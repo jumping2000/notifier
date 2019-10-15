@@ -19,15 +19,21 @@ class Notifier(hass.Hass):
     @property
     def volume(self) -> float:
         """Retrieve the audio player's volume."""
-        return float(self.get_state(entity = self.gh_player, attribute='volume_level') or 0.3)
+        if self.get_state(self.gh_player) == "off":
+            self.log("accendo il GH: {}".format(self.gh_player))
+            self.call_service(
+                "media_player/turn_on", 
+                entity_id = self.gh_player
+            )
+        return round(float(self.get_state(entity = self.gh_player, attribute='volume_level') or 0.3),2) 
 
-    @volume.setter 
-    def volume(self, value: float) -> None:
-        """Turn on Google Home mini"""
-        self.call_service(
-            "media_player/turn_on", 
-            entity_id = self.gh_player
-        )
+    #@volume.setter 
+    #def volume(self, value: float) -> None:
+    #    """Turn on Google Home mini"""
+    #    self.call_service(
+    #        "media_player/turn_on", 
+    #        entity_id = self.gh_player
+    #    )
 
         """Set the audio player's volume."""
         self.call_service(
@@ -155,7 +161,8 @@ class Notifier(hass.Hass):
             self.log("GH PLAYER: {}".format(self.gh_player))
             self.log("VOLUME GH DA IMPOSTARE: {}".format(self.gh_volume))
             self.log("VOLUME SALVATO {}".format(volume_saved))
-
+            # SET VOLUME
+            self.call_service("media_player/volume_set", entity_id = self.gh_player, volume_level = self.gh_volume)
             # check last message
             if self.last_gh_notification_time is not None and (
                 datetime.datetime.now() - self.last_gh_notification_time
