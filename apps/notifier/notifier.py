@@ -19,7 +19,7 @@ class Notifier(hass.Hass):
     @property
     def volume(self) -> float:
         """Retrieve the audio player's volume."""
-        return float(self.get_state(self.gh_selected_media_player_google, attribute='volume_level') or 0.3)
+        return float(self.get_state(entity = self.gh_player, attribute='volume_level') or 0.3)
 
     @volume.setter 
     def volume(self, value: float) -> None:
