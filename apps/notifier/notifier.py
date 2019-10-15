@@ -34,13 +34,13 @@ class Notifier(hass.Hass):
     #        "media_player/turn_on", 
     #        entity_id = self.gh_player
     #    )
-
-        """Set the audio player's volume."""
-        self.call_service(
-            "media_player/volume_set",
-            entity_id = self.gh_player,
-            volume_level = value
-        )
+    #
+    #    """Set the audio player's volume."""
+    #    self.call_service(
+    #        "media_player/volume_set",
+    #        entity_id = self.gh_player,
+    #        volume_level = value
+    #    )
 
     def initialize(self):
         self.timer_handle_list = []
