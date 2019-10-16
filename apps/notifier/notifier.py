@@ -178,7 +178,7 @@ class Notifier(hass.Hass):
                     self.log("VOLUME DESIDERATO: {}".format(data['volume']))
                     # Set to the desired volume
                     self.volume_set(data['gh_player'], data['volume'])
-                    #self.volume_set(data['alexa_player'])
+                    #self.volume_set(data['alexa_player'], data['volume'])
                     # Alexa tts type
                     #if self.alexa_tts_type == "tts":
                     #    alexa_tts = '{"type":"tts"}'
