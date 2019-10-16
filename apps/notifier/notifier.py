@@ -1,7 +1,11 @@
 import appdaemon.plugins.hass.hassapi as hass
 import datetime
 import globals
-
+import time
+#import sys
+from queue import Queue
+from threading import Thread
+from threading import Event
 #
 # Centralizes messaging. Use Google Home  Telegram and Persisten Notification
 #
@@ -12,45 +16,22 @@ import globals
 #   Initial Version
 
 __NOTIFY__ = "notify/"
-__WAIT_TIME__ = 5  # seconds
+__WAIT_TIME__ = 3  # seconds
+__TTS__ = "tts/"
 
 class Notifier(hass.Hass):
 
-    @property
-    def volume(self) -> float:
-        """Retrieve the audio player's volume."""
-        if self.get_state(self.gh_player) == "off":
-            self.log("accendo il GH: {}".format(self.gh_player))
-            self.call_service(
-                "media_player/turn_on", 
-                entity_id = self.gh_player
-            )
-        return round(float(self.get_state(entity = self.gh_player, attribute='volume_level') or 0.3),2) 
-
-    #@volume.setter 
-    #def volume(self, value: float) -> None:
-    #    """Turn on Google Home mini"""
-    #    self.call_service(
-    #        "media_player/turn_on", 
-    #        entity_id = self.gh_player
-    #    )
-    #
-    #    """Set the audio player's volume."""
-    #    self.call_service(
-    #        "media_player/volume_set",
-    #        entity_id = self.gh_player,
-    #        volume_level = value
-    #    )
-
     def initialize(self):
-        self.timer_handle_list = []
-
         self.gh_tts_google_mode = globals.get_arg(self.args, "gh_tts_google_mode")
-        self.gh_volume_storage = globals.get_arg(self.args, "gh_volume_storage")
-        self.gh_switch = globals.get_arg(self.args, "gh_switch")
-        self.gh_selected_media_player_google = globals.get_arg(self.args, "gh_selected_media_player_google")
-        self.gh_language = globals.get_arg(self.args, "gh_language")
-        self.gh_period_of_day_volume = globals.get_arg(self.args, "gh_period_of_day_volume")
+        self.gh_switch_entity = globals.get_arg(self.args, "gh_switch")
+        self.gh_selected_media_player = globals.get_arg(self.args, "gh_selected_media_player")
+
+        self.alexa_tts_alexa_type = globals.get_arg(self.args, "alexa_tts_alexa_type")
+        self.alexa_switch_entity = globals.get_arg(self.args, "alexa_switch")
+        self.alexa_selected_media_player = globals.get_arg(self.args, "alexa_selected_media_player")
+
+        self.tts_language = globals.get_arg(self.args, "tts_language")
+        self.tts_period_of_day_volume = globals.get_arg(self.args, "tts_period_of_day_volume")
 
         self.text_notifications = globals.get_arg(self.args, "text_notifications")
         self.screen_notifications = globals.get_arg(self.args, "screen_notifications")
@@ -64,14 +45,35 @@ class Notifier(hass.Hass):
         self.intercom_message_hub = globals.get_arg(self.args, "intercom_message_hub")
 
         self.gh_tts = "google_translate_say"
-        self.last_gh_notification_time = None
+        self.alexa_tts = "alexa_media"
+
+        # Create Queue
+        self.queue = Queue(maxsize=0)
+        # Create worker thread
+        t = Thread(target=self.worker)
+        t.daemon = True
+        t.start()
+        self.event = Event()
+        #self.log("Thread Alive {}, {}" .format (t.isAlive(), t.is_alive()))
+
         self.listen_event(self.notify_hub, "hub")
 
-    def notify_hub(self, event_name, data, kwargs):
-        self.log(event_name)
-        self.log(data)
-        self.log(kwargs)
+    #@property
+    def volume(self, entity):
+        """Retrieve the audio player's volume."""
+        """ First turn on Google Home mini"""
+        self.log("STATO MEDIA_PLAYER: {}".format(self.get_state(entity)))
+        if self.get_state(entity) == "off":
+            self.log("accendo il GH: {}".format(entity))
+            self.call_service("media_player/turn_on", entity_id = entity)
+        return round(float(self.get_state(entity = entity, attribute='volume_level') or 0.2),2)
 
+    def volume_set(self, entity, volume):
+        self.log("MEDIA_PLAYER: {}".format(entity))
+        self.call_service("media_player/volume_set", entity_id = entity, volume_level = float(volume))
+
+    def notify_hub(self, event_name, data, kwargs):
+        self.log("################## START NOTIFIER ####################")
         if self.get_state(self.text_notifications) == 'on':
             useNotification = True
             notify_name = self.get_state(self.default_notify).lower().replace(' ', '_')
@@ -80,30 +82,36 @@ class Notifier(hass.Hass):
         else:
             usePersistentNotification = False
         if self.get_state(self.speech_notifications) == 'on':
-            useGH = True
+            useTTS = True
         else:
-            useGH = False
-        
-        self.gh_volume = self.get_state(self.gh_period_of_day_volume)
-        self.gh_player = self.get_state(self.gh_selected_media_player_google)
+            useTTS = False
 
-        self.log(data['message'])
-        self.log(data['title'])
-        self.log(notify_name)
-        self.log(self.gh_volume)
-        self.log(self.gh_player)
+        self.gh_player = self.get_state(self.gh_selected_media_player)
+        self.alexa_player = self.get_state(self.alexa_selected_media_player)
+        self.gh_switch = self.get_state(self.gh_switch_entity )
+        self.alexa_switch = self.get_state(self.alexa_switch_entity)
+        self.alexa_tts_type = str(self.get_state(self.alexa_tts_alexa_type)).lower
+        #self.log(data['message'])
+        #self.log(data['title'])
+        #self.log(notify_name)
+        #self.log(self.gh_player)
 
-        self.notify(notify_name, data, useGH, useNotification, usePersistentNotification)
+        if data['media_player_google'] == '':
+            data.update({'media_player_google': self.gh_player})
+        #if data['media_player_alexa'] == '':
+        #    data.update({'media_player_alexa': self.amazon_player})
+        if data['volume'] == '':
+            data.update({'volume': self.get_state(self.tts_period_of_day_volume)})
 
+        self.notify(notify_name, data, useTTS, useNotification, usePersistentNotification)
 
-    def notify(self, notify_name, data, useGH, useNotification, usePersistentNotification):
-        timestamp = datetime.datetime.now().strftime('%H:%M')
+    def notify(self, notify_name, data, useTTS, useNotification, usePersistentNotification):
+        timestamp = datetime.datetime.now().strftime('%H:%M:%S')
         title = data['title']
         message = data['message']
         url = data['url']
         _file = data['file']
         caption = data ['caption']
-        delay_tts = int(len(message.split()) / 2)+3
 
         if useNotification:
             self.log("Notifying via Telegram")
@@ -114,13 +122,11 @@ class Notifier(hass.Hass):
             
             if caption == '':
                 caption = 'Photo'
-            
-            self.log("TITLE - {}".format(title))
-            self.log("MESSAGE - {}".format(message))
-            self.log("URL - {}".format(url))
-            self.log("FILE - {}".format(_file))
-            self.log("CAPTION - {}".format(caption))
-
+            #self.log("TITLE - {}".format(title))
+            #self.log("MESSAGE - {}".format(message))
+            #self.log("URL - {}".format(url))
+            #self.log("FILE - {}".format(_file))
+            #self.log("CAPTION - {}".format(caption))
             if url !='':
                 extra_data = { 'photo': 
                                 {'url': url,
@@ -131,10 +137,7 @@ class Notifier(hass.Hass):
                                 {'file': _file,
                                 'caption': caption}
                             }
-
             if url !='' or _file !='':
-                self.log("Sending data: " + _file + " " + url + " " + caption)
-
                 self.call_service(__NOTIFY__ + notify_name, 
                                 message = message, 
                                 title = title,
@@ -150,54 +153,69 @@ class Notifier(hass.Hass):
                             notification_id = "info_messages",
                             message = ("{} - {}".format(timestamp, message)),
                             title = "Centro Messaggi")
-
-        if useGH:
-            self.log("Notifying via Google Home")
-
-            # Save current volume
-            volume_saved = self.volume
-
+        if useTTS:
+            self.log("Notifying via TTS")
+            #length = round(len(message)/9)
+            length = round(len(message.split()) / 2) + 2
+            self.queue.put({"type": "tts", "text": message, "length": length, "volume": data['volume']})
+            
             # LOGGING
-            self.log("GH PLAYER: {}".format(self.gh_player))
-            self.log("VOLUME GH DA IMPOSTARE: {}".format(self.gh_volume))
-            self.log("VOLUME SALVATO {}".format(volume_saved))
-            # SET VOLUME
-            self.call_service("media_player/volume_set", entity_id = self.gh_player, volume_level = self.gh_volume)
-            # check last message
-            if self.last_gh_notification_time is not None and (
-                datetime.datetime.now() - self.last_gh_notification_time
-                < datetime.timedelta(seconds=__WAIT_TIME__) 
-                ):
-                self.timer_handle_list.append(self.run_in(self.notify_callback, __WAIT_TIME__, message=message))
-            else:
-                self.last_gh_notification_time = datetime.datetime.now()
-                self.call_service(
-                    "tts/" + self.gh_tts,
-                    entity_id=self.gh_player,
-                    message=message
-                )
+            #self.log("Message added to queue. Queue is empty? {}".format(self.queue.empty()))
+            self.log("Queue Size is now {}".format(self.queue.qsize()))
+            self.log(self.queue.queue)         
 
-            # Restore volume
-            self.run_in(self.volume_callback, delay_tts, volume_level=volume_saved)
+    def worker(self):
+        active = True
+        while active:
+            try:
+                # Get data from queue
+                data = self.queue.get()
+                if data["type"] == "terminate":
+                    active = False
+                else:
+                    # Save current volume
+                    volume_saved_gh = self.volume(self.gh_player)
+                    #volume_saved_alexa = self.volume(self.alexa_player)
+                    self.log("VOLUME SALVATO: {}".format(volume_saved_gh))
+                    self.log("VOLUME DESIDERATO: {}".format(data['volume']))
+                    # Set to the desired volume
+                    self.volume_set(self.gh_player, data['volume'])
+                    #self.volume_set(self.alexa_player)
+                    # Alexa tts type
+                    #if self.alexa_tts_type == "tts":
+                    #    alexa_tts = '{"type":"tts"}'
+                    #elif  self.alexa_tts_type =="announce":
+                    #    alexa_tts = '{"type":"announce", "method":"all"}'
+                    #else:
+                    #    alexa_tts = '{"type":"push"}'
+                    
+                    if (data["type"] == "tts" and self.gh_switch == "on"):
+                        self.call_service(__TTS__ + self.gh_tts, entity_id = self.gh_player, message = data['text'])
+                    #if (data["type"] == "tts" and self.gh_switch == "on" and self.alexa_switch == "off"):
+                    #    self.call_service(__TTS__ + self.gh_tts, entity_id = self.gh_player, message = data["text"])
+                    #elif (data["type"] == "tts" and self.gh_switch == "off" and self.alexa_switch == "on"):
+                    #    self.call_service(__NOTIFY__ + self.alexa_tts, data=alexa_tts, target = self.alexa_player, message = data["text"])
+                    #elif (data["type"] == "tts" and self.gh_switch == "off" and self.alexa_switch == "off"):
+                    #    self.call_service(__TTS__ + self.gh_tts, entity_id = self.gh_player, message = data["text"])
+                    #    self.call_service(__NOTIFY__ + self.alexa_tts, data=alexa_tts, target = self.alexa_player, message = data["text"])
 
-
-    def notify_callback(self, kwargs):
-        self.last_gh_notification_time = datetime.datetime.now()
-        self.call_service(
-            "tts/" + self.gh_tts,
-            entity_id = self.gh_player,
-            message = kwargs["message"]
-        )
-    
-    def volume_callback (self, kwargs):
-        self.call_service(
-            "media_player/volume_set", 
-            entity_id = self.gh_player,
-            volume_level = kwargs["volume_level"]
-        )
-        self.log("Restore Volume")
-
+                    # Sleep to allow message to complete before restoring volume
+                    time.sleep(int(data["length"]))
+                    # Restore volume
+                    self.call_service("media_player/volume_set", entity_id = self.gh_player, volume_level = volume_saved_gh)
+                    #self.call_service("media_player/volume_set", entity_id = self.alexa_player, volume_level = volume_saved_alexa)
+                    # Set state locally as well to avoid race condition
+                    self.set_state(self.gh_player, attributes = {"volume_level": volume_saved_gh})
+            except:
+                self.log("Error in worker")
+                #self.log(sys.exc_info()) 
+        # Rinse and repeat
+        self.queue.task_done()
+        self.log("Worker thread exiting")
+        self.event.set()
 
     def terminate(self):
-        for timer_handle in self.timer_handle_list:
-            self.cancel_timer(timer_handle)
+        self.event.clear()
+        self.queue.put({"type": "terminate"})
+        self.log(" Terminate function called")
+        self.event.wait()
