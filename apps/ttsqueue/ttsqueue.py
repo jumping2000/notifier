@@ -48,7 +48,7 @@ class TTSqueue(hass.Hass):
           active = False
         else:
           # Save current volume
-          #volume_saved = self.get_state(self.gh_selected_media_player, attribute="volume_level")
+          #volume_saved = self.get_state(self.gh_player, attribute="volume_level")
           
           # Turn on Google and Set to the desired volume
           #self.call_service("media_player/turn_on", entity_id = self.gh_player)
