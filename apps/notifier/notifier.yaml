@@ -4,11 +4,14 @@ Notifier:
 
   gh_tts_google_mode: input_boolean.tts_google_mode
   gh_switch:  input_boolean.google_switch
-  gh_volume_storage: input_number.google_volume_storage
-  gh_language: input_select.language
-  gh_player_google: input_text.player_google
-  gh_selected_media_player_google: sensor.media_player_google
-  gh_period_of_day_volume: sensor.period_of_day_volume
+  gh_selected_media_player: sensor.media_player_google
+
+  alexa_tts_alexa_type: input_select.default_alexa_type
+  alexa_switch:  input_boolean.alexa_switch
+  alexa_selected_media_player: sensor.media_player_alexa
+
+  tts_period_of_day_volume: sensor.period_of_day_volume
+  tts_language: input_select.language
 
   text_notifications: input_boolean.text_notifications
   screen_notifications: input_boolean.screen_notifications
