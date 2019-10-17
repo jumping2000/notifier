@@ -4,8 +4,8 @@ import globals
 import time
 #import sys
 from queue import Queue
-from threading import Thread
-from threading import Event
+from threading import Thread, Event
+#from threading import Event
 #
 # Centralizes messaging. Use Google Home  Telegram and Persisten Notification
 #
@@ -63,14 +63,15 @@ class Notifier(hass.Hass):
         """Retrieve the audio player's volume."""
         """ First turn on Google Home mini"""
         self.log("STATO MEDIA_PLAYER: {}".format(self.get_state(entity)))
-        if self.get_state(entity) == "off":
+        if (self.get_state(entity) == "off" and self.gh_switch == "on"):
             self.log("accendo il GH: {}".format(entity))
             self.call_service("media_player/turn_on", entity_id = entity)
         return round(float(self.get_state(entity = entity, attribute='volume_level') or 0.2),2)
 
     def volume_set(self, entity, volume):
-        self.log("MEDIA_PLAYER: {}".format(entity))
-        self.call_service("media_player/volume_set", entity_id = entity, volume_level = float(volume))
+        if self.gh_switch == "on":
+            self.log("MEDIA_PLAYER: {}".format(entity))
+            self.call_service("media_player/volume_set", entity_id = entity, volume_level = float(volume))
 
     def notify_hub(self, event_name, data, kwargs):
         self.log("################## START NOTIFIER ####################")
@@ -95,8 +96,8 @@ class Notifier(hass.Hass):
 
         if data['media_player_google'] == '':
             data.update({'media_player_google': self.get_state(self.gh_selected_media_player)})
-        #if data['media_player_alexa'] == '':
-        #    data.update({'media_player_alexa': self.get_state(self.alexa_selected_media_player)})
+        if data['media_player_alexa'] == '':
+           data.update({'media_player_alexa': self.get_state(self.alexa_selected_media_player)})
         if data['volume'] == '':
             data.update({'volume': self.get_state(self.tts_period_of_day_volume)})
 
@@ -155,7 +156,7 @@ class Notifier(hass.Hass):
             #length = round(len(message)/9)
             length = round(len(message.split()) / 2) + 2
             self.queue.put({"type": "tts", "text": message, "length": length, "volume": data['volume'], 
-                            "gh_player": data['media_player_google'], "amazon_player": data['media_player_alexa']})
+                            "gh_player": data['media_player_google'], "alexa_player": data['media_player_alexa']})
             
             # LOGGING
             #self.log("Message added to queue. Queue is empty? {}".format(self.queue.empty()))
@@ -189,6 +190,8 @@ class Notifier(hass.Hass):
                     
                     if (data["type"] == "tts" and self.gh_switch == "on"):
                         self.call_service(__TTS__ + self.gh_tts, entity_id = data['gh_player'], message = data['text'])
+                    if (data["type"] == "tts" and self.alexa_switch == "on"):
+                        self.call_service("notify/alexa_media", target = data['alexa_player'], data={"type":"tts"},message = data["text"])
                     #if (data["type"] == "tts" and self.gh_switch == "on" and self.alexa_switch == "off"):
                     #    self.call_service(__TTS__ + self.gh_tts, entity_id = data['gh_player'], message = data["text"])
                     #elif (data["type"] == "tts" and self.gh_switch == "off" and self.alexa_switch == "on"):
