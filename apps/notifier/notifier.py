@@ -16,7 +16,7 @@ from threading import Thread, Event
 #   Initial Version
 
 __NOTIFY__ = "notify/"
-__WAIT_TIME__ = 2  # seconds
+__WAIT_TIME__ = 3  # seconds
 __TTS__ = "tts/"
 
 class Notifier(hass.Hass):
@@ -88,7 +88,7 @@ class Notifier(hass.Hass):
 
         self.gh_switch = self.get_state(self.gh_switch_entity )
         self.alexa_switch = self.get_state(self.alexa_switch_entity)
-        self.alexa_tts_type = str(self.get_state(self.alexa_tts_alexa_type)).lower
+        self.alexa_tts_type = str(self.get_state(self.alexa_tts_alexa_type)).lower()
         #self.log(data['message'])
         #self.log(data['title'])
         #self.log(notify_name)
@@ -160,7 +160,7 @@ class Notifier(hass.Hass):
             # LOGGING
             #self.log("Message added to queue. Queue is empty? {}".format(self.queue.empty()))
             self.log("Queue Size is now {}".format(self.queue.qsize()))
-            self.log(self.queue.queue)         
+            self.log(self.queue.queue)
 
     def worker(self):
         active = True
@@ -180,18 +180,17 @@ class Notifier(hass.Hass):
                     self.volume_set(data['gh_player'], data['volume'])
                     self.volume_set(data['alexa_player'], data['volume'])
                     # Alexa tts type
-                    #alexa_tts = {}
                     if self.alexa_tts_type == "tts":
-                       alexa_tts = '{"type": "tts"}'
-                    # elif  self.alexa_tts_type =="announce":
-                    #    alexa_tts = '{{"type":"announce", "method":"speak"}}'
-                    # else:
-                    #    alexa_tts = '{{"type":"push"}}'
+                       alexa_tts = {'type': 'tts'}
+                    elif  self.alexa_tts_type =="announce":
+                       alexa_tts = {'type':'announce', 'method':'speak'}
+                    else:
+                       alexa_tts = {'type':'push'}
                     
                     if (data["type"] == "tts" and self.gh_switch == "on"):
                         self.call_service(__TTS__ + self.gh_tts, entity_id = data['gh_player'], message = data['text'])
                     if (data["type"] == "tts" and self.alexa_switch == "on"):
-                        self.call_service(__NOTIFY__ + self.alexa_tts, target = data['alexa_player'], data = {"type": "tts"}, message = data['text'])
+                        self.call_service(__NOTIFY__ + self.alexa_tts, target = data['alexa_player'], data = alexa_tts, message = data['text'])
                     #if (data["type"] == "tts" and self.gh_switch == "on" and self.alexa_switch == "off"):
                     #    self.call_service(__TTS__ + self.gh_tts, entity_id = data['gh_player'], message = data["text"])
                     #elif (data["type"] == "tts" and self.gh_switch == "off" and self.alexa_switch == "on"):
