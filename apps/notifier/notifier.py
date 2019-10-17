@@ -16,7 +16,7 @@ from threading import Thread, Event
 #   Initial Version
 
 __NOTIFY__ = "notify/"
-__WAIT_TIME__ = 3  # seconds
+__WAIT_TIME__ = 2  # seconds
 __TTS__ = "tts/"
 
 class Notifier(hass.Hass):
@@ -69,9 +69,8 @@ class Notifier(hass.Hass):
         return round(float(self.get_state(entity = entity, attribute='volume_level') or 0.2),2)
 
     def volume_set(self, entity, volume):
-        if self.gh_switch == "on":
-            self.log("MEDIA_PLAYER: {}".format(entity))
-            self.call_service("media_player/volume_set", entity_id = entity, volume_level = float(volume))
+        self.log("MEDIA_PLAYER: {}".format(entity))
+        self.call_service("media_player/volume_set", entity_id = entity, volume_level = float(volume))
 
     def notify_hub(self, event_name, data, kwargs):
         self.log("################## START NOTIFIER ####################")
@@ -154,7 +153,7 @@ class Notifier(hass.Hass):
         if useTTS:
             self.log("Notifying via TTS")
             #length = round(len(message)/9)
-            length = round(len(message.split()) / 2) + 2
+            length = round(len(message.split()) / 2) + __WAIT_TIME__
             self.queue.put({"type": "tts", "text": message, "length": length, "volume": data['volume'], 
                             "gh_player": data['media_player_google'], "alexa_player": data['media_player_alexa']})
             
@@ -174,24 +173,25 @@ class Notifier(hass.Hass):
                 else:
                     # Save current volume
                     volume_saved_gh = self.volume(data['gh_player'])
-                    #volume_saved_alexa = self.volume(data['alexa_player'])
+                    volume_saved_alexa = self.volume(data['alexa_player'])
                     self.log("VOLUME SALVATO: {}".format(volume_saved_gh))
                     self.log("VOLUME DESIDERATO: {}".format(data['volume']))
                     # Set to the desired volume
                     self.volume_set(data['gh_player'], data['volume'])
-                    #self.volume_set(data['alexa_player'], data['volume'])
+                    self.volume_set(data['alexa_player'], data['volume'])
                     # Alexa tts type
-                    #if self.alexa_tts_type == "tts":
-                    #    alexa_tts = '{"type":"tts"}'
-                    #elif  self.alexa_tts_type =="announce":
-                    #    alexa_tts = '{"type":"announce", "method":"all"}'
-                    #else:
-                    #    alexa_tts = '{"type":"push"}'
+                    #alexa_tts = {}
+                    if self.alexa_tts_type == "tts":
+                       alexa_tts = '{"type": "tts"}'
+                    # elif  self.alexa_tts_type =="announce":
+                    #    alexa_tts = '{{"type":"announce", "method":"speak"}}'
+                    # else:
+                    #    alexa_tts = '{{"type":"push"}}'
                     
                     if (data["type"] == "tts" and self.gh_switch == "on"):
                         self.call_service(__TTS__ + self.gh_tts, entity_id = data['gh_player'], message = data['text'])
                     if (data["type"] == "tts" and self.alexa_switch == "on"):
-                        self.call_service("notify/alexa_media", target = data['alexa_player'], data={"type":"tts"},message = data["text"])
+                        self.call_service(__NOTIFY__ + self.alexa_tts, target = data['alexa_player'], data = {"type": "tts"}, message = data['text'])
                     #if (data["type"] == "tts" and self.gh_switch == "on" and self.alexa_switch == "off"):
                     #    self.call_service(__TTS__ + self.gh_tts, entity_id = data['gh_player'], message = data["text"])
                     #elif (data["type"] == "tts" and self.gh_switch == "off" and self.alexa_switch == "on"):
@@ -204,7 +204,7 @@ class Notifier(hass.Hass):
                     time.sleep(int(data["length"]))
                     # Restore volume
                     self.call_service("media_player/volume_set", entity_id = data['gh_player'], volume_level = volume_saved_gh)
-                    #self.call_service("media_player/volume_set", entity_id = data['alexa_player'], volume_level = volume_saved_alexa)
+                    self.call_service("media_player/volume_set", entity_id = data['alexa_player'], volume_level = volume_saved_alexa)
                     # Set state locally as well to avoid race condition
                     self.set_state(data['gh_player'], attributes = {"volume_level": volume_saved_gh})
             except:
