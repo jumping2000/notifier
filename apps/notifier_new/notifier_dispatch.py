@@ -59,6 +59,7 @@ class Notifier_Dispatch(hass.Hass):
         gh_switch = self.get_state(self.gh_switch_entity)
         alexa_switch = self.get_state(self.alexa_switch_entity)
         alexa_tts_type = str(self.get_state(self.alexa_tts_alexa_type)).lower()
+        alexa_tts_method = str(self.get_state(self.alexa_tts_alexa_method)).lower()
 
         if data["media_player_google"] == "":
             data.update({"media_player_google": self.get_state(self.gh_selected_media_player)})
@@ -69,9 +70,9 @@ class Notifier_Dispatch(hass.Hass):
         if data["notify"] == "":
             data.update({"notify": notify_name})
         if data["alexa_type"] =="":
-            data.update({"alexa_type": self.get_state(self.alexa_tts_alexa_type)})
+            data.update({"alexa_type": self.get_state(alexa_tts_type)})
         if data["alexa_method"] =="":
-            data.update({"alexa_method": self.get_state(self.alexa_tts_alexa_method)})
+            data.update({"alexa_method": self.get_state(alexa_tts_method)})
 
         if usePersistentNotification:
             self.log("Notifying via Persistnt Notification")
