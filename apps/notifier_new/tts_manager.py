@@ -15,7 +15,7 @@ Following features are implemented:
 """
 
 __NOTIFY__ = "notify/"
-__WAIT_TIME__ = 2  # seconds
+__WAIT_TIME__ = 1  # seconds
 __TTS__ = "tts/"
 
 class TTS_Manager(hass.Hass):
@@ -82,12 +82,12 @@ class TTS_Manager(hass.Hass):
                     self.log("VOLUME DESIDERATO: {}".format(data["volume"]))
                     ### SPEAK
                     self.call_service(__TTS__ + self.gh_tts, entity_id = entity, message = data["text"])
-                    time.sleep(1)
+                    time.sleep(__WAIT_TIME__)
                     duration = self.get_state(entity, attribute='media_duration')
                     self.log("DURATION {}:".format(duration))
                     if not duration:
                         #The TTS already played, set a small duration
-                        duration = __WAIT_TIME__
+                        duration = (len(data["text"].split()) / 2) + __WAIT_TIME__
                         self.log("DURATION-WAIT {}:".format(duration))
                     #Sleep and wait for the tts to finish
                     time.sleep(duration)
@@ -112,12 +112,13 @@ class TTS_Manager(hass.Hass):
                                     "method": data["alexa_method"]
                                     }
                 self.call_service(__NOTIFY__ + self.alexa_tts, data = alexa_data, target = alexa_player, message = data["text"])
-                time.sleep(1)
+                time.sleep(__WAIT_TIME__)
                 duration = self.get_state(entity, attribute='media_duration')
                 self.log(duration)
                 if not duration:
                     #The TTS already played, set a small duration
-                    duration = __WAIT_TIME__
+                    duration = (len(data["text"].split()) / 2) + __WAIT_TIME__
+                    self.log("DURATION-WAIT {}:".format(duration))
                 #Sleep and wait for the tts to finish                  
                 time.sleep(duration)
                 ##
