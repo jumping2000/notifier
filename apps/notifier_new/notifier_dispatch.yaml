@@ -7,6 +7,7 @@ Notifier_Dispatch:
   gh_selected_media_player: sensor.media_player_google
 
   alexa_tts_alexa_type: input_select.default_alexa_type
+  alexa_tts_alexa_method: input_select.default_alexa_method
   alexa_switch:  input_boolean.alexa_switch
   alexa_selected_media_player: sensor.media_player_alexa
 
