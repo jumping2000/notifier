@@ -1,0 +1,7 @@
+Notification_Manager:
+  module: notification_manager
+  class: Notification_Manager
+
+  global_dependencies:
+    - globals
+    - secrets

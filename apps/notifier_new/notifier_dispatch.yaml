@@ -1,0 +1,34 @@
+Notifier_Dispatch:
+  module: notifier_dispatch
+  class: Notifier_Dispatch
+
+  gh_tts_google_mode: input_boolean.tts_google_mode
+  gh_switch:  input_boolean.google_switch
+  gh_selected_media_player: sensor.media_player_google
+
+  alexa_tts_alexa_type: input_select.default_alexa_type
+  alexa_switch:  input_boolean.alexa_switch
+  alexa_selected_media_player: sensor.media_player_alexa
+
+  tts_period_of_day_volume: sensor.period_of_day_volume
+  tts_language: input_select.language
+
+  text_notifications: input_boolean.text_notifications
+  screen_notifications: input_boolean.screen_notifications
+  speech_notifications: input_boolean.speech_notifications
+
+  default_notify: input_select.default_notify
+  priority_message: input_boolean.priority_message
+  guest_mode: input_boolean.guest_mode
+  last_message: input_boolean.last_message
+
+  personal_assistant_name: input_text.personal_assistant_name
+  intercom_message_hub: input_text.intercom_message_hub
+
+  dependencies: 
+    - Notification_Manager
+    - TTS_Manager
+
+  global_dependencies:
+    - globals
+    - secrets
