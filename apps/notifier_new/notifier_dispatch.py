@@ -46,7 +46,7 @@ class Notifier_Dispatch(hass.Hass):
         if self.get_state(self.text_notifications) == "on":
             useNotification = True
             notify_name = self.get_state(self.default_notify).lower().replace(" ", "_")
-        if self.get_state(self.screen_notifications) == "on":
+        if (self.get_state(self.screen_notifications) == "on" and data["no_show"] != "1"):
             usePersistentNotification = True
         else:
             usePersistentNotification = False
