@@ -15,7 +15,7 @@ Following features are implemented:
 """
 
 __NOTIFY__ = "notify/"
-__WAIT_TIME__ = 1  # seconds
+__WAIT_TIME__ = 2  # seconds
 __TTS__ = "tts/"
 
 class TTS_Manager(hass.Hass):
@@ -72,10 +72,6 @@ class TTS_Manager(hass.Hass):
             data = self.queue.get()
 
             if (data["type"] == "tts" and data["gh_switch"] == "on"):
-                #if "," in data["gh_player"]:
-                #    gh_player = self.converti(data["gh_player"])
-                #else:
-                #    gh_player = data["gh_player"]
                 gh_player = self.converti(data["gh_player"])
                 for entity in gh_player:
                     ### Save current volume
@@ -85,13 +81,14 @@ class TTS_Manager(hass.Hass):
                     self.volume_set(entity, data["volume"])
                     self.log("VOLUME DESIDERATO: {}".format(data["volume"]))
                     ### SPEAK
-                    time.sleep(1)
                     self.call_service(__TTS__ + self.gh_tts, entity_id = entity, message = data["text"])
+                    time.sleep(1)
                     duration = self.get_state(entity, attribute='media_duration')
-                    self.log(duration)
+                    self.log("DURATION {}:".format(duration))
                     if not duration:
                         #The TTS already played, set a small duration
                         duration = __WAIT_TIME__
+                        self.log("DURATION-WAIT {}:".format(duration))
                     #Sleep and wait for the tts to finish
                     time.sleep(duration)
                     self.call_service("media_player/volume_set", entity_id = entity, volume_level = volume_saved_gh)
@@ -99,10 +96,6 @@ class TTS_Manager(hass.Hass):
                     self.log("VOLUME RIPROGRAMMATO: {} - {}".format(volume_saved_gh,entity))
 
             if (data["type"] == "tts" and data["alexa_switch"] == "on"):
-                #if "," in data["alexa_player"]:
-                #    alexa_player = self.converti(data["alexa_player"])
-                #else:
-                #    alexa_player = data["alexa_player"]
                 alexa_player = self.converti(data["alexa_player"])
                 for entity in alexa_player:
                     ### Save current volume
@@ -119,7 +112,7 @@ class TTS_Manager(hass.Hass):
                                     "method": data["alexa_method"]
                                     }
                 self.call_service(__NOTIFY__ + self.alexa_tts, data = alexa_data, target = alexa_player, message = data["text"])
-                #time.sleep(__WAIT_TIME__)
+                time.sleep(1)
                 duration = self.get_state(entity, attribute='media_duration')
                 self.log(duration)
                 if not duration:
