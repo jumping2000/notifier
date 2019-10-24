@@ -1,7 +1,9 @@
 Notification_Manager:
   module: notification_manager
   class: Notification_Manager
-
+  
+  text_last_message: input_text.last_message
+  
   global_dependencies:
     - globals
     - secrets

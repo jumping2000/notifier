@@ -1,7 +1,5 @@
 import appdaemon.plugins.hass.hassapi as hass
-import datetime
 import globals
-import time
 #
 # Centralizes messaging.
 #
@@ -22,6 +20,7 @@ class Notifier_Dispatch(hass.Hass):
         self.alexa_switch_entity = globals.get_arg(self.args, "alexa_switch")
         self.alexa_selected_media_player = globals.get_arg(self.args, "alexa_selected_media_player")
 
+        self.tts_default_restore_volume = globals.get_arg(self.args,"tts_default_restore_volume")
         self.tts_language = globals.get_arg(self.args, "tts_language")
         self.tts_period_of_day_volume = globals.get_arg(self.args, "tts_period_of_day_volume")
 
@@ -32,7 +31,7 @@ class Notifier_Dispatch(hass.Hass):
         self.default_notify = globals.get_arg(self.args, "default_notify")
         self.priority_message = globals.get_arg(self.args, "priority_message")
         self.guest_mode = globals.get_arg(self.args, "guest_mode")
-        self.last_message = globals.get_arg(self.args, "last_message")
+
         self.personal_assistant_name = globals.get_arg(self.args, "personal_assistant_name") 
         self.intercom_message_hub = globals.get_arg(self.args, "intercom_message_hub")
 
@@ -43,24 +42,32 @@ class Notifier_Dispatch(hass.Hass):
 
 #####################################################################
     def notify_hub(self, event_name, data, kwargs):
-        self.log("################## START NOTIFIER_DISPATCH ####################")
+        self.log("#### START NOTIFIER_DISPATCH ####")
+        notify_name = self.get_state(self.default_notify).lower().replace(" ", "_")
+
         if self.get_state(self.text_notifications) == "on":
             useNotification = True
-            notify_name = self.get_state(self.default_notify).lower().replace(" ", "_")
+        else:
+            useNotification = False
+
         if (self.get_state(self.screen_notifications) == "on" and data["no_show"] != "1"):
             usePersistentNotification = True
         else:
             usePersistentNotification = False
+
         if (self.get_state(self.speech_notifications) == "on" and data["mute"] != "1"):
             useTTS = True
         else:
             useTTS = False
 
+        restore_volume = float(self.get_state(self.tts_default_restore_volume)) / 100
         gh_switch = self.get_state(self.gh_switch_entity)
         alexa_switch = self.get_state(self.alexa_switch_entity)
         alexa_tts_type = str(self.get_state(self.alexa_tts_alexa_type)).lower()
         alexa_tts_method = str(self.get_state(self.alexa_tts_alexa_method)).lower()
 
+        if data["language"] == "":
+            data.update({"language": str(self.get_state(self.tts_language)).lower()})     
         if data["media_player_google"] == "":
             data.update({"media_player_google": self.get_state(self.gh_selected_media_player)})
         if data["media_player_alexa"] == "":
@@ -75,13 +82,13 @@ class Notifier_Dispatch(hass.Hass):
             data.update({"alexa_method": self.get_state(alexa_tts_method)})
 
         if usePersistentNotification:
-            self.log("Notifying via Persistnt Notification")
+            self.log("##### Notifying via Persistent Notification #####")
             self.notification_manager.send_persistent(data)
         if useNotification:
-            self.log("Notifying via Telegram")
+            self.log("##### Notifying via Telegram #####")
             self.notification_manager.send_notify(data, self.get_state(self.personal_assistant_name))
         if useTTS:
-            self.log("Notifying via TTS")
-            self.tts_manager.speak(data, gh_switch, alexa_switch, alexa_tts_type)
+            self.log("##### Notifying via TTS #####")
+            self.tts_manager.speak(data, gh_switch, alexa_switch, restore_volume)
 
 #####################################################################

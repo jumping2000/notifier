@@ -11,6 +11,7 @@ Notifier_Dispatch:
   alexa_switch:  input_boolean.alexa_switch
   alexa_selected_media_player: sensor.media_player_alexa
 
+  tts_default_restore_volume: input_number.default_restore_volume
   tts_period_of_day_volume: sensor.period_of_day_volume
   tts_language: input_select.language
 
@@ -21,7 +22,6 @@ Notifier_Dispatch:
   default_notify: input_select.default_notify
   priority_message: input_boolean.priority_message
   guest_mode: input_boolean.guest_mode
-  last_message: input_boolean.last_message
 
   personal_assistant_name: input_text.personal_assistant_name
   intercom_message_hub: input_text.intercom_message_hub
