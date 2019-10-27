@@ -22,6 +22,7 @@ Notifier_Dispatch:
   default_notify: input_select.default_notify
   priority_message: input_boolean.priority_message
   guest_mode: input_boolean.guest_mode
+  dnd: binary_sensor.dnd
 
   personal_assistant_name: input_text.personal_assistant_name
   intercom_message_hub: input_text.intercom_message_hub

@@ -20,6 +20,7 @@ class Notification_Manager(hass.Hass):
         _file = data["file"]
         caption = data ["caption"]
         notify_name = data["notify"]
+        link = data["link"]
 
         self.log = ("[MESSAGGIO]: {}".format(message))
 
@@ -27,12 +28,16 @@ class Notification_Manager(hass.Hass):
         self.set_state(self.text_last_message, state = message[:245])
 
         if title !="":
-            title = ("*[{} - {}]* {}".format(assistant_name, timestamp, title))
+            title = ("*[{} - {}]* *{}*".format(assistant_name, timestamp, title))
         else:
             title = ("*[{} - {}]*".format(assistant_name, timestamp))
         
-        if caption == "":
-            caption = "Photo"
+        if link !="":
+            message = ("{} {}".format(message,link))
+
+        if caption =="":
+            caption = ("{}\n{}".format(title,message))
+
         if url !="":
             extra_data = { "photo": 
                             {"url": url,
@@ -45,8 +50,8 @@ class Notification_Manager(hass.Hass):
                         }
         if url !="" or _file !="":
             self.call_service(__NOTIFY__ + notify_name, 
-                            message = message, 
-                            title = title,
+                            #message = message, 
+                            #title = title,
                             data = extra_data)
         else:                    
             self.call_service(__NOTIFY__ + notify_name, 

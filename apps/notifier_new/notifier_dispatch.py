@@ -23,6 +23,7 @@ class Notifier_Dispatch(hass.Hass):
         self.tts_default_restore_volume = globals.get_arg(self.args,"tts_default_restore_volume")
         self.tts_language = globals.get_arg(self.args, "tts_language")
         self.tts_period_of_day_volume = globals.get_arg(self.args, "tts_period_of_day_volume")
+        self.tts_dnd = globals.get_arg(self.args, "dnd")
 
         self.text_notifications = globals.get_arg(self.args, "text_notifications")
         self.screen_notifications = globals.get_arg(self.args, "screen_notifications")
@@ -31,6 +32,7 @@ class Notifier_Dispatch(hass.Hass):
         self.default_notify = globals.get_arg(self.args, "default_notify")
         self.priority_message = globals.get_arg(self.args, "priority_message")
         self.guest_mode = globals.get_arg(self.args, "guest_mode")
+        
 
         self.personal_assistant_name = globals.get_arg(self.args, "personal_assistant_name") 
         self.intercom_message_hub = globals.get_arg(self.args, "intercom_message_hub")
@@ -44,6 +46,7 @@ class Notifier_Dispatch(hass.Hass):
     def notify_hub(self, event_name, data, kwargs):
         self.log("#### START NOTIFIER_DISPATCH ####")
         notify_name = self.get_state(self.default_notify).lower().replace(" ", "_")
+        dnd = self.get_state(self.tts_dnd)
 
         if self.get_state(self.text_notifications) == "on":
             useNotification = True
@@ -55,7 +58,7 @@ class Notifier_Dispatch(hass.Hass):
         else:
             usePersistentNotification = False
 
-        if (self.get_state(self.speech_notifications) == "on" and data["mute"] != "1"):
+        if (self.get_state(self.speech_notifications) == "on" and data["mute"] != "1" and dnd =="off"):
             useTTS = True
         else:
             useTTS = False
@@ -77,9 +80,9 @@ class Notifier_Dispatch(hass.Hass):
         if data["notify"] == "":
             data.update({"notify": notify_name})
         if data["alexa_type"] =="":
-            data.update({"alexa_type": self.get_state(alexa_tts_type)})
+            data.update({"alexa_type": alexa_tts_type})
         if data["alexa_method"] =="":
-            data.update({"alexa_method": self.get_state(alexa_tts_method)})
+            data.update({"alexa_method": alexa_tts_method})
 
         if usePersistentNotification:
             self.log("##### Notifying via Persistent Notification #####")
