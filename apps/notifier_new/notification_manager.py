@@ -50,8 +50,7 @@ class Notification_Manager(hass.Hass):
                         }
         if url !="" or _file !="":
             self.call_service(__NOTIFY__ + notify_name, 
-                            #message = message, 
-                            #title = title,
+                            message = "", 
                             data = extra_data)
         else:                    
             self.call_service(__NOTIFY__ + notify_name, 
