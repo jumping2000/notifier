@@ -68,8 +68,8 @@ class Notifier_Dispatch(hass.Hass):
         gh_switch = self.get_state(self.gh_switch_entity)
         alexa_switch = self.get_state(self.alexa_switch_entity)
         
-        alexa_tts_type = self.get_state(self.alexa_tts_alexa_type)
-        alexa_tts_method = self.get_state(self.alexa_tts_alexa_method)
+        alexa_tts_type = self.get_state(self.alexa_tts_alexa_type).lower()
+        alexa_tts_method = self.get_state(self.alexa_tts_alexa_method).lower()
 
         if data["language"] == "":
             data.update({"language": self.get_state(self.tts_language).lower()})
