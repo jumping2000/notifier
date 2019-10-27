@@ -32,8 +32,9 @@ class Notifier_Dispatch(hass.Hass):
         self.default_notify = globals.get_arg(self.args, "default_notify")
         self.priority_message = globals.get_arg(self.args, "priority_message")
         self.guest_mode = globals.get_arg(self.args, "guest_mode")
-        
 
+        self.persistent_notification_info = globals.get_arg(self.args, "persistent_notification_info")
+        
         self.personal_assistant_name = globals.get_arg(self.args, "personal_assistant_name") 
         self.intercom_message_hub = globals.get_arg(self.args, "intercom_message_hub")
 
@@ -48,7 +49,7 @@ class Notifier_Dispatch(hass.Hass):
         notify_name = self.get_state(self.default_notify).lower().replace(" ", "_")
         dnd = self.get_state(self.tts_dnd)
 
-        if self.get_state(self.text_notifications) == "on":
+        if (self.get_state(self.text_notifications) == "on" and data["location"] != "home"):
             useNotification = True
         else:
             useNotification = False
@@ -66,11 +67,12 @@ class Notifier_Dispatch(hass.Hass):
         restore_volume = float(self.get_state(self.tts_default_restore_volume)) / 100
         gh_switch = self.get_state(self.gh_switch_entity)
         alexa_switch = self.get_state(self.alexa_switch_entity)
-        alexa_tts_type = str(self.get_state(self.alexa_tts_alexa_type)).lower()
-        alexa_tts_method = str(self.get_state(self.alexa_tts_alexa_method)).lower()
+        
+        alexa_tts_type = self.get_state(self.alexa_tts_alexa_type)
+        alexa_tts_method = self.get_state(self.alexa_tts_alexa_method)
 
         if data["language"] == "":
-            data.update({"language": str(self.get_state(self.tts_language)).lower()})     
+            data.update({"language": self.get_state(self.tts_language).lower()})
         if data["media_player_google"] == "":
             data.update({"media_player_google": self.get_state(self.gh_selected_media_player)})
         if data["media_player_alexa"] == "":
@@ -86,7 +88,7 @@ class Notifier_Dispatch(hass.Hass):
 
         if usePersistentNotification:
             self.log("##### Notifying via Persistent Notification #####")
-            self.notification_manager.send_persistent(data)
+            self.notification_manager.send_persistent(data, self.persistent_notification_info)
         if useNotification:
             self.log("##### Notifying via Telegram #####")
             self.notification_manager.send_notify(data, self.get_state(self.personal_assistant_name))

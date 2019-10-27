@@ -19,6 +19,8 @@ Notifier_Dispatch:
   screen_notifications: input_boolean.screen_notifications
   speech_notifications: input_boolean.speech_notifications
 
+  persistent_notification_info: persistent_notification.info_messages
+
   default_notify: input_select.default_notify
   priority_message: input_boolean.priority_message
   guest_mode: input_boolean.guest_mode
