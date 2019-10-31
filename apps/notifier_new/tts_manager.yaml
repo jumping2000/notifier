@@ -1,7 +1,0 @@
-TTS_Manager:
-  module: tts_manager
-  class: TTS_Manager
-
-  global_dependencies:
-    - globals
-    - secrets
