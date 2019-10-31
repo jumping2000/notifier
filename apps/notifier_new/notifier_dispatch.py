@@ -39,7 +39,8 @@ class Notifier_Dispatch(hass.Hass):
         self.intercom_message_hub = globals.get_arg(self.args, "intercom_message_hub")
 
         self.notification_manager = self.get_app("Notification_Manager")
-        self.tts_manager = self.get_app("TTS_Manager")
+        self.gh_manager = self.get_app("GH_Manager")
+        self.alexa_manager = self.get_app("Alexa_Manager")
 
         self.listen_event(self.notify_hub, "hub")
 
@@ -68,6 +69,7 @@ class Notifier_Dispatch(hass.Hass):
         gh_switch = self.get_state(self.gh_switch_entity)
         alexa_switch = self.get_state(self.alexa_switch_entity)
         
+        gh_tts_mode = self.get_state(self.gh_tts_google_mode)
         alexa_tts_type = self.get_state(self.alexa_tts_alexa_type)
         alexa_tts_method = self.get_state(self.alexa_tts_alexa_method)
 
@@ -94,6 +96,9 @@ class Notifier_Dispatch(hass.Hass):
             self.notification_manager.send_notify(data, self.get_state(self.personal_assistant_name))
         if useTTS:
             self.log("##### Notifying via TTS #####")
-            self.tts_manager.speak(data, gh_switch, alexa_switch, restore_volume)
+            if gh_switch:
+                self.gh_manager.speak(data, gh_tts_mode, restore_volume)
+            if alexa_switch:
+                self.alexa_manager.speak(data, restore_volume)
 
 #####################################################################

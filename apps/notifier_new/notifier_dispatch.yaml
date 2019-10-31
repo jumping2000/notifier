@@ -31,7 +31,8 @@ Notifier_Dispatch:
 
   dependencies: 
     - Notification_Manager
-    - TTS_Manager
+    - GH_Manager
+    - Alexa_Manager
 
   global_dependencies:
     - globals

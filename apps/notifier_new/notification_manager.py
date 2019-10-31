@@ -19,8 +19,8 @@ class Notification_Manager(hass.Hass):
         url = data["url"]
         _file = data["file"]
         caption = data["caption"]
-        notify_name = data["notify"]
         link = data["link"]
+        notify_name = data["notify"]
         
         self.log = ("[MESSAGGIO]: {}".format(message))
 

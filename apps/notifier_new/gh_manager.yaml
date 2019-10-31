@@ -1,0 +1,7 @@
+GH_Manager:
+  module: gh_manager
+  class: GH_Manager
+
+  global_dependencies:
+    - globals
+    - secrets
