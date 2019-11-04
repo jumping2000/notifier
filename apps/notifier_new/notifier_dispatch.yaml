@@ -8,8 +8,11 @@ Notifier_Dispatch:
 
   alexa_tts_alexa_type: input_select.default_alexa_type
   alexa_tts_alexa_method: input_select.default_alexa_method
-  alexa_switch:  input_boolean.alexa_switch
+  alexa_switch: input_boolean.alexa_switch
   alexa_selected_media_player: sensor.media_player_alexa
+
+  ariela_switch: input_boolean.ariela_switch
+  ariela_mqtt_tts: secret_ariela_mqtt
 
   tts_default_restore_volume: input_number.default_restore_volume
   tts_period_of_day_volume: sensor.period_of_day_volume
