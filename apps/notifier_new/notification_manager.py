@@ -12,7 +12,7 @@ class Notification_Manager(hass.Hass):
     def initialize(self):
         self.text_last_message = globals.get_arg(self.args, "text_last_message")
 
-    def send_notify(self, data, assistant_name: str):
+    def send_notify(self, data, notify_name: str, assistant_name: str):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         title = data["title"]
         message = data["message"].replace("\n","").replace("   ","").replace("  "," ")
@@ -20,7 +20,6 @@ class Notification_Manager(hass.Hass):
         _file = data["file"]
         caption = data["caption"]
         link = data["link"]
-        notify_name = data["notify"]
         
         self.log = ("[MESSAGGIO]: {}".format(message))
 
