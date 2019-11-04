@@ -1,4 +1,5 @@
 import appdaemon.plugins.hass.hassapi as hass
+import appdaemon.plugins.mqtt.mqttapi as mqtt
 import globals
 #
 # Centralizes messaging.
@@ -105,6 +106,8 @@ class Notifier_Dispatch(hass.Hass):
                 self.alexa_manager.speak(data, restore_volume)
             if ariela_switch == "on":
                 self.log("##### Notifying via Ariela #####")
-                self.mqtt_publish(self.ariela_mqtt, data["message"].replace("\n","").replace("   ","").replace("  "," "))
+                            if ariela_switch == "on":
+                self.log("##### Notifying via Ariela #####")
+                self.mqtt_publish(self.ariela_mqtt, data["message"].replace("\n","").replace("   ","").replace("  "," "), qos = 0, retain = false, namepace = "mqtt")
 
 #####################################################################
