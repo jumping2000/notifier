@@ -20,6 +20,9 @@ class Notifier_Dispatch(hass.Hass):
         self.alexa_switch_entity = globals.get_arg(self.args, "alexa_switch")
         self.alexa_selected_media_player = globals.get_arg(self.args, "alexa_selected_media_player")
 
+        self.ariela_switch_entity = globals.get_arg(self.args, "ariela_switch")
+        self.ariela_mqtt_tts = globals.get_arg(self.args, "ariela_mqtt_tts")
+
         self.tts_default_restore_volume = globals.get_arg(self.args,"tts_default_restore_volume")
         self.tts_language = globals.get_arg(self.args, "tts_language")
         self.tts_period_of_day_volume = globals.get_arg(self.args, "tts_period_of_day_volume")
@@ -50,7 +53,7 @@ class Notifier_Dispatch(hass.Hass):
         notify_name = self.get_state(self.default_notify).lower().replace(" ", "_")
         dnd = self.get_state(self.tts_dnd)
 
-        if (self.get_state(self.text_notifications) == "on" and data["location"] != "home"):
+        if (self.get_state(self.text_notifications) == "on" and data["location"] != "home" and data["notify"] != "0"):
             useNotification = True
         else:
             useNotification = False
@@ -68,10 +71,11 @@ class Notifier_Dispatch(hass.Hass):
         restore_volume = float(self.get_state(self.tts_default_restore_volume)) / 100
         gh_switch = self.get_state(self.gh_switch_entity)
         alexa_switch = self.get_state(self.alexa_switch_entity)
+        ariela_switch = self.get_state(self.ariela_switch_entity)
         
         gh_tts_mode = self.get_state(self.gh_tts_google_mode)
-        alexa_tts_type = self.get_state(self.alexa_tts_alexa_type)
-        alexa_tts_method = self.get_state(self.alexa_tts_alexa_method)
+        alexa_tts_type = str(self.get_state(self.alexa_tts_alexa_type)).lower()
+        alexa_tts_method = str(self.get_state(self.alexa_tts_alexa_method)).lower()
 
         if data["language"] == "":
             data.update({"language": self.get_state(self.tts_language).lower()})
@@ -81,8 +85,6 @@ class Notifier_Dispatch(hass.Hass):
             data.update({"media_player_alexa": self.get_state(self.alexa_selected_media_player)})
         if data["volume"] == "":
             data.update({"volume": self.get_state(self.tts_period_of_day_volume)})
-        if data["notify"] == "":
-            data.update({"notify": notify_name})
         if data["alexa_type"] =="":
             data.update({"alexa_type": alexa_tts_type})
         if data["alexa_method"] =="":
@@ -93,12 +95,16 @@ class Notifier_Dispatch(hass.Hass):
             self.notification_manager.send_persistent(data, self.persistent_notification_info)
         if useNotification:
             self.log("##### Notifying via Telegram #####")
-            self.notification_manager.send_notify(data, self.get_state(self.personal_assistant_name))
+            self.notification_manager.send_notify(data, notify_name, self.get_state(self.personal_assistant_name))
         if useTTS:
-            self.log("##### Notifying via TTS #####")
-            if gh_switch:
+            if gh_switch == "on":
+                self.log("##### Notifying via Google Home #####")
                 self.gh_manager.speak(data, gh_tts_mode, restore_volume)
-            if alexa_switch:
+            if alexa_switch == "on":
+                self.log("##### Notifying via Amazon Alexa #####")
                 self.alexa_manager.speak(data, restore_volume)
+            if ariela_switch == "on":
+                self.log("##### Notifying via Ariela #####")
+                self.mqtt_publish(self.ariela_mqtt, data["message"].replace("\n","").replace("   ","").replace("  "," "))
 
 #####################################################################
