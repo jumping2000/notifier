@@ -2,6 +2,9 @@ GH_Manager:
   module: gh_manager
   class: GH_Manager
 
+  gh_mplayer: group.mplayer_gr
+  gh_restore_volume: input_number.default_restore_volume
+
   global_dependencies:
     - globals
     - secrets

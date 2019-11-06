@@ -1,5 +1,4 @@
 import appdaemon.plugins.hass.hassapi as hass
-import appdaemon.plugins.mqtt.mqttapi as mqtt
 import globals
 #
 # Centralizes messaging.
@@ -24,7 +23,7 @@ class Notifier_Dispatch(hass.Hass):
         self.ariela_switch_entity = globals.get_arg(self.args, "ariela_switch")
         self.ariela_mqtt_tts = globals.get_arg(self.args, "ariela_mqtt_tts")
 
-        self.tts_default_restore_volume = globals.get_arg(self.args,"tts_default_restore_volume")
+        #self.tts_default_restore_volume = globals.get_arg(self.args,"tts_default_restore_volume")
         self.tts_language = globals.get_arg(self.args, "tts_language")
         self.tts_period_of_day_volume = globals.get_arg(self.args, "tts_period_of_day_volume")
         self.tts_dnd = globals.get_arg(self.args, "dnd")
@@ -51,6 +50,10 @@ class Notifier_Dispatch(hass.Hass):
 #####################################################################
     def notify_hub(self, event_name, data, kwargs):
         self.log("#### START NOTIFIER_DISPATCH ####")
+
+        #config = self.get_plugin_config()
+        #self.log("Current Client ID is {}".format(config["client_id"]))
+
         notify_name = self.get_state(self.default_notify).lower().replace(" ", "_")
         dnd = self.get_state(self.tts_dnd)
 
@@ -69,7 +72,7 @@ class Notifier_Dispatch(hass.Hass):
         else:
             useTTS = False
 
-        restore_volume = float(self.get_state(self.tts_default_restore_volume)) / 100
+        #restore_volume = float(self.get_state(self.tts_default_restore_volume)) / 100
         gh_switch = self.get_state(self.gh_switch_entity)
         alexa_switch = self.get_state(self.alexa_switch_entity)
         ariela_switch = self.get_state(self.ariela_switch_entity)
@@ -92,22 +95,15 @@ class Notifier_Dispatch(hass.Hass):
             data.update({"alexa_method": alexa_tts_method})
 
         if usePersistentNotification:
-            self.log("##### Notifying via Persistent Notification #####")
             self.notification_manager.send_persistent(data, self.persistent_notification_info)
         if useNotification:
-            self.log("##### Notifying via Telegram #####")
             self.notification_manager.send_notify(data, notify_name, self.get_state(self.personal_assistant_name))
         if useTTS:
             if gh_switch == "on":
-                self.log("##### Notifying via Google Home #####")
-                self.gh_manager.speak(data, gh_tts_mode, restore_volume)
+                self.gh_manager.speak(data, gh_tts_mode)
             if alexa_switch == "on":
-                self.log("##### Notifying via Amazon Alexa #####")
-                self.alexa_manager.speak(data, restore_volume)
+                self.alexa_manager.speak(data)
             if ariela_switch == "on":
-                self.log("##### Notifying via Ariela #####")
-                            if ariela_switch == "on":
-                self.log("##### Notifying via Ariela #####")
-                self.mqtt_publish(self.ariela_mqtt, data["message"].replace("\n","").replace("   ","").replace("  "," "), qos = 0, retain = false, namepace = "mqtt")
+                self.call_service("mqtt/publish", payload = data["message"].replace("\n","").replace("   ","").replace("  "," "), topic = self.ariela_mqtt_tts, qos = 0, retain = 0)
 
 #####################################################################

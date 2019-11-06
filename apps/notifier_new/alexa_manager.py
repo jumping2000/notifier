@@ -30,11 +30,11 @@ class Alexa_Manager(hass.Hass):
         #self.event = Event()
         #self.log("Thread Alive {}, {}" .format (t.isAlive(), t.is_alive()))
 
-    def speak(self, data, restore_volume: float):
+    def speak(self, data):
         """Speak the provided text through the media player"""
         message = data["message"].replace("\n","").replace("   ","").replace("  "," ")
         # queues the message to be handled async, use when_tts_done_do method to supply callback when tts is done
-        self.queue.put({"type": "tts", "text": message, "volume": data["volume"], "restore_volume": restore_volume, "language": data["language"],
+        self.queue.put({"type": "tts", "text": message, "volume": data["volume"], "language": data["language"],
                         "alexa_player": data["media_player_alexa"], "alexa_type": data["alexa_type"], "alexa_method": data["alexa_method"] })
 
         #self.log("Message added to queue. Queue is empty? {}".format(self.queue.empty()))
@@ -70,7 +70,6 @@ class Alexa_Manager(hass.Hass):
     def worker(self):
         while True:
             data = self.queue.get()
-            restore_volume = data["restore_volume"]
             if data["type"] == "tts":
                 alexa_player = self.converti(data["alexa_player"])
                 ### turn on  media player and set volume
@@ -94,8 +93,8 @@ class Alexa_Manager(hass.Hass):
                 #Sleep and wait for the tts to finish
                 time.sleep(duration)
                 ## RESTORE VOLUME
-                for entity in alexa_player:
-                    self.call_service("media_player/volume_set", entity_id = entity, volume_level = restore_volume)
+                #for entity in alexa_player:
+                #    self.call_service("media_player/volume_set", entity_id = entity, volume_level = restore_volume)
 
             self.queue.task_done()
 
