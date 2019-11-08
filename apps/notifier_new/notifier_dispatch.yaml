@@ -14,7 +14,6 @@ Notifier_Dispatch:
   ariela_switch: input_boolean.ariela_switch
   ariela_mqtt_tts: secret_ariela_mqtt
 
-  tts_default_restore_volume: input_number.default_restore_volume
   tts_period_of_day_volume: sensor.period_of_day_volume
   tts_language: input_select.language
 
@@ -23,7 +22,8 @@ Notifier_Dispatch:
   speech_notifications: input_boolean.speech_notifications
 
   persistent_notification_info: persistent_notification.info_messages
-
+  
+  location_tracker: group.location_tracker
   default_notify: input_select.default_notify
   priority_message: input_boolean.priority_message
   guest_mode: input_boolean.guest_mode

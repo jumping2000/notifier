@@ -23,7 +23,6 @@ class Notifier_Dispatch(hass.Hass):
         self.ariela_switch_entity = globals.get_arg(self.args, "ariela_switch")
         self.ariela_mqtt_tts = globals.get_arg(self.args, "ariela_mqtt_tts")
 
-        #self.tts_default_restore_volume = globals.get_arg(self.args,"tts_default_restore_volume")
         self.tts_language = globals.get_arg(self.args, "tts_language")
         self.tts_period_of_day_volume = globals.get_arg(self.args, "tts_period_of_day_volume")
         self.tts_dnd = globals.get_arg(self.args, "dnd")
@@ -38,6 +37,7 @@ class Notifier_Dispatch(hass.Hass):
 
         self.persistent_notification_info = globals.get_arg(self.args, "persistent_notification_info")
         
+        self.location_tracker = globals.get_arg(self.args, "location_tracker") 
         self.personal_assistant_name = globals.get_arg(self.args, "personal_assistant_name") 
         self.intercom_message_hub = globals.get_arg(self.args, "intercom_message_hub")
 
@@ -51,13 +51,13 @@ class Notifier_Dispatch(hass.Hass):
     def notify_hub(self, event_name, data, kwargs):
         self.log("#### START NOTIFIER_DISPATCH ####")
 
-        #config = self.get_plugin_config()
-        #self.log("Current Client ID is {}".format(config["client_id"]))
-
         notify_name = self.get_state(self.default_notify).lower().replace(" ", "_")
-        dnd = self.get_state(self.tts_dnd)
+        dnd_status = self.get_state(self.tts_dnd)
+        location_status = self.get_state(self.location_tracker)
+        guest_status = self.get_state(self.guest_mode)
+        priority_status = self.get_state(self.priority_message)
 
-        if (self.get_state(self.text_notifications) == "on" and data["location"] != "home" and data["notify"] != "0"):
+        if (self.get_state(self.text_notifications) == "on" and (data["location"] == "home" or location_status == "home") and data["notify"] != "0"):
             useNotification = True
         else:
             useNotification = False
@@ -67,7 +67,7 @@ class Notifier_Dispatch(hass.Hass):
         else:
             usePersistentNotification = False
 
-        if (self.get_state(self.speech_notifications) == "on" and data["mute"] != "1" and dnd =="off"):
+        if (self.get_state(self.speech_notifications) == "on" and data["mute"] != "1" and (dnd_status == "off" or priority_status == "on" ) and (location_status == "home" or guest_status == "on")):
             useTTS = True
         else:
             useTTS = False

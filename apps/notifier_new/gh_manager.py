@@ -58,7 +58,7 @@ class GH_Manager(hass.Hass):
 
     def worker(self):
         while True:
-            try
+            try:
                 data = self.queue.get()
                 gh_player = self.converti(data["gh_player"])
                 ### set volume
