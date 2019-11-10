@@ -15,7 +15,7 @@ class Notification_Manager(hass.Hass):
     def send_notify(self, data, notify_name: str, assistant_name: str):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         title = data["title"]
-        message = data["message"].replace("\n","").replace("   ","").replace("  "," ")
+        message = data["message"].replace("\n","").replace("   ","").replace("  "," ").replace("_","-")
         url = data["url"]
         _file = data["file"]
         caption = data["caption"]
@@ -24,10 +24,10 @@ class Notification_Manager(hass.Hass):
         self.log = ("[MESSAGGIO]: {}".format(message))
 
         ### SAVE IN INPUT_TEXT.LAST_MESSAGE
-        self.set_state(self.text_last_message, state = message[:245])
+        self.set_state(self.text_last_message, state = message[:255])
 
         if title !="":
-            title = ("*[{} - {}]* *{}*".format(assistant_name, timestamp, title))
+            title = ("*[{} - {}] {}*".format(assistant_name, timestamp, title))
         else:
             title = ("*[{} - {}]*".format(assistant_name, timestamp))
         
