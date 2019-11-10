@@ -1,6 +1,8 @@
 Alexa_Manager:
   module: alexa_manager
   class: Alexa_Manager
+  
+  default_restore_volume: input_number.default_restore_volume
 
   global_dependencies:
     - globals
