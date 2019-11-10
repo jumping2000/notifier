@@ -30,7 +30,8 @@ class Alexa_Manager(hass.Hass):
     def speak(self, data):
         """ Speak the provided text through the media player """
         default_restore_volume = float(self.get_state(globals.get_arg(self.args, "default_restore_volume")))/100
-        self.volume_get(data["media_player_alexa"],default_restore_volume)
+        if self.queue.qsize() == 0:
+            self.volume_get(data["media_player_alexa"],default_restore_volume)
         message = data["message"].replace("\n","").replace("   ","").replace("  "," ").replace("_"," ").replace("!",".")
         """ Queues the message to be handled async, use when_tts_done_do method to supply callback when tts is done """
         self.queue.put({"type": "tts", "text": message, "volume": data["volume"],
