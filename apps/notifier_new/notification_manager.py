@@ -15,16 +15,17 @@ class Notification_Manager(hass.Hass):
     def send_notify(self, data, notify_name: str, assistant_name: str):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         title = data["title"]
-        message = data["message"].replace("\n","").replace("   ","").replace("  "," ").replace("_","-")
+        message = data["message"].replace("\n","").replace("   ","").replace("  "," ").replace("_"," ")
         url = data["url"]
         _file = data["file"]
         caption = data["caption"]
         link = data["link"]
         
         self.log = ("[MESSAGGIO]: {}".format(message))
+        self.log = ("[Notifier]: {}".format(notify_name))
 
         ### SAVE IN INPUT_TEXT.LAST_MESSAGE
-        self.set_state(self.text_last_message, state = message[:255])
+        self.set_state(self.text_last_message, state = message[:245])
 
         if title !="":
             title = ("*[{} - {}] {}*".format(assistant_name, timestamp, title))
@@ -66,7 +67,7 @@ class Notification_Manager(hass.Hass):
             per_not_info = "null"
             #self.log(sys.exc_ingo())
 
-        message = data["message"].replace("\n","").replace("   ","").replace("  "," ")
+        message = data["message"].replace("\n","").replace("   ","").replace("  "," ").replace("_"," ")
         message = ("{} - {}".format(timestamp, message))
         if per_not_info == "notifying":
             message = self.get_state(persistent_notification_info, attribute="message") + "\n" + message

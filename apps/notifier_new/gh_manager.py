@@ -17,13 +17,12 @@ Following features are implemented:
 """
 
 __NOTIFY__ = "notify/"
-__WAIT_TIME__ = 1  # seconds
-__TTS_GH__ = "tts/google_translate_say"
+__TTS__ = "tts/"
 
 class GH_Manager(hass.Hass):
 
     def initialize(self)->None:
-        self.gh_tts = "google_assistant"
+        self.gh_wait_time = globals.get_arg(self.args, "gh_wait_time")
         #self.dict_volumes = {}
         self.queue = Queue(maxsize=0)
         self._when_tts_done_callback_queue = Queue()
@@ -38,16 +37,18 @@ class GH_Manager(hass.Hass):
             self.log("SET MEDIA_PLAYER/VOLUME: {} / {}".format(item,volume))
             self.call_service("media_player/volume_set", entity_id = item, volume_level = volume)
 
-    def speak(self, data, gh_tts_mode: bool):
+    def speak(self, data, gh_mode: bool, gh_notifier: str):
         """Speak the provided text through the media player"""
         self.dict_volumes = {}
         gh_player = self.converti(data["media_player_google"])
         for i in gh_player:
             self.dict_volumes[i] = float(self.get_state(globals.get_arg(self.args, "gh_restore_volume")))/100
+        
+        wait_time = float(self.get_state(self.gh_wait_time))
         message = data["message"].replace("\n","").replace("   ","").replace("  "," ")
         # queues the message to be handled async, use when_tts_done_do method to supply callback when tts is done
         self.queue.put({"type": "tts", "text": message, "volume": data["volume"], "language": data["language"],
-                        "gh_player": data["media_player_google"], "gh_tts_mode": gh_tts_mode })
+                        "gh_player": data["media_player_google"], "wait_time": wait_time, "gh_mode": gh_mode, "gh_notifier": gh_notifier})
     
     def when_tts_done_do(self, callback:callable)->None:
         """Callback when the queue of tts messages are done"""
@@ -64,26 +65,26 @@ class GH_Manager(hass.Hass):
                 ### set volume
                 self.volume_set(gh_player,data["volume"])
                 ### Let's hope GH will get up
-                time.sleep(__WAIT_TIME__)
+                time.sleep(data["wait_time"])
                 ### SPEAK
-                if data["gh_tts_mode"] == 'on':
-                    self.call_service(__NOTIFY__ + self.gh_tts, message = data["text"])
-                    duration = (len(data["text"].split()) / 3) + __WAIT_TIME__
+                if data["gh_mode"] == 'on':
+                    self.call_service(__NOTIFY__ + data["gh_notifier"], message = data["text"])
+                    duration = (len(data["text"].split()) / 3) + data["wait_time"]
                     #Sleep and wait for the tts to finish
                     time.sleep(duration)
                 else:
                     for entity in gh_player:
-                        self.call_service(__TTS_GH__, entity_id = entity, message = data["text"], language = data["language"])
-                        time.sleep(__WAIT_TIME__)
+                        self.call_service(__TTS__ + data["gh_notifier"], entity_id = entity, message = data["text"], language = data["language"])
+                        time.sleep(data["wait_time"])
                         duration = self.get_state(entity, attribute='media_duration')
                         if not duration:
                             #The TTS already played, set a small duration
-                            duration = (len(data["text"].split()) / 3) + __WAIT_TIME__
+                            duration = (len(data["text"].split()) / 3) + data["wait_time"]
                             self.log("DURATION-WAIT {}:".format(duration))
                         #Sleep and wait for the tts to finish
                         time.sleep(duration)
             except:
-                self.log("Errore nel ciclo principale")
+                self.log("Errore nel ciclo principale", level="ERROR")
                 self.log(sys.exc_info()) 
 
             self.queue.task_done()
@@ -102,7 +103,7 @@ class GH_Manager(hass.Hass):
                         callback_func() # Call the callback
                         self._when_tts_done_callback_queue.task_done()
                 except:
-                    self.log("Errore nel CallBack")
+                    self.log("Errore nel CallBack", level="ERROR")
                     self.log(sys.exc_info()) 
                     pass # Nothing in queue
 
@@ -150,7 +151,7 @@ class GH_Manager(hass.Hass):
             try:
                 if self.get_state(item) == "off":
                     self.call_service("media_player/turn_on", entity_id = item)
-                    time.sleep(__WAIT_TIME__)
+                    time.sleep(wait_time)
                 self.dict_volumes[item] = round(float(self.get_state(entity = item, attribute="volume_level") or 0.3),2)
             except:
                 self.log ("Errore nel salvataggio volumi")
