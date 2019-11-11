@@ -67,7 +67,7 @@ class Notifier_Dispatch(hass.Hass):
         else:
             usePersistentNotification = False
 
-        if (self.get_state(self.speech_notifications) == "on" and data["mute"] != "1" and (dnd_status == "off" or priority_status == "on" ) and (location_status == "home" or guest_status == "on")):
+        if (self.get_state(self.speech_notifications) == "on" and data["mute"] != "1" and (dnd_status == "off" or priority_status == "on" or data["priority"] == '1') and (location_status == "home" or guest_status == "on")):
             useTTS = True
         else:
             useTTS = False
