@@ -1,4 +1,6 @@
 import appdaemon.plugins.hass.hassapi as hass
+import yaml
+import os
 import globals
 #
 # Centralizes messaging.
@@ -21,7 +23,6 @@ class Notifier_Dispatch(hass.Hass):
         self.alexa_selected_media_player = globals.get_arg(self.args, "alexa_selected_media_player")
 
         self.ariela_switch_entity = globals.get_arg(self.args, "ariela_switch")
-        self.ariela_mqtt_tts = globals.get_arg(self.args, "ariela_mqtt_tts")
 
         self.tts_language = globals.get_arg(self.args, "tts_language")
         self.tts_period_of_day_volume = globals.get_arg(self.args, "tts_period_of_day_volume")
@@ -41,6 +42,19 @@ class Notifier_Dispatch(hass.Hass):
         self.personal_assistant_name = globals.get_arg(self.args, "personal_assistant_name") 
         self.intercom_message_hub = globals.get_arg(self.args, "intercom_message_hub")
 
+        # Da implementare try: ed except: per i log?
+        cfg_file = 'hub_config.yaml'
+        for r,d,f in os.walk('/config/packages'):
+            for files in f:
+                if files == cfg_file:
+                    cfg_file = os.path.join(r,files)
+        #self.log("PATH = {}".format(cfg_file))
+                    with open(cfg_file, 'r') as f:
+                        cfg = yaml.load(f)
+
+        self.ariela_tts_mqtt = cfg['homeassistant']['customize']['config']['ariela_tts_mqtt']
+        self.gh_tts = cfg['homeassistant']['customize']['config']['tts_google']
+        self.gh_notify = cfg['homeassistant']['customize']['config']['notify_google']
         self.notification_manager = self.get_app("Notification_Manager")
         self.gh_manager = self.get_app("GH_Manager")
         self.alexa_manager = self.get_app("Alexa_Manager")
@@ -50,14 +64,13 @@ class Notifier_Dispatch(hass.Hass):
 #####################################################################
     def notify_hub(self, event_name, data, kwargs):
         self.log("#### START NOTIFIER_DISPATCH ####")
-
         notify_name = self.get_state(self.default_notify).lower().replace(" ", "_")
         dnd_status = self.get_state(self.tts_dnd)
         location_status = self.get_state(self.location_tracker)
         guest_status = self.get_state(self.guest_mode)
         priority_status = self.get_state(self.priority_message)
 
-        if (self.get_state(self.text_notifications) == "on" and (data["location"] == "home" or location_status == "home") and data["notify"] != "0"):
+        if (self.get_state(self.text_notifications) == "on" and (data["location"] != "home" or location_status != "home") and data["notify"] != "0"):
             useNotification = True
         else:
             useNotification = False
@@ -67,7 +80,7 @@ class Notifier_Dispatch(hass.Hass):
         else:
             usePersistentNotification = False
 
-        if (self.get_state(self.speech_notifications) == "on" and data["mute"] != "1" and (dnd_status == "off" or priority_status == "on" or data["priority"] == '1') and (location_status == "home" or guest_status == "on")):
+        if (self.get_state(self.speech_notifications) == "on" and data["mute"] != "1" and (dnd_status == "off" or priority_status == "on" )): # and (location_status == "home" or guest_status == "on")):
             useTTS = True
         else:
             useTTS = False
@@ -77,7 +90,13 @@ class Notifier_Dispatch(hass.Hass):
         alexa_switch = self.get_state(self.alexa_switch_entity)
         ariela_switch = self.get_state(self.ariela_switch_entity)
         
-        gh_tts_mode = self.get_state(self.gh_tts_google_mode)
+        if self.get_state(self.gh_tts_google_mode) == "on":
+            gh_notifica = self.gh_notify
+        else:
+            gh_notifica = self.gh_tts
+        
+        self.log(gh_notifica)
+
         alexa_tts_type = str(self.get_state(self.alexa_tts_alexa_type)).lower()
         alexa_tts_method = str(self.get_state(self.alexa_tts_alexa_method)).lower()
 
@@ -99,11 +118,12 @@ class Notifier_Dispatch(hass.Hass):
         if useNotification:
             self.notification_manager.send_notify(data, notify_name, self.get_state(self.personal_assistant_name))
         if useTTS:
+            self.log("### TTS ###")
             if gh_switch == "on":
-                self.gh_manager.speak(data, gh_tts_mode)
+                self.gh_manager.speak(data, self.get_state(self.gh_tts_google_mode), gh_notifica)
             if alexa_switch == "on":
                 self.alexa_manager.speak(data)
             if ariela_switch == "on":
-                self.call_service("mqtt/publish", payload = data["message"].replace("\n","").replace("   ","").replace("  "," "), topic = self.ariela_mqtt_tts, qos = 0, retain = 0)
+                self.call_service("mqtt/publish", payload = data["message"].replace("\n","").replace("   ","").replace("  "," "), topic = self.ariela_tts_mqtt, qos = 0, retain = 0)
 
 #####################################################################
