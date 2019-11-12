@@ -12,7 +12,6 @@ Notifier_Dispatch:
   alexa_selected_media_player: sensor.media_player_alexa
 
   ariela_switch: input_boolean.ariela_switch
-  ariela_mqtt_tts: secret_ariela_mqtt
 
   tts_period_of_day_volume: sensor.period_of_day_volume
   tts_language: input_select.language
