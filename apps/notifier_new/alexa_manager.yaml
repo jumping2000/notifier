@@ -1,8 +1,9 @@
 Alexa_Manager:
   module: alexa_manager
   class: Alexa_Manager
-  
+
   default_restore_volume: input_number.default_restore_volume
+  wait_time: input_number.tts_wait_time
 
   global_dependencies:
     - globals

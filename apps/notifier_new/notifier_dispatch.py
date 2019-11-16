@@ -41,7 +41,7 @@ class Notifier_Dispatch(hass.Hass):
         self.personal_assistant_name = globals.get_arg(self.args, "personal_assistant_name") 
         self.intercom_message_hub = globals.get_arg(self.args, "intercom_message_hub")
 
-        with open("/config/packages/secrets.yaml", 'r') as ymlfile:
+        with open("/config/packages/centro_notifiche/secrets.yaml", 'r') as ymlfile:
             cfg = yaml.load(ymlfile)
         self.ariela_tts_mqtt = cfg['ariela_tts_mqtt']
         self.gh_tts = cfg['tts_google']
@@ -72,7 +72,7 @@ class Notifier_Dispatch(hass.Hass):
         else:
             usePersistentNotification = False
 
-        if (self.get_state(self.speech_notifications) == "on" and data["mute"] != "1" and (dnd_status == "off" or priority_status == "on" )): # and (location_status == "home" or guest_status == "on")):
+        if (self.get_state(self.speech_notifications) == "on" and data["mute"] != "1" and (dnd_status == "off" or priority_status == "on" ) and (location_status == "home" or guest_status == "on")):
             useTTS = True
         else:
             useTTS = False
@@ -114,7 +114,10 @@ class Notifier_Dispatch(hass.Hass):
             if gh_switch == "on":
                 self.gh_manager.speak(data, self.get_state(self.gh_tts_google_mode), gh_notifica)
             if alexa_switch == "on":
-                self.alexa_manager.speak(data)
+                if data["alexa_type"] != "push" and data["alexa_push"] !="1":
+                    self.alexa_manager.speak(data)
+                if data["alexa_type"] == "push" or data["alexa_push"] =="1":
+                    self.call_service("notify/alexa_media", data = {"type": "push"}, target = data["media_player_alexa"], title = data["title"], message = data["message"].replace("\n","").replace("   ","").replace("  "," "))
             if ariela_switch == "on":
                 self.call_service("mqtt/publish", payload = data["message"].replace("\n","").replace("   ","").replace("  "," "), topic = self.ariela_tts_mqtt, qos = 0, retain = 0)
 
