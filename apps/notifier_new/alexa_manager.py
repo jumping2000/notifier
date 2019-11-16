@@ -5,7 +5,7 @@ import globals
 import sys
 from queue import Queue
 from threading import Thread
-import re
+
 """
 Class Alexa Manager handles sending text to speech messages to Alexa media players
 Following features are implemented:
@@ -20,38 +20,25 @@ class Alexa_Manager(hass.Hass):
 
     def initialize(self) -> None:
         self.wait_time = globals.get_arg(self.args, "wait_time")
-        self.alexa_switch_push = globals.get_arg(self.args, "alexa_switch_push")
         self.alexa_tts = "alexa_media"
         self.queue = Queue(maxsize=0)
         self._when_tts_done_callback_queue = Queue()
         t = Thread(target=self.worker)
         t.daemon = True
         t.start()
-        # gruppo = self.get_state("input_select.notification_media_player_alexa", attribute="options")
-        # self.set_state("group.hub_media_player_alexa", state = "on", attributes = {"entity_id": gruppo})
 
     def speak(self, data):
-        """ Speak the provided text through the media player """
+        """ SPEAK THE PROVIDED TEXT THROUGH THE MEDIA PLAYER """
         default_restore_volume = float(self.get_state(globals.get_arg(self.args, "default_restore_volume")))/100
         wait_time = float(self.get_state(self.wait_time))
         if self.queue.qsize() == 0:
             self.volume_get(data["media_player_alexa"],default_restore_volume)
         if data["message_tts"] != "": 
             data.update({"message": data["message_tts"]})
-        switch_push = self.get_state(self.alexa_switch_push)
-        message = data["message"].replace("\n","").replace("   ","").replace("  "," ").replace("_"," ").replace("!",".")
+        message = data["message"].replace("\n","").replace("   "," ").replace("  "," ").replace("_"," ").replace("!",".")
 
-        # if switch_push == "on" and (data["alexa_type"] == "push" or data["alexa_push"] == '1'):
-        #     timestamp = datetime.datetime.now().strftime("%H:%M:%S")
-        # title = data["title"]
-        #     if title !="":
-        #         title = ("[{}] {}".format(timestamp, title))
-        #     else:
-        #         title = ("[{}]".format(timestamp))
-        #     self.call_service(__NOTIFY__ + self.alexa_tts, data = {"type": "push"}, target = data["media_player_alexa"], message = message, title = title)
-            
         """ Queues the message to be handled async, use when_tts_done_do method to supply callback when tts is done """
-        self.queue.put({"switch_push": switch_push, "title": data["title"], "text": message, "volume": data["volume"], "alexa_player": data["media_player_alexa"], 
+        self.queue.put({"title": data["title"], "text": message, "volume": data["volume"], "alexa_player": data["media_player_alexa"], 
                         "alexa_type": data["alexa_type"], "wait_time": wait_time, "alexa_method": data["alexa_method"] })
 
     def volume_get(self, media_player, volume: float):
@@ -65,20 +52,20 @@ class Alexa_Manager(hass.Hass):
             self.log("MEDIA PLAYER SINGLE: {}".format(list_player))
         for i in list_player:
             self.dict_volumes[i] = self.get_state(entity = i, attribute="volume_level") or restore_volume
-            self.log("GET VOLUMES: {} - {}".format(i,self.dict_volumes[i]))
+        self.log("GET VOLUMES: {}".format(self.dict_volumes))
         return self.dict_volumes
 
     def volume_set(self, media_player, volume: float):
         if 'group' in media_player:
-            entity = self.get_state(media_player, attribute="entity_id")
-            self.log("SET GRUPPO MEDIA_PLAYER/VOLUME: {} / {}".format(entity,volume))
-            self.call_service("media_player/volume_set", entity_id = entity, volume_level = volume)
+            list_player = self.get_state(media_player, attribute="entity_id")
+            self.log("SET GRUPPO MEDIA_PLAYER/VOLUME: {} / {}".format(list_player,volume))
+            self.call_service("media_player/volume_set", entity_id = list_player, volume_level = volume)
         else:
             self.log("SET MEDIA_PLAYER/VOLUME: {} / {}".format(media_player,volume))
             self.call_service("media_player/volume_set", entity_id = media_player, volume_level = volume)
 
     def when_tts_done_do(self, callback:callable)->None:
-        """ Callback when the queue of tts messages are done """
+        """ CALLBACK WHEN THE QUEUE OF TTS MESSAGES ARE DONE """
         self._when_tts_done_callback_queue.put(callback)
 
     def converti(self, stringa): 
@@ -93,21 +80,7 @@ class Alexa_Manager(hass.Hass):
             data = self.queue.get()
             alexa_player = data["alexa_player"]
 
-            if self.entity_exists("group.hub_media_player_alexa") and len(self.converti(data["alexa_player"])) > 1:
-                alexa_player = "group.hub_media_player_alexa"
-
             """ ALEXA TYPE-METHOD """
-
-            if data["switch_push"] == "on": #and (data["alexa_type"] == "push" or data["alexa_push"] == '1'):
-                timestamp = datetime.datetime.now().strftime("%H:%M:%S")
-                title = data["title"]
-                if title !="":
-                    title = ("[{}] {}".format(timestamp, title))
-                else:
-                    title = ("[{}]".format(timestamp))
-                self.call_service(__NOTIFY__ + self.alexa_tts, data = {"type": "push"}, target = alexa_player, title = title, message = data["text"])
-                time.sleep(0.5)
-            
             if data["alexa_type"] != "push":
                 if data["alexa_type"] == "tts":
                     alexa_data = {"type": "tts"}
@@ -117,19 +90,27 @@ class Alexa_Manager(hass.Hass):
                     alexa_data = {"type": data["alexa_type"],
                                     "method": data["alexa_method"]
                                     }
+                if self.entity_exists("group.hub_media_player_alexa") and len(self.converti(data["alexa_player"])) > 1:
+                    alexa_player = "group.hub_media_player_alexa"
 
-                """ ALEXA TIME-TO-SPEAK """
+                """ SPEECH TIME CALCULATOR """
+                period = data["text"].count(', ') + data["text"].count('. ') ##+ data["text"].count(' - ')
+                words = len(data["text"].split())
                 chars = data["text"].count('')
-                duration = ((chars * 0.00133) * 60) + data["wait_time"] 
+                
+                """ ESTIMATED TIME """
+                duration = ((chars * 0.00133) * 60) + data["wait_time"] + (period/2)
+                duration1 = (len(data["text"].split()) / 2) + data["wait_time"]
+                duration2 = ((len(data["text"].split()) / 130) * 60) + data["wait_time"]
+                duration3 = ((words * 0.007) * 60) + data["wait_time"] + (period)
+                self.log("\n| DURATION     | PERIODO = {} | PAROLE = {} | CHARS = {} \n| (Char*0.00133) = {} \n| (OLD) = {} \n| (char/130) = {} \n| (Parole*0.008) = {}".format(period,words,chars,round(duration,2),round(duration1,2),round(duration2,2),round(duration3,2)))
 
                 """ SPEAK """
-                #self.log("WORKER ALEXA PLAYER = {} ".format(alexa_player))
-                #self.log("| CHARS = {} | DURATION = {}".format(chars,round(duration,2)))
                 self.call_service(__NOTIFY__ + self.alexa_tts, data = alexa_data, target = alexa_player, message = data["text"])
                 self.volume_set(alexa_player, data["volume"])
 
-                """ Sleep and wait for the tts to finish """
-                time.sleep(duration)
+                """ SLEEP AND WAIT FOR THE TTS TO FINISH """
+                time.sleep(duration3)
 
             self.queue.task_done()
 
@@ -152,43 +133,5 @@ class Alexa_Manager(hass.Hass):
                 except:
                     self.log("ERRORE NEL TRY EXCEPT", level="ERROR")
                     self.error("ERRORE NEL TRY EXCEPT", level="ERROR")
+                    self.error(sys.exc_info(), level="ERROR") 
                     pass # Nothing in queue
-
-"""
-#https://github.com/python-telegram-bot/python-telegram-bot/blob/master/telegram/utils/helpers.py
-def escape_markdown(text):
-    #Helper function to escape telegram markup symbols.
-    escape_chars = '\*_`\['
-    return re.sub(r'([%s])' % escape_chars, r'\\\1', text)
-
-String escapedMsg = toEscapeMsg
-    .replace("_", "\\_")
-    .replace("*", "\\*")
-    .replace("[", "\\[")
-    .replace("`", "\\`");
-
-list_player = self.get_state("input_select.notification_media_player_alexa", attribute="options")
-
-TEST
-                # Restore volume
-                self.call_service("media_player/volume_set", entity_id = self.args["player"], volume_level = volume)
-                # Set state locally as well to avoid race condition
-                self.set_state(self.args["player"], attributes = {"volume_level": volume})
-
-                # o anche
-                volume = self.get_state(<entity_name>, attribute='volume_level') or 0.50
-
-                if 100 < chars < 150:
-                    self.log("-----DURATION-2 + DUE {}:".format(duration2+2))
-                    time.sleep(duration2 + 2)
-                else:
-                    self.log("-----DURATION-1 + 0.5 {}:".format(duration1+0.5))
-                    time.sleep(duration1 + 0.5)
-
-                #self.log("\n| DURATION     | PAROLE = {} | CHARS = {} \n| OLD = {} \n| (1) = {} \n| (2) = {} \n| (3) = {}".format(parole,chars,round(duration,2),round(duration1,2),round(duration2,2),round(duration3,2)))
-                parole = len(data["text"].split()) ##+ data["text"].count('.') + data["text"].count(',') + data["text"].count('-')
-                #self.log("PAROLE: {} - CHARS: {}".format(parole,chars))
-                # duration = (len(data["text"].split()) / 2) + data["wait_time"]
-                # duration1 = ((len(data["text"].split()) / 130) * 60) + data["wait_time"]
-                # duration2 = ((parole * 0.008) * 60) + data["wait_time"]
-"""                
