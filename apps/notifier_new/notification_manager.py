@@ -26,16 +26,20 @@ class Notification_Manager(hass.Hass):
 
         if (data["notify"] != ""):
             notify_name = data["notify"]
-        
-
 
         ### SAVE IN INPUT_TEXT.LAST_MESSAGE
         self.set_state(self.text_last_message, state = message[:245])
 
-        if title !="":
-            title = ("*[{} - {}] {}*".format(assistant_name, timestamp, title))
+        if "telegram" in notify_name:
+            if title !="":
+                title = ("*[{} - {}] {}*".format(assistant_name, timestamp, title))
+            else:
+                title = ("*[{} - {}]*".format(assistant_name, timestamp))
         else:
-            title = ("*[{} - {}]*".format(assistant_name, timestamp))
+            if title !="":
+                title = ("[{} - {}] {}".format(assistant_name, timestamp, title))
+            else:
+                title = ("[{} - {}]".format(assistant_name, timestamp))
         
         if link !="":
             message = ("{} {}".format(message,link))
@@ -44,7 +48,6 @@ class Notification_Manager(hass.Hass):
             caption = ("{}\n{}".format(title,message))
 
         #self.log("[CAPTION]: {}".format(caption))
-
         if url !="":
             extra_data = { "photo": 
                             {"url": url,
