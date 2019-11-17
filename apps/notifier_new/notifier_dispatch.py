@@ -41,7 +41,7 @@ class Notifier_Dispatch(hass.Hass):
         self.personal_assistant_name = globals.get_arg(self.args, "personal_assistant_name") 
         self.intercom_message_hub = globals.get_arg(self.args, "intercom_message_hub")
 
-        with open("/config/packages/centro_notifiche/secrets.yaml", 'r') as ymlfile:
+        with open("/config/packages/secrets.yaml", 'r') as ymlfile:
             cfg = yaml.load(ymlfile)
         self.ariela_tts_mqtt = cfg['ariela_tts_mqtt']
         self.gh_tts = cfg['tts_google']
@@ -77,7 +77,6 @@ class Notifier_Dispatch(hass.Hass):
         else:
             useTTS = False
 
-        #restore_volume = float(self.get_state(self.tts_default_restore_volume)) / 100
         gh_switch = self.get_state(self.gh_switch_entity)
         alexa_switch = self.get_state(self.alexa_switch_entity)
         ariela_switch = self.get_state(self.ariela_switch_entity)
@@ -87,8 +86,6 @@ class Notifier_Dispatch(hass.Hass):
         else:
             gh_notifica = self.gh_tts
         
-        self.log(gh_notifica)
-
         alexa_tts_type = str(self.get_state(self.alexa_tts_alexa_type)).lower()
         alexa_tts_method = str(self.get_state(self.alexa_tts_alexa_method)).lower()
 
@@ -110,14 +107,10 @@ class Notifier_Dispatch(hass.Hass):
         if useNotification:
             self.notification_manager.send_notify(data, notify_name, self.get_state(self.personal_assistant_name))
         if useTTS:
-            self.log("### TTS ###")
             if gh_switch == "on":
                 self.gh_manager.speak(data, self.get_state(self.gh_tts_google_mode), gh_notifica)
             if alexa_switch == "on":
-                if data["alexa_type"] != "push" and data["alexa_push"] !="1":
-                    self.alexa_manager.speak(data)
-                if data["alexa_type"] == "push" or data["alexa_push"] =="1":
-                    self.call_service("notify/alexa_media", data = {"type": "push"}, target = data["media_player_alexa"], title = data["title"], message = data["message"].replace("\n","").replace("   ","").replace("  "," "))
+                self.alexa_manager.speak(data)
             if ariela_switch == "on":
                 self.call_service("mqtt/publish", payload = data["message"].replace("\n","").replace("   ","").replace("  "," "), topic = self.ariela_tts_mqtt, qos = 0, retain = 0)
 
