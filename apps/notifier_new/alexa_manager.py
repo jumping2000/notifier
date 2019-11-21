@@ -20,14 +20,14 @@ class Alexa_Manager(hass.Hass):
 
     def initialize(self) -> None:
         self.wait_time = globals.get_arg(self.args, "wait_time")
-        self.alexa_tts = "alexa_media"
+        # self.alexa_tts = "alexa_media"
         self.queue = Queue(maxsize=0)
         self._when_tts_done_callback_queue = Queue()
         t = Thread(target=self.worker)
         t.daemon = True
         t.start()
 
-    def speak(self, data):
+    def speak(self, data, alexa_notifier: str):
         """ SPEAK THE PROVIDED TEXT THROUGH THE MEDIA PLAYER """
         default_restore_volume = float(self.get_state(globals.get_arg(self.args, "default_restore_volume")))/100
         wait_time = float(self.get_state(self.wait_time))
@@ -39,7 +39,7 @@ class Alexa_Manager(hass.Hass):
 
         """ Queues the message to be handled async, use when_tts_done_do method to supply callback when tts is done """
         self.queue.put({"title": data["title"], "text": message, "volume": data["volume"], "alexa_player": data["media_player_alexa"], 
-                        "alexa_type": data["alexa_type"], "wait_time": wait_time, "alexa_method": data["alexa_method"] })
+                        "alexa_type": data["alexa_type"], "wait_time": wait_time, "alexa_method": data["alexa_method"], "alexa_notifier": alexa_notifier })
 
     def volume_get(self, media_player, volume: float):
         self.dict_volumes = {}
@@ -106,7 +106,7 @@ class Alexa_Manager(hass.Hass):
                 self.log("\n| DURATION     | PERIODO = {} | PAROLE = {} | CHARS = {} \n| (Char*0.00133) = {} \n| (OLD) = {} \n| (char/130) = {} \n| (Parole*0.008) = {}".format(period,words,chars,round(duration,2),round(duration1,2),round(duration2,2),round(duration3,2)))
 
                 """ SPEAK """
-                self.call_service(__NOTIFY__ + self.alexa_tts, data = alexa_data, target = alexa_player, message = data["text"])
+                self.call_service(__NOTIFY__ + data["alexa_notifier"], data = alexa_data, target = alexa_player, message = data["text"])
                 self.volume_set(alexa_player, data["volume"])
 
                 """ SLEEP AND WAIT FOR THE TTS TO FINISH """
