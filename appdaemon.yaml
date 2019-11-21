@@ -13,20 +13,7 @@ appdaemon:
       type: hass
       ha_url: http://hassio/homeassistant
       token: 
-      latitude: 43
-      longitude: 11
-      elevation: 33
       time_zone: Europe/Rome
-    MQTT:
-      type: mqtt
-      verbose: true
-      namespace: mqtt
-      client_host: 192.168.1.101
-      client_user: user
-      client_password: pwd
-      client_port: 1883
-      client_topics:
-      - homeassistant/tts/#
 hadashboard:
   dash_url: http://127.0.0.1:5050
   dash_dir: /config/appdaemon/dashboards
