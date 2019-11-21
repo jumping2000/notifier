@@ -30,7 +30,7 @@ class Notification_Manager(hass.Hass):
         ### SAVE IN INPUT_TEXT.LAST_MESSAGE
         self.set_state(self.text_last_message, state = message[:245])
 
-        if "telegram" in notify_name:
+        if notify_name.find("telegram") != -1:
             if title !="":
                 title = ("*[{} - {}] {}*".format(assistant_name, timestamp, title))
             else:
@@ -63,7 +63,7 @@ class Notification_Manager(hass.Hass):
             self.call_service(__NOTIFY__ + notify_name, 
                             message = "",
                             data = extra_data)
-        elif (url =="" and _file =="") and ("alexa" in notify_name or data["alexa_push"] =="1"):
+        elif (url =="" and _file =="") and (notify_name.find("alexa") != -1 or data["alexa_push"] =="1"):
             self.call_service(__NOTIFY__ + notify_name, 
                             data = {"type": "push"}, 
                             target = data["media_player_alexa"], 

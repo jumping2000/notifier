@@ -78,10 +78,11 @@ class Notifier_Dispatch(hass.Hass):
         else:
             useTTS = False
 
+        ### TTS SWITCH ###
         gh_switch = self.get_state(self.gh_switch_entity)
         alexa_switch = self.get_state(self.alexa_switch_entity)
         ariela_switch = self.get_state(self.ariela_switch_entity)
-        
+        ### SERVIZIO TTS/NOTIFY DI GOOGLE ###
         if self.get_state(self.gh_tts_google_mode) == "on":
             gh_notifica = self.gh_notify
         else:
@@ -111,7 +112,7 @@ class Notifier_Dispatch(hass.Hass):
             if gh_switch == "on":
                 self.gh_manager.speak(data, self.get_state(self.gh_tts_google_mode), gh_notifica)
             if alexa_switch == "on":
-                self.alexa_manager.speak(data)
+                self.alexa_manager.speak(data, self.alexa_notify)
             if ariela_switch == "on":
                 self.call_service("mqtt/publish", payload = data["message"].replace("\n","").replace("   ","").replace("  "," "), topic = self.ariela_tts_mqtt, qos = 0, retain = 0)
 
