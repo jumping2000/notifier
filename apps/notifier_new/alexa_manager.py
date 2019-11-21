@@ -28,18 +28,19 @@ class Alexa_Manager(hass.Hass):
         t.start()
 
     def speak(self, data):
-        """ SPEAK THE PROVIDED TEXT THROUGH THE MEDIA PLAYER """
-        default_restore_volume = float(self.get_state(globals.get_arg(self.args, "default_restore_volume")))/100
-        wait_time = float(self.get_state(self.wait_time))
-        if self.queue.qsize() == 0:
-            self.volume_get(data["media_player_alexa"],default_restore_volume)
-        if data["message_tts"] != "": 
-            data.update({"message": data["message_tts"]})
-        message = data["message"].replace("\n","").replace("   "," ").replace("  "," ").replace("_"," ").replace("!",".")
+        if data["alexa_type"] != "push" and data["alexa_push"] !="1":
+            """ SPEAK THE PROVIDED TEXT THROUGH THE MEDIA PLAYER """
+            default_restore_volume = float(self.get_state(globals.get_arg(self.args, "default_restore_volume")))/100
+            wait_time = float(self.get_state(self.wait_time))
+            if self.queue.qsize() == 0:
+                self.volume_get(data["media_player_alexa"],default_restore_volume)
+            if data["message_tts"] != "": 
+                data.update({"message": data["message_tts"]})
+            message = data["message"].replace("\n","").replace("   "," ").replace("  "," ").replace("_"," ").replace("!",".")
 
-        """ Queues the message to be handled async, use when_tts_done_do method to supply callback when tts is done """
-        self.queue.put({"title": data["title"], "text": message, "volume": data["volume"], "alexa_player": data["media_player_alexa"], 
-                        "alexa_type": data["alexa_type"], "wait_time": wait_time, "alexa_method": data["alexa_method"] })
+            """ Queues the message to be handled async, use when_tts_done_do method to supply callback when tts is done """
+            self.queue.put({"title": data["title"], "text": message, "volume": data["volume"], "alexa_player": data["media_player_alexa"], 
+                            "alexa_type": data["alexa_type"], "wait_time": wait_time, "alexa_method": data["alexa_method"] })
 
     def volume_get(self, media_player, volume: float):
         self.dict_volumes = {}
@@ -102,7 +103,10 @@ class Alexa_Manager(hass.Hass):
                 duration = ((chars * 0.00133) * 60) + data["wait_time"] + (period/2)
                 duration1 = (len(data["text"].split()) / 2) + data["wait_time"]
                 duration2 = ((len(data["text"].split()) / 130) * 60) + data["wait_time"]
-                duration3 = ((words * 0.007) * 60) + data["wait_time"] + (period)
+                if (chars/words) > 7 and chars > 90:
+                    self.log("ADD 7 SEC")
+                    data["wait_time"] += 7
+                duration3 = ((words * 0.007) * 60) + data["wait_time"] + (period*0.2)
                 self.log("\n| DURATION     | PERIODO = {} | PAROLE = {} | CHARS = {} \n| (Char*0.00133) = {} \n| (OLD) = {} \n| (char/130) = {} \n| (Parole*0.008) = {}".format(period,words,chars,round(duration,2),round(duration1,2),round(duration2,2),round(duration3,2)))
 
                 """ SPEAK """
