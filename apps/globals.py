@@ -1,6 +1,4 @@
 import secrets
-import random
-
 
 def get_arg(args, key):
     key = args[key]
@@ -29,13 +27,3 @@ def get_arg_list(args, key):
             arg_list.append(key)
     return arg_list
 
-
-def random_arg(argList):
-    ############################################
-    # pick a random text from a list
-    ############################################
-    if isinstance(argList, list):
-        text = random.choice(argList)
-    else:
-        text = argList
-    return text
