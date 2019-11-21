@@ -63,18 +63,17 @@ class Notification_Manager(hass.Hass):
             self.call_service(__NOTIFY__ + notify_name, 
                             message = "",
                             data = extra_data)
-        else:                    
+        elif (url =="" and _file =="") and ("alexa" in notify_name or data["alexa_push"] =="1"):
+            self.call_service(__NOTIFY__ + notify_name, 
+                            data = {"type": "push"}, 
+                            target = data["media_player_alexa"], 
+                            title = title,
+                            message = message)
+        else:
             self.call_service(__NOTIFY__ + notify_name,
                             message = message,
                             title = title)
 
-        if data["alexa_type"] == "push" or data["alexa_push"] =="1":
-            notify_name = "alexa_media"
-            self.call_service(__NOTIFY__ + notify_name, 
-                            data = {"type": "push"}, 
-                            target = data["media_player_alexa"], 
-                            title = title, 
-                            message = message)
 
     def send_persistent(self, data, persistent_notification_info):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")

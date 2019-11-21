@@ -46,6 +46,7 @@ class Notifier_Dispatch(hass.Hass):
         self.ariela_tts_mqtt = cfg['ariela_tts_mqtt']
         self.gh_tts = cfg['tts_google']
         self.gh_notify = cfg['notify_google']
+        self.alexa_notify = cfg['notify_alexa']
 
         self.notification_manager = self.get_app("Notification_Manager")
         self.gh_manager = self.get_app("GH_Manager")
