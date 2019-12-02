@@ -64,12 +64,17 @@ class GH_Manager(hass.Hass):
                 gh_player = self.converti(data["gh_player"])
                 ### set volume
                 self.volume_set(gh_player,data["volume"])
+                """ SPEECH TIME CALCULATOR """
+                period = data["text"].count(', ') + data["text"].count('. ')
+                words = len(data["text"].split())
+                #chars = data["text"].count('')
                 ### Let's hope GH will get up
                 time.sleep(data["wait_time"])
                 ### SPEAK
                 if data["gh_mode"] == 'on':
                     self.call_service(__NOTIFY__ + data["gh_notifier"], message = data["text"])
-                    duration = (len(data["text"].split()) / 3) + data["wait_time"]
+                    duration = ((words * 0.008) * 60) + data["wait_time"] + (period*0.2)
+                    # duration = (len(data["text"].split()) / 3) + data["wait_time"]
                     #Sleep and wait for the tts to finish
                     time.sleep(duration)
                 else:
@@ -96,6 +101,8 @@ class GH_Manager(hass.Hass):
                     for i,j in self.dict_volumes.items():
                         self.call_service("media_player/volume_set", entity_id = i, volume_level = j)
                         self.log("VOLUME RIPROGRAMMATO: {} - {}".format(j,i))
+                        # Force Set state
+                        self.set_state(i, attributes = {"volume_level": j})
                 # It is empty, make callbacks
                 try:
                     while(self._when_tts_done_callback_queue.qsize() > 0):

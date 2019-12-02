@@ -61,19 +61,24 @@ class Notifier_Dispatch(hass.Hass):
         dnd_status = self.get_state(self.tts_dnd)
         location_status = self.get_state(self.location_tracker)
         guest_status = self.get_state(self.guest_mode)
-        priority_status = self.get_state(self.priority_message)
+        
 
-        if (self.get_state(self.text_notifications) == "on" and (data["location"] != "home" or location_status != "home") and data["notify"] != "0"):
+        priority_status = (self.get_state(self.priority_message) == "on") or (data["priority"] == "1")
+        if (self.get_state(self.priority_message) == "on"):
+            self.set_state(self.priority_message, state = "off")
+        #self.log("[PRIORITY]: {}".format(priority_status))
+
+        if (priority_status or (self.get_state(self.text_notifications) == "on" and (data["location"] != "home" or location_status != "home") and data["notify"] != "0")):
             useNotification = True
         else:
             useNotification = False
 
-        if (self.get_state(self.screen_notifications) == "on" and data["no_show"] != "1"):
+        if (priority_status or (self.get_state(self.screen_notifications) == "on" and data["no_show"] != "1")):
             usePersistentNotification = True
         else:
             usePersistentNotification = False
 
-        if (self.get_state(self.speech_notifications) == "on" and data["mute"] != "1" and (dnd_status == "off" or priority_status == "on" ) and (location_status == "home" or guest_status == "on")):
+        if (priority_status or (self.get_state(self.speech_notifications) == "on" and data["mute"] != "1" and dnd_status == "off" and (location_status == "home" or guest_status == "on"))):
             useTTS = True
         else:
             useTTS = False
