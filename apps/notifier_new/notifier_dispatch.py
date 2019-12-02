@@ -64,8 +64,8 @@ class Notifier_Dispatch(hass.Hass):
         
 
         priority_status = (self.get_state(self.priority_message) == "on") or (data["priority"] == "1")
-        if (self.get_state(self.priority_message) == "on"):
-            self.set_state(self.priority_message, state = "off")
+        #if (self.get_state(self.priority_message) == "on"):
+        #    self.set_state(self.priority_message, state = "off")
         #self.log("[PRIORITY]: {}".format(priority_status))
 
         if (priority_status or (self.get_state(self.text_notifications) == "on" and (data["location"] != "home" or location_status != "home") and data["notify"] != "0")):
