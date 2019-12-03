@@ -1,7 +1,0 @@
-TTSQueue:
-  module: ttsqueue
-  class: TTSqueue
-  gh_selected_media_player: sensor.media_player_google
-  global_dependencies:
-    - globals
-    - secrets
