@@ -20,9 +20,6 @@ class Notification_Manager(hass.Hass):
         _file = data["file"]
         caption = data["caption"]
         link = data["link"]
-        
-        self.log("[MESSAGGIO]: {}".format(message))
-        self.log("[Notifier]: {}".format(notify_name))
 
         if (data["notify"] != ""):
             notify_name = data["notify"]
