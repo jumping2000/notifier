@@ -46,22 +46,22 @@ class Alexa_Manager(hass.Hass):
         restore_volume = volume
         if 'group' in media_player:
             list_player = self.get_state(media_player, attribute="entity_id")
-            self.log("MEDIA PLAYER GROUP= {}".format(list_player))
+            #self.log("MEDIA PLAYER GROUP= {}".format(list_player))
         else:
             list_player = self.converti(media_player)
-            self.log("MEDIA PLAYER SINGLE: {}".format(list_player))
+            #self.log("MEDIA PLAYER SINGLE: {}".format(list_player))
         for i in list_player:
             self.dict_volumes[i] = self.get_state(entity = i, attribute="volume_level") or restore_volume
-        self.log("GET VOLUMES: {}".format(self.dict_volumes))
+        #self.log("GET VOLUMES: {}".format(self.dict_volumes))
         return self.dict_volumes
 
     def volume_set(self, media_player, volume: float):
         if 'group' in media_player:
             list_player = self.get_state(media_player, attribute="entity_id")
-            self.log("SET GRUPPO MEDIA_PLAYER/VOLUME: {} / {}".format(list_player,volume))
+            #self.log("SET GRUPPO MEDIA_PLAYER/VOLUME: {} / {}".format(list_player,volume))
             self.call_service("media_player/volume_set", entity_id = list_player, volume_level = volume)
         else:
-            self.log("SET MEDIA_PLAYER/VOLUME: {} / {}".format(media_player,volume))
+            #self.log("SET MEDIA_PLAYER/VOLUME: {} / {}".format(media_player,volume))
             self.call_service("media_player/volume_set", entity_id = media_player, volume_level = volume)
 
     def replace(self, string, substitutions):
