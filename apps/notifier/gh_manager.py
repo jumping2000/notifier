@@ -95,7 +95,7 @@ class GH_Manager(hass.Hass):
             self.queue.task_done()
 
             if self.queue.qsize() == 0:
-                self.log("QSIZE = 0 - Worker thread exiting")
+                #self.log("QSIZE = 0 - Worker thread exiting")
                 ## RESTORE VOLUME
                 if self.dict_volumes:
                     for i,j in self.dict_volumes.items():
@@ -113,65 +113,3 @@ class GH_Manager(hass.Hass):
                     self.log("Errore nel CallBack", level="ERROR")
                     self.log(sys.exc_info()) 
                     pass # Nothing in queue
-
-"""
-    def retry(exceptions, tries=4, delay=3, backoff=2, logger=None):
-        
-        Retry calling the decorated function using an exponential backoff.
-        Args:
-        exceptions: The exception to check. may be a tuple of exceptions to check.
-        tries: Number of times to try (not retry) before giving up.
-        delay: Initial delay between retries in seconds.
-        backoff: Backoff multiplier (e.g. value of 2 will double the delay each retry).
-        logger: Logger to use. If None, print.
-        
-        def deco_retry(f):
-            @wraps(f)
-            def f_retry(*args, **kwargs):
-                mtries, mdelay = tries, delay
-                while mtries > 1:
-                    try:
-                        return f(*args, **kwargs)
-                    except exceptions as e:
-                        msg = '{}, Retrying in {} seconds...'.format(e, mdelay)
-                        if logger:
-                            logger.warning(msg)
-                        else:
-                            self.log("retry decorator: {} ".format(msg))
-                        time.sleep(mdelay)
-                        mtries -= 1
-                        mdelay *= backoff
-                return f(*args, **kwargs)
-            return f_retry  # true decorator
-        return deco_retry
-
-    def volume_get(self, entity):
-        Retrieve the audio player"s volume.
-        self.log("STATO MEDIA_PLAYER: {}".format(self.get_state(entity)))
-        if self.get_state(entity) == "off":
-            self.log("accendo il media player: {}".format(entity))
-            self.call_service("media_player/turn_on", entity_id = entity)
-        return round(float(self.get_state(entity = entity, attribute="volume_level") or 0.24),2)
-
-    def volume_callback(self, kwargs):
-        for item in self.get_state(globals.get_arg(self.args, "gh_mplayer"), attribute="all")["attributes"]["entity_id"]:
-            try:
-                if self.get_state(item) == "off":
-                    self.call_service("media_player/turn_on", entity_id = item)
-                    time.sleep(wait_time)
-                self.dict_volumes[item] = round(float(self.get_state(entity = item, attribute="volume_level") or 0.3),2)
-            except:
-                self.log ("Errore nel salvataggio volumi")
-        self.log("DICT SALVA VOLUMI: {} ".format(self.dict_volumes))
-
-    def terminate(self):
-        self.cancel_timer(self.handle_mplayer)
-
-    def volume_save(self, volume_level)->dict:
-        dict_volumes = {}
-        for item in self.get_state(globals.get_arg(self.args, "gh_mplayer"), attribute="all")["attributes"]["entity_id"]:
-            dict_volumes[item] = volume_level
-        self.log("DICT SALVA VOLUMI: {} ".format(dict_volumes))
-        return dict_volumes
-
-"""
