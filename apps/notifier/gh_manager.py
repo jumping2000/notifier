@@ -34,7 +34,7 @@ class GH_Manager(hass.Hass):
         for item in gh_player:
             if self.get_state(item) == "off":
                 self.call_service("media_player/turn_on", entity_id = item)  ### Set to the desired volume
-            self.log("SET MEDIA_PLAYER/VOLUME: {} / {}".format(item,volume))
+            #self.log("SET MEDIA_PLAYER/VOLUME: {} / {}".format(item,volume))
             self.call_service("media_player/volume_set", entity_id = item, volume_level = volume)
 
     def speak(self, data, gh_mode: bool, gh_notifier: str):
@@ -85,7 +85,7 @@ class GH_Manager(hass.Hass):
                         if not duration:
                             #The TTS already played, set a small duration
                             duration = (len(data["text"].split()) / 3) + data["wait_time"]
-                            self.log("DURATION-WAIT {}:".format(duration))
+                            #self.log("DURATION-WAIT {}:".format(duration))
                         #Sleep and wait for the tts to finish
                         time.sleep(duration)
             except:
@@ -100,7 +100,7 @@ class GH_Manager(hass.Hass):
                 if self.dict_volumes:
                     for i,j in self.dict_volumes.items():
                         self.call_service("media_player/volume_set", entity_id = i, volume_level = j)
-                        self.log("VOLUME RIPROGRAMMATO: {} - {}".format(j,i))
+                        #self.log("VOLUME RIPROGRAMMATO: {} - {}".format(j,i))
                         # Force Set state
                         self.set_state(i, attributes = {"volume_level": j})
                 # It is empty, make callbacks
