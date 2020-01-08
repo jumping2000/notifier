@@ -18,7 +18,7 @@ class Phone_Manager(hass.Hass):
         self.log("[MESSAGGIO]: {}".format(message))
         self.log("[CALLED NUMBER]: {}".format(called_number))
         if called_number != "":
-            if phone_name.find("call") == -1:
+            if phone_name.find("voip_call") != -1:
                 called_number = ("sip:{}@{}".format(called_number, sip_server_name))
                 self.call_service("hassio/addon_stdin", 
                         addon="89275b70_dss_voip", 
