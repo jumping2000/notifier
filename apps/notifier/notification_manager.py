@@ -21,8 +21,8 @@ class Notification_Manager(hass.Hass):
         caption = data["caption"]
         link = data["link"]
         
-        self.log = ("[MESSAGGIO]: {}".format(message))
-        self.log = ("[Notifier]: {}".format(notify_name))
+        self.log("[MESSAGGIO]: {}".format(message))
+        self.log("[Notifier]: {}".format(notify_name))
 
         if (data["notify"] != ""):
             notify_name = data["notify"]
@@ -60,7 +60,7 @@ class Notification_Manager(hass.Hass):
                         }
 
         if url !="" or _file !="":
-            self.call_service(__NOTIFY__ + notify_name, 
+            self.call_service(__NOTIFY__ + notify_name,
                             message = "",
                             data = extra_data)
         elif (url =="" and _file =="") and (notify_name.find("alexa") != -1 or data["alexa_push"] =="1"):

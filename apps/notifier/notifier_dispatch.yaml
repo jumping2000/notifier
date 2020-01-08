@@ -3,7 +3,7 @@ Notifier_Dispatch:
   class: Notifier_Dispatch
 
   gh_tts_google_mode: input_boolean.tts_google_mode
-  gh_switch:  input_boolean.google_switch
+  gh_switch: input_boolean.google_switch
   gh_selected_media_player: sensor.media_player_google
 
   alexa_tts_alexa_type: input_select.default_alexa_type
@@ -19,22 +19,26 @@ Notifier_Dispatch:
   text_notifications: input_boolean.text_notifications
   screen_notifications: input_boolean.screen_notifications
   speech_notifications: input_boolean.speech_notifications
+  phone_notifications: input_boolean.phone_notifications
 
   persistent_notification_info: persistent_notification.info_messages
   
   location_tracker: group.location_tracker
-  default_notify: input_select.default_notify
+  text_notify: input_select.text_notify
+  phone_notify: input_select.phone_notify
   priority_message: input_boolean.priority_message
   guest_mode: input_boolean.guest_mode
   dnd: binary_sensor.dnd
 
   personal_assistant_name: input_text.personal_assistant_name
   intercom_message_hub: input_text.intercom_message_hub
+  phone_called_number: input_text.phone_called_number
 
   dependencies: 
     - Notification_Manager
     - GH_Manager
     - Alexa_Manager
+    - Phone_Manager
 
   global_dependencies:
     - globals
