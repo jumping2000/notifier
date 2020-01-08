@@ -135,6 +135,6 @@ class Notifier_Dispatch(hass.Hass):
             if ariela_switch == "on":
                 self.call_service("mqtt/publish", payload = data["message"].replace("\n","").replace("   ","").replace("  "," "), topic = self.ariela_tts_mqtt, qos = 0, retain = 0)
         if usePhone:
-            self.phone_manager.send_voice_call(data, phone_notify_name, self.get_state(self.phone_sip_server))
+            self.phone_manager.send_voice_call(data, phone_notify_name, self.phone_sip_server)
 
 #####################################################################
