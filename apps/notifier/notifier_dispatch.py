@@ -118,11 +118,7 @@ class Notifier_Dispatch(hass.Hass):
             data.update({"alexa_method": alexa_tts_method})
         if data["called_number"] =="":
             data.update({"called_number": self.get_state(self.phone_called_number)})
-        ### CALL and NOTIFY MANAGER ###
-        self.log("[USE PHONE]: {}".format(usePhone))
-        self.log("[phone called]: {}".format(self.phone_called_number))
-        self.log("[phone called]: {}".format(self.get_state(self.phone_called_number)))
-        
+        ### CALL and NOTIFY MANAGER ###        
         if usePersistentNotification:
             self.notification_manager.send_persistent(data, self.persistent_notification_info)
         if useNotification:
