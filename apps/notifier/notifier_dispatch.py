@@ -106,19 +106,29 @@ class Notifier_Dispatch(hass.Hass):
         ### FROM SCRIPT_NOTIFY ###
         if data["language"] == "":
             data.update({"language": self.get_state(self.tts_language).lower()})
-        if data["media_player_google"] == "":
-            data.update({"media_player_google": self.get_state(self.gh_selected_media_player)})
-        if data["media_player_alexa"] == "":
-            data.update({"media_player_alexa": self.get_state(self.alexa_selected_media_player)})
         if data["volume"] == "":
             data.update({"volume": self.get_state(self.tts_period_of_day_volume)})
-        if data["alexa_type"] =="":
-            data.update({"alexa_type": alexa_tts_type})
-        if data["alexa_method"] =="":
-            data.update({"alexa_method": alexa_tts_method})
         if data["called_number"] =="":
             data.update({"called_number": self.get_state(self.phone_called_number)})
-        ### CALL and NOTIFY MANAGER ###        
+        if data["message_tts"] =="":
+            data.update({"message_tts": data["message"]})
+        if data["message"] =="":
+            data.update({"message": data["message_tts"]})
+        ###########################
+        if gh_switch == "on":
+            if data["media_player_google"] == "":
+                data.update({"media_player_google": self.get_state(self.gh_selected_media_player)})
+        if alexa_switch == "on":
+            if data["media_player_alexa"] == "":
+                data.update({"media_player_alexa": self.get_state(self.alexa_selected_media_player)})
+            if data["alexa_type"] =="":
+                data.update({"alexa_type": alexa_tts_type})
+            if data["alexa_method"] =="":
+                data.update({"alexa_method": alexa_tts_method})
+        ### CALL and NOTIFY MANAGER ###
+        #self.log("[USE PHONE]: {}".format(usePhone))
+        #self.log("[PHONE CALLED]: {}".format(self.phone_called_number))
+        #self.log("[PHONE CALLED STATUS]: {}".format(self.get_state(self.phone_called_number)))
         if usePersistentNotification:
             self.notification_manager.send_persistent(data, self.persistent_notification_info)
         if useNotification:
