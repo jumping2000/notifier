@@ -33,9 +33,7 @@ class Alexa_Manager(hass.Hass):
         wait_time = float(self.get_state(self.wait_time))
         if self.queue.qsize() == 0:
             self.volume_get(data["media_player_alexa"],default_restore_volume)
-        if data["message_tts"] != "": 
-            data.update({"message": data["message_tts"]})
-        message = data["message"]
+        message = data["message_tts"]
 
         """ Queues the message to be handled async, use when_tts_done_do method to supply callback when tts is done """
         self.queue.put({"title": data["title"], "text": message, "volume": data["volume"], "alexa_player": data["media_player_alexa"], 
