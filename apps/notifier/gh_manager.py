@@ -45,7 +45,7 @@ class GH_Manager(hass.Hass):
             self.dict_volumes[i] = float(self.get_state(globals.get_arg(self.args, "gh_restore_volume")))/100
         
         wait_time = float(self.get_state(self.gh_wait_time))
-        message = data["message"].replace("\n","").replace("*","").replace("   ","").replace("  "," ")
+        message = data["message_tts"].replace("\n","").replace("*","").replace("   ","").replace("  "," ")
         # queues the message to be handled async, use when_tts_done_do method to supply callback when tts is done
         self.queue.put({"type": "tts", "text": message, "volume": data["volume"], "language": data["language"],
                         "gh_player": data["media_player_google"], "wait_time": wait_time, "gh_mode": gh_mode, "gh_notifier": gh_notifier})
