@@ -13,7 +13,7 @@ class Phone_Manager(hass.Hass):
         self.no_op = 1
 
     def send_voice_call(self, data, phone_name: str, sip_server_name: str):
-        message = data["message"].replace("\n","").replace("   ","").replace("  "," ").replace("_"," ")
+        message = data["message_tts"].replace("\n","").replace("   ","").replace("  "," ").replace("_"," ")
         called_number= data["called_number"]
         self.log("[MESSAGGIO]: {}".format(message))
         self.log("[CALLED NUMBER]: {}".format(called_number))
