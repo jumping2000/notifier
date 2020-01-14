@@ -26,6 +26,6 @@ class Phone_Manager(hass.Hass):
                         )
             else:
                 message = ("http://api.callmebot.com/start.php?user={}&text={}&lang=it-IT-Standard-A".format(called_number, message))
-                self.call_service(__NOTIFY__ + phone_name,
-                        message = message
+                self.call_service("shell_command/telegram_call",
+                        url = message
                         )
