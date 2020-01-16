@@ -14,6 +14,7 @@ class Phone_Manager(hass.Hass):
 
     def send_voice_call(self, data, phone_name: str, sip_server_name: str):
         message = data["message_tts"].replace("\n","").replace("   ","").replace("  "," ").replace("_"," ")
+        message_tts = message.replace(" ","%20")
         called_number= data["called_number"]
         self.log("[MESSAGGIO]: {}".format(message))
         self.log("[CALLED NUMBER]: {}".format(called_number))
@@ -25,7 +26,7 @@ class Phone_Manager(hass.Hass):
                         input = {"call_sip_uri":called_number,"message_tts":message}
                         )
             else:
-                message = ("http://api.callmebot.com/start.php?user={}&text={}&lang=it-IT-Standard-A".format(called_number, message))
+                message_tts = ("http://api.callmebot.com/start.php?user={}&text={}&lang=it-IT-Standard-A".format(called_number, message_tts))
                 self.call_service("shell_command/telegram_call",
-                        url = message
+                        url = message_tts
                         )
