@@ -26,7 +26,5 @@ class Phone_Manager(hass.Hass):
                         input = {"call_sip_uri":called_number,"message_tts":message}
                         )
             else:
-                message_tts = ("http://api.callmebot.com/start.php?user={}&text={}&lang=it-IT-Standard-A".format(called_number, message_tts))
-                self.call_service("shell_command/telegram_call",
-                        url = message_tts
-                        )
+                url_tts = ("http://api.callmebot.com/start.php?user={}&text={}&lang=it-IT-Standard-A".format(called_number, message_tts))
+                self.call_service("shell_command/telegram_call", url = url_tts)
