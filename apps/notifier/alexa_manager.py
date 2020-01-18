@@ -33,9 +33,7 @@ class Alexa_Manager(hass.Hass):
         wait_time = float(self.get_state(self.wait_time))
         if self.queue.qsize() == 0:
             self.volume_get(data["media_player_alexa"],default_restore_volume)
-        if data["message_tts"] != "": 
-            data.update({"message": data["message_tts"]})
-        message = data["message"]
+        message = data["message_tts"]
 
         """ Queues the message to be handled async, use when_tts_done_do method to supply callback when tts is done """
         self.queue.put({"title": data["title"], "text": message, "volume": data["volume"], "alexa_player": data["media_player_alexa"], 
@@ -46,22 +44,22 @@ class Alexa_Manager(hass.Hass):
         restore_volume = volume
         if 'group' in media_player:
             list_player = self.get_state(media_player, attribute="entity_id")
-            self.log("MEDIA PLAYER GROUP= {}".format(list_player))
+            # self.log("MEDIA PLAYER GROUP= {}".format(list_player))
         else:
             list_player = self.converti(media_player)
-            self.log("MEDIA PLAYER SINGLE: {}".format(list_player))
+            # self.log("MEDIA PLAYER SINGLE: {}".format(list_player))
         for i in list_player:
-            self.dict_volumes[i] = self.get_state(entity = i, attribute="volume_level") or restore_volume
-        self.log("GET VOLUMES: {}".format(self.dict_volumes))
+            self.dict_volumes[i] = self.get_state(entity_id = i, attribute="volume_level") or restore_volume
+        # self.log("GET VOLUMES: {}".format(self.dict_volumes))
         return self.dict_volumes
 
     def volume_set(self, media_player, volume: float):
         if 'group' in media_player:
             list_player = self.get_state(media_player, attribute="entity_id")
-            self.log("SET GRUPPO MEDIA_PLAYER/VOLUME: {} / {}".format(list_player,volume))
+            # self.log("SET GRUPPO MEDIA_PLAYER/VOLUME: {} / {}".format(list_player,volume))
             self.call_service("media_player/volume_set", entity_id = list_player, volume_level = volume)
         else:
-            self.log("SET MEDIA_PLAYER/VOLUME: {} / {}".format(media_player,volume))
+            # self.log("SET MEDIA_PLAYER/VOLUME: {} / {}".format(media_player,volume))
             self.call_service("media_player/volume_set", entity_id = media_player, volume_level = volume)
 
     def replace(self, string, substitutions):
@@ -102,7 +100,7 @@ class Alexa_Manager(hass.Hass):
                     """ REPLACE """
                     string = data["text"]
                     # Test def 
-                    substitutions = {"/h": " all'ora","$": "dollaro ", "€": "euro ","°C": " gradi"}
+                    substitutions = {"/h": " all'ora","$": "dollaro ", "€": "euro ","°C": " gradi","%": " per cento"}
                     output = self.replace(string, substitutions)
                     # Test for
                     replacements = [("[\s_]+", " "),("[?!;:]+\s", ", "),("\.+\s", ". "),("[\n\*]", "")]
@@ -146,7 +144,7 @@ class Alexa_Manager(hass.Hass):
                         self.call_service("media_player/volume_set", entity_id = i, volume_level = j)
                         self.log("VOLUME RIPROGRAMMATO: {} - {}".format(j,i))
                         # Force Set state
-                        self.set_state(i, attributes = {"volume_level": j})
+                        self.set_state(i, state = "", attributes = {"volume_level": j})
                 # It is empty, make callbacks
                 try:
                     while(self._when_tts_done_callback_queue.qsize() > 0):
