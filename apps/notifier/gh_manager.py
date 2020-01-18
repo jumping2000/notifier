@@ -102,7 +102,7 @@ class GH_Manager(hass.Hass):
                         self.call_service("media_player/volume_set", entity_id = i, volume_level = j)
                         #self.log("VOLUME RIPROGRAMMATO: {} - {}".format(j,i))
                         # Force Set state
-                        self.set_state(i, attributes = {"volume_level": j})
+                        self.set_state(i, state = "", attributes = {"volume_level": j})
                 # It is empty, make callbacks
                 try:
                     while(self._when_tts_done_callback_queue.qsize() > 0):
