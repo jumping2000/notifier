@@ -14,7 +14,7 @@ Package-Notification-HUB-AppDaemon<br>
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-Yes-brightgreen.svg)](https://github.com/caiosweet/Package-Notification-HUB-AppDaemon/graphs/commit-activity)
 [![GitHub issues](https://img.shields.io/github/issues/caiosweet/Package-Notification-HUB-AppDaemon)](https://github.com/caiosweet/Package-Notification-HUB-AppDaemon/issues)
 
-*Notifier is an [AppDaemon](https://github.com/home-assistant/appdaemon) app which works togheter with [Centro Notifiche](https://github.com/caiosweet/Package-Notification-HUB-AppDaemon) to sends text (Telegram, Push, Ariela), TTS Google and Alexa, VoIP notifications to you and/or your devices like PC smartphone, pad, etc..*
+*Notifier is an [AppDaemon](https://github.com/home-assistant/appdaemon) app which works togheter with [Centro Notifiche](https://github.com/caiosweet/Package-Notification-HUB-AppDaemon) to sends text (Telegram, Push, Ariela), TTS Google and Alexa, VoIP notifications to you and/or your devices like PC, smartphone, pad, etc..*
 The app works with Appdaemon v3.x and v4.x.
 
 ## Installation
