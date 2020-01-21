@@ -15,6 +15,7 @@ Package-Notification-HUB-AppDaemon<br>
 [![GitHub issues](https://img.shields.io/github/issues/caiosweet/Package-Notification-HUB-AppDaemon)](https://github.com/caiosweet/Package-Notification-HUB-AppDaemon/issues)
 
 *Notifier is an [AppDaemon](https://github.com/home-assistant/appdaemon) app which works togheter with [Centro Notifiche](https://github.com/caiosweet/Package-Notification-HUB-AppDaemon) to sends a text, TTS, VoIP notifications to you and your devices.*
+The app works with Appdaemon v3.x and v4.x. 
 
 ## Installation
 Use [HACS](https://github.com/custom-components/hacs) or [download](https://github.com/jumping2000/notifier) the `notifier` directory from inside the `apps` directory here to your local `apps` directory.
