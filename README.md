@@ -7,7 +7,7 @@ Notifier Centre for Home Assistant [jumping2000](https://github.com/jumping2000/
 [![Hass.io][img-hassio]][link-hassio]
 [![GitHub issues](https://img.shields.io/github/issues/jumping2000/notifier)](https://github.com/jumping2000/notifier/issues)
 
-Package-Notification-HUB-AppDaemon
+Package-Notification-HUB-AppDaemon<br>
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/caiosweet/Package-Notification-HUB-AppDaemon)](https://github.com/caiosweet/Package-Notification-HUB-AppDaemon/releases)
 ![GitHub Release Date](https://img.shields.io/github/release-date/caiosweet/Package-Notification-HUB-AppDaemon)
 [![Hass.io][img-hassio]][link-hassio]
