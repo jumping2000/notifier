@@ -26,6 +26,9 @@ class Alexa_Manager(hass.Hass):
         t = Thread(target=self.worker)
         t.daemon = True
         t.start()
+        self.version = self.get_ad_version()
+        self.log(f"Versione AppDaemon: {self.version}")
+
 
     def speak(self, data, alexa_notifier: str):
         """ SPEAK THE PROVIDED TEXT THROUGH THE MEDIA PLAYER """
@@ -44,22 +47,22 @@ class Alexa_Manager(hass.Hass):
         restore_volume = volume
         if 'group' in media_player:
             list_player = self.get_state(media_player, attribute="entity_id")
-            # self.log("MEDIA PLAYER GROUP= {}".format(list_player))
+            # self.log(f"MEDIA PLAYER GROUP= {list_player}")
         else:
             list_player = self.converti(media_player)
-            # self.log("MEDIA PLAYER SINGLE: {}".format(list_player))
+            # self.log(f"MEDIA PLAYER SINGLE: {list_player}")
         for i in list_player:
-            self.dict_volumes[i] = self.get_state(entity_id = i, attribute="volume_level") or restore_volume
-        # self.log("GET VOLUMES: {}".format(self.dict_volumes))
+            self.dict_volumes[i] = self.get_state(i, attribute="volume_level", default=restore_volume) #if self.version >= '4.0.0' else restore_volume
+        # self.log(f"GET VOLUMES: {self.dict_volumes}")
         return self.dict_volumes
 
     def volume_set(self, media_player, volume: float):
         if 'group' in media_player:
             list_player = self.get_state(media_player, attribute="entity_id")
-            # self.log("SET GRUPPO MEDIA_PLAYER/VOLUME: {} / {}".format(list_player,volume))
+            # self.log(f"SET GRUPPO MEDIA_PLAYER/VOLUME: {list_player} / {volume}")
             self.call_service("media_player/volume_set", entity_id = list_player, volume_level = volume)
         else:
-            # self.log("SET MEDIA_PLAYER/VOLUME: {} / {}".format(media_player,volume))
+            # self.log(f"SET MEDIA_PLAYER/VOLUME: {media_player} / {volume}")
             self.call_service("media_player/volume_set", entity_id = media_player, volume_level = volume)
 
     def replace(self, string, substitutions):
@@ -106,8 +109,8 @@ class Alexa_Manager(hass.Hass):
                     replacements = [("[\s_]+", " "),("[?!;:]+\s", ", "),("\.+\s", ". "),("[\n\*]", "")]
                     for old, new in replacements:
                         output = re.sub(old, new, output)
-                    # self.log("PRIMA: {}".format(string))
-                    # self.log("RISULTATO: {}".format(output))
+                    # self.log(f"PRIMA: {string}")
+                    # self.log(f"RISULTATO: {output}")
 
                     """ SPEECH TIME CALCULATOR """
                     period = output.count(', ') + output.count('. ') ##+ output.count(' - ')
@@ -117,12 +120,14 @@ class Alexa_Manager(hass.Hass):
                     """ ESTIMATED TIME """
                     if (chars/words) > 7 and chars > 90:
                         data["wait_time"] += 7
-                        # self.log("ADD EXTRA TIME: {}".format(data["wait_time"]), level="WARNING")
+                        # self.log(f"ADD EXTRA TIME: {data["wait_time"]}"), level="WARNING")
                     # duration = ((chars * 0.00133) * 60) + data["wait_time"] #+ (period/2)
                     # duration1 = (len(output.split()) / 2) + data["wait_time"]
                     # duration2 = ((len(output.split()) / 130) * 60) + data["wait_time"]
                     duration3 = ((words * 0.007) * 60) + data["wait_time"] #+ (period*0.2)
-                    # self.log("\n| DURATION     | PERIODO = {} | PAROLE = {} | CHARS = {} \n| (Char*0.00133) = {} \n| (OLD) = {} \n| (char/130) = {} \n| (Parole*0.007) = {}".format(period,words,chars,round(duration,2),round(duration1,2),round(duration2,2),round(duration3,2)))
+                    # self.log(f"\n| DURATION     | PERIODO = {period} | PAROLE = {words} | CHARS = {chars} \n| \
+                    #     (Char*0.00133) = {round(duration,2)} \n| (OLD) = {round(duration1,2)} \n| \
+                    #     (char/130) = {round(duration2,2)} \n| (Parole*0.007) = {round(duration3,2)}")
 
                     """ SPEAK """
                     self.call_service(__NOTIFY__ + data["alexa_notifier"], data = alexa_data, target = alexa_player, message = output)
@@ -142,7 +147,7 @@ class Alexa_Manager(hass.Hass):
                 if self.dict_volumes:
                     for i,j in self.dict_volumes.items():
                         self.call_service("media_player/volume_set", entity_id = i, volume_level = j)
-                        self.log("VOLUME RIPROGRAMMATO: {} - {}".format(j,i))
+                        self.log(f"VOLUME RIPROGRAMMATO: {j} - {i}")
                         # Force Set state
                         self.set_state(i, state = "", attributes = {"volume_level": j})
                 # It is empty, make callbacks
