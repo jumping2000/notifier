@@ -1,4 +1,4 @@
-import appdaemon.plugins.hass.hassapi as hass
+import hassapi as hass
 import datetime
 import globals
 
@@ -6,6 +6,7 @@ import globals
 Class Notification_Manager handles sending text to notfyng service
 """
 __NOTIFY__ = "notify/"
+SUB_NOTIFICHE = [("[\s]+"," ")]
 
 class Notification_Manager(hass.Hass):
 
@@ -15,7 +16,7 @@ class Notification_Manager(hass.Hass):
     def send_notify(self, data, notify_name: str, assistant_name: str):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         title = data["title"]
-        message = data["message"].replace("\n","").replace("   ","").replace("  "," ").replace("_"," ")
+        message = globals.replace_regular(data["message"], SUB_NOTIFICHE).replace("_","\_")
         url = data["url"]
         _file = data["file"]
         caption = data["caption"]
@@ -72,7 +73,8 @@ class Notification_Manager(hass.Hass):
         except:
             per_not_info = "null"
             #self.log(sys.exc_ingo())
-        message = data["message"].replace("\n","").replace("   ","").replace("  "," ").replace("_"," ")
+        #message = data["message"].replace("\n","").replace("   ","").replace("  "," ").replace("_"," ")
+        message = globals.replace_regular(data["message"], SUB_NOTIFICHE)
         message = ("{} - {}".format(timestamp, message))
         if per_not_info == "notifying":
             message = self.get_state(persistent_notification_info, attribute="message") + "\n" + message
