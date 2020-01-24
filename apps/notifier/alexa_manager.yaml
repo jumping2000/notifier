@@ -1,3 +1,7 @@
+# global_modules:
+#   - globals
+#   - secrets
+
 Alexa_Manager:
   module: alexa_manager
   class: Alexa_Manager
