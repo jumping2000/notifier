@@ -32,6 +32,7 @@ class Alexa_Manager(hass.Hass):
         self.version = self.get_ad_version()
         self.log(f"Versione AppDaemon: {self.version}")
 
+
     def speak(self, data, alexa_notifier: str):
         """ SPEAK THE PROVIDED TEXT THROUGH THE MEDIA PLAYER """
 
@@ -51,8 +52,6 @@ class Alexa_Manager(hass.Hass):
             # self.log(f"MEDIA PLAYER SINGLE: {list_player}")
         for i in list_player:
             self.dict_volumes[i] = self.get_state(i, attribute="volume_level", default=restore_volume) if self.version >= '4.0.0' else restore_volume
-        # self.log(f"GET VOLUMES: {self.dict_volumes}")
-        return self.dict_volumes
 
     def volume_set(self, media_player, volume: float):
         if 'group' in media_player:
@@ -122,6 +121,50 @@ class Alexa_Manager(hass.Hass):
 
                 """ SPEAK """
                 if 'group' in alexa_player:
+=======
+                if data["alexa_type"] != "push":
+                    if data["alexa_type"] == "tts":
+                        alexa_data = {"type": "tts"}
+                        data["wait_time"] += 2
+                    else:
+                        data["wait_time"] += 3.5
+                        alexa_data = {"type": data["alexa_type"],
+                                        "method": data["alexa_method"]
+                                        }
+                    if self.entity_exists("group.hub_media_player_alexa") and len(self.converti(data["alexa_player"])) > 1:
+                        alexa_player = "group.hub_media_player_alexa"
+
+                    """ REPLACE """
+                    string = data["text"]
+                    # Test def 
+                    substitutions = {"/h": " all'ora","$": "dollaro ", "€": "euro ","°C": " gradi","%": " per cento"}
+                    output = self.replace(string, substitutions)
+                    # Test for
+                    replacements = [("[\s_]+", " "),("[?!;:]+\s", ", "),("\.+\s", ". "),("[\n\*]", "")]
+                    for old, new in replacements:
+                        output = re.sub(old, new, output)
+                    # self.log(f"PRIMA: {string}")
+                    # self.log(f"RISULTATO: {output}")
+
+                    """ SPEECH TIME CALCULATOR """
+                    period = output.count(', ') + output.count('. ') ##+ output.count(' - ')
+                    words = len(output.split())
+                    chars = output.count('')
+                    
+                    """ ESTIMATED TIME """
+                    if (chars/words) > 7 and chars > 90:
+                        data["wait_time"] += 7
+                        # self.log(f"ADD EXTRA TIME: {data["wait_time"]}"), level="WARNING")
+                    # duration = ((chars * 0.00133) * 60) + data["wait_time"] #+ (period/2)
+                    # duration1 = (len(output.split()) / 2) + data["wait_time"]
+                    # duration2 = ((len(output.split()) / 130) * 60) + data["wait_time"]
+                    duration3 = ((words * 0.007) * 60) + data["wait_time"] #+ (period*0.2)
+                    # self.log(f"\n| DURATION     | PERIODO = {period} | PAROLE = {words} | CHARS = {chars} \n| \
+                    #     (Char*0.00133) = {round(duration,2)} \n| (OLD) = {round(duration1,2)} \n| \
+                    #     (char/130) = {round(duration2,2)} \n| (Parole*0.007) = {round(duration3,2)}")
+
+                    """ SPEAK """
+                    self.call_service(__NOTIFY__ + data["alexa_notifier"], data = alexa_data, target = alexa_player, message = output)
                     self.volume_set(alexa_player, data["volume"])
                 self.call_service(__NOTIFY__ + data["alexa_notifier"], data = alexa_data, target = alexa_player, message = message_clean)
                 self.volume_set(alexa_player, data["volume"])
@@ -134,8 +177,8 @@ class Alexa_Manager(hass.Hass):
                     for i,j in self.dict_volumes.items():
                         self.call_service("media_player/volume_set", entity_id = i, volume_level = j)
                         # self.log(f"VOLUME RIPROGRAMMATO: {j} - {i}")
-                        # Force Set state
-                        self.set_state(i, state = "", attributes = {"volume_level": j})
+
+                        self.log(f"VOLUME RIPROGRAMMATO: {j} - {i}")
 
             except:
                 self.log("Errore nel ciclo principale", level="ERROR")
