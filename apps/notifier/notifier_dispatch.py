@@ -71,23 +71,31 @@ class Notifier_Dispatch(hass.Hass):
         location_status = self.get_state(self.location_tracker)
         guest_status = self.get_state(self.guest_mode)
         priority_status = (self.get_state(self.priority_message) == "on") or (data["priority"] == "1")
-        if (self.get_state(self.priority_message) == "on"):
-            self.set_state(self.priority_message, state = "off")
-        #self.log("[PRIORITY]: {}".format(priority_status))
-        ###
-        if ((priority_status or self.get_state(self.text_notifications) == "on") and (data["location"] != "home" or location_status != "home") and data["notify"] != "0"):
+        ### NOTIFICATION ###
+        if priority_status:
+            useNotification = True
+        elif self.get_state(self.text_notifications) == "on" and (data["location"] != "home" or location_status != "home") and data["notify"] != "0":
             useNotification = True
         else:
             useNotification = False
-        if ((priority_status or self.get_state(self.screen_notifications) == "on") and data["no_show"] != "1"):
+        ### PERSISTENT ###
+        if priority_status:
+            usePersistentNotification = True
+        elif self.get_state(self.screen_notifications) == "on" and data["no_show"] != "1":
             usePersistentNotification = True
         else:
             usePersistentNotification = False
-        if ((priority_status or self.get_state(self.speech_notifications) == "on") and data["mute"] != "1" and dnd_status == "off" and (location_status == "home" or guest_status == "on")):
+        ### TTS ###
+        if priority_status:
+            useTTS = True
+        elif self.get_state(self.speech_notifications) == "on" and data["mute"] != "1" and dnd_status == "off" and (location_status == "home" or guest_status == "on"):
             useTTS = True
         else:
             useTTS = False
-        if ((priority_status or self.get_state(self.phone_notifications) == "on") and data["mute"] != "1" and dnd_status == "off"):
+        ### PHONE ###
+        if priority_status:
+            usePhone = True
+        elif self.get_state(self.phone_notifications) == "on" and data["mute"] != "1" and dnd_status == "off":
             usePhone = True
         else:
             usePhone = False
@@ -129,6 +137,7 @@ class Notifier_Dispatch(hass.Hass):
         #self.log("[USE PHONE]: {}".format(usePhone))
         #self.log("[PHONE CALLED]: {}".format(self.phone_called_number))
         #self.log("[PHONE CALLED STATUS]: {}".format(self.get_state(self.phone_called_number)))
+        #self.log("[PRIORITY]: {}".format(priority_status))
         if usePersistentNotification:
             self.notification_manager.send_persistent(data, self.persistent_notification_info)
         if useNotification:
@@ -143,4 +152,6 @@ class Notifier_Dispatch(hass.Hass):
         if usePhone:
             self.phone_manager.send_voice_call(data, phone_notify_name, self.phone_sip_server)
 
+        if (self.get_state(self.priority_message) == "on"):
+            self.set_state(self.priority_message, state = "off")
 #####################################################################
