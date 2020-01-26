@@ -13,7 +13,7 @@ class Notification_Manager(hass.Hass):
     def initialize(self):
         self.text_last_message = globals.get_arg(self.args, "text_last_message")
 
-    def send_notify(self, data, notify_name: str, assistant_name: str):
+    def send_notify(self, data, notify_name: str, notify_alexa: str, assistant_name: str):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         title = data["title"]
         message = globals.replace_regular(data["message"], SUB_NOTIFICHE).replace("_","\_")
@@ -21,8 +21,8 @@ class Notification_Manager(hass.Hass):
         _file = data["file"]
         caption = data["caption"]
         link = data["link"]
-        #self.log("[MESSAGGIO]: {}".format(message))
-        #self.log("[Notifier]: {}".format(notify_name))
+        #self.log("[MESSAGGIO]: {}".format(message), ascii_encode = False)
+        #self.log("[Notifier]: {}".format(notify_name), ascii_encode = False)
         if (data["notify"] != ""):
             notify_name = data["notify"]
         ### SAVE IN INPUT_TEXT.LAST_MESSAGE
@@ -51,11 +51,13 @@ class Notification_Manager(hass.Hass):
                             {"file": _file,
                             "caption": caption}
                         }
-        if url !="" or _file !="":
+        if url != "" or _file != "":
             self.call_service(__NOTIFY__ + notify_name,
                             message = "",
                             data = extra_data)
-        elif (url =="" and _file =="") and (notify_name.find("alexa") != -1 or data["alexa_push"] =="1"):
+        elif (url == "" and _file == "") and (notify_name.find("alexa") != -1 or data["alexa_push"] == "1"):
+            notify_name = notify_alexa
+            #self.log("[Notifier]: {}".format(notify_name), ascii_encode = False)
             self.call_service(__NOTIFY__ + notify_name, 
                             data = {"type": "push"}, 
                             target = data["media_player_alexa"], 

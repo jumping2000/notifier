@@ -141,7 +141,7 @@ class Notifier_Dispatch(hass.Hass):
         if usePersistentNotification:
             self.notification_manager.send_persistent(data, self.persistent_notification_info)
         if useNotification:
-            self.notification_manager.send_notify(data, notify_name, self.get_state(self.personal_assistant_name))
+            self.notification_manager.send_notify(data, notify_name, self.alexa_notify ,self.get_state(self.personal_assistant_name))
         if useTTS:
             if gh_switch == "on":
                 self.gh_manager.speak(data, self.get_state(self.gh_tts_google_mode), gh_notifica)
