@@ -68,10 +68,13 @@ class Alexa_Manager(hass.Hass):
                 """ GET AND SAVE VOLUME in dict_volumes """
                 self.volume_get(alexa_player, float(self.get_state(globals.get_arg(self.args, "default_restore_volume")))/100)
 
-                if len(alexa_player) > 1:
-                    # self.set_state("group.hub_media_player_alexa", state = "on", attributes = {"entity_id": alexa_player})
-                    # alexa_player = "group.hub_media_player_alexa"
-                    self.volume_set(alexa_player, data["volume"])
+                # if len(alexa_player) > 1:
+                #     # self.set_state("group.hub_media_player_alexa", state = "on", attributes = {"entity_id": alexa_player})
+                #     # alexa_player = "group.hub_media_player_alexa"
+                #     self.volume_set(alexa_player, data["volume"])
+
+                """ SET VOLUME """
+                self.volume_set(alexa_player, data["volume"])
 
                 """ ALEXA TYPE-METHOD """
                 if data["alexa_type"] == "tts":
@@ -102,7 +105,7 @@ class Alexa_Manager(hass.Hass):
 
                 """ SPEAK """
                 self.call_service(__NOTIFY__ + data["alexa_notifier"], data = alexa_data, target = alexa_player, message = message_clean)
-                self.volume_set(alexa_player, data["volume"])
+                # self.volume_set(alexa_player, data["volume"])
                 
                 """ SLEEP AND WAIT FOR THE TTS TO FINISH """
                 time.sleep(duration)
