@@ -1,8 +1,5 @@
 import appdaemon.plugins.hass.hassapi as hass
-import time
-import datetime
 import globals
-import sys
 from queue import Queue
 from threading import Thread
 
@@ -30,45 +27,28 @@ class Alexa_Manager(hass.Hass):
         t.daemon = True
         t.start()
         self.version = self.get_ad_version()
-        self.log(f"Versione AppDaemon: {self.version}")
+        # self.log(f"Versione AppDaemon: {self.version}")
 
     def speak(self, data, alexa_notifier: str):
         """ SPEAK THE PROVIDED TEXT THROUGH THE MEDIA PLAYER """
 
-        """ Queues the message to be handled async, use when_tts_done_do method to supply callback when tts is done """
-        self.queue.put({"title": data["title"], "text": data["message_tts"], "volume": data["volume"], "alexa_player": data["media_player_alexa"], 
-                        "alexa_type": data["alexa_type"], "wait_time": float(self.get_state(self.wait_time)), "alexa_method": data["alexa_method"], 
-                        "alexa_notifier": alexa_notifier})
+        ## Queues the message to be handled async, use when_tts_done_do method to supply callback when tts is done
+        self.queue.put({"title": data["title"], "text": data["message_tts"], "volume": data["volume"], 
+                        "alexa_player": data["media_player_alexa"], "alexa_type": data["alexa_type"], 
+                        "alexa_method": data["alexa_method"], "alexa_notifier": alexa_notifier,
+                        "wait_time": float(self.get_state(self.wait_time))
+                        })
 
     def volume_get(self, media_player, volume: float):
         self.dict_volumes = {}
-        restore_volume = volume
-        if 'group' in media_player:
-            list_player = self.get_state(media_player, attribute="entity_id")
-            # self.log(f"MEDIA PLAYER GROUP= {list_player}")
-        else:
-            list_player = self.converti(media_player)
-            # self.log(f"MEDIA PLAYER SINGLE: {list_player}")
-        for i in list_player:
-            self.dict_volumes[i] = self.get_state(i, attribute="volume_level", default=restore_volume) if self.version >= '4.0.0' else restore_volume
+        for i in media_player:
+            self.dict_volumes[i] = self.get_state(i, attribute="volume_level", default=volume) if self.version >= '4.0.0' else volume
         # self.log(f"GET VOLUMES: {self.dict_volumes}")
         return self.dict_volumes
 
     def volume_set(self, media_player, volume: float):
-        if 'group' in media_player:
-            media_player = self.get_state(media_player, attribute="entity_id")
-            # self.log(f"SET GRUPPO MEDIA_PLAYER/VOLUME: {media_player} / {volume}")
-            self.call_service("media_player/volume_set", entity_id = media_player, volume_level = volume)
-        else:
-            # self.log(f"SET MEDIA_PLAYER/VOLUME: {media_player} / {volume}")
-            self.call_service("media_player/volume_set", entity_id = media_player, volume_level = volume)
-
-    def converti(self, stringa): 
-        li = list(stringa.replace(" ", "").split(","))
-        if len(li) > 1:
-            # self.log("SET DUMMY GROUP ALEXA")
-            self.set_state("group.hub_media_player_alexa", state = "on", attributes = {"entity_id": li})
-        return li
+        self.call_service("media_player/volume_set", entity_id = media_player, volume_level = volume)
+        # self.log(f"SET MEDIA_PLAYER/VOLUME: {media_player} / {volume}")
 
     def when_tts_done_do(self, callback:callable)->None:
         """ CALLBACK WHEN THE QUEUE OF TTS MESSAGES ARE DONE """
@@ -78,29 +58,35 @@ class Alexa_Manager(hass.Hass):
         while True:
             try:
                 data = self.queue.get()
-                """ GET AND SAVE VOLUME """
-                self.volume_get(data["alexa_player"], float(self.get_state(globals.get_arg(self.args, "default_restore_volume")))/100)
+                if 'group.' in data["alexa_player"]:
+                    alexa_player = self.get_state(data["alexa_player"], attribute="entity_id")
+                elif 'sensor.' in data["alexa_player"]:
+                    alexa_player = self.split_device_list(self.get_state(data["alexa_player"]))
+                else:
+                    alexa_player = self.split_device_list(data["alexa_player"])
 
-                alexa_player = data["alexa_player"] 
+                """ GET AND SAVE VOLUME in dict_volumes """
+                self.volume_get(alexa_player, float(self.get_state(globals.get_arg(self.args, "default_restore_volume")))/100)
+
+                if len(alexa_player) > 1:
+                    # self.set_state("group.hub_media_player_alexa", state = "on", attributes = {"entity_id": alexa_player})
+                    # alexa_player = "group.hub_media_player_alexa"
+                    self.volume_set(alexa_player, data["volume"])
 
                 """ ALEXA TYPE-METHOD """
                 if data["alexa_type"] == "tts":
                     alexa_data = {"type": "tts"}
-                    data["wait_time"] += 2
                 else:
-                    data["wait_time"] += 3.5
+                    data["wait_time"] += 1.5
                     alexa_data = {"type": data["alexa_type"],
                                     "method": data["alexa_method"]
                                     }
 
-                if len(self.converti(data["alexa_player"])) > 1:
-                    alexa_player = "group.hub_media_player_alexa"
-
                 """ REPLACE AND CLEAN MESSAGE """
                 message_clean = globals.replace_char(data["text"], SUB_STRING)
                 message_clean = globals.replace_regular(message_clean, SUB_ALEXA)
-                # self.log(f"PRIMA: {data['text']}")
-                # self.log(f"RISULTATO: {message_clean}")
+                # self.log(f"TEXT: {data['text']}")
+                # self.log(f"MESSAGE CLEAN: {message_clean}")
 
                 """ SPEECH TIME CALCULATOR """
                 # period = message_clean.count(', ') + message_clean.count('. ') ##+ message_clean.count(' - ')
@@ -110,32 +96,24 @@ class Alexa_Manager(hass.Hass):
                 """ ESTIMATED TIME """
                 if (chars/words) > 7 and chars > 90:
                     data["wait_time"] += 7
-                    # self.log(f"ADD EXTRA TIME: {data["wait_time"]}"), level="WARNING")
-                # duration = ((chars * 0.00133) * 60) + data["wait_time"] #+ (period/2)
-                # duration1 = (len(message_clean.split()) / 2) + data["wait_time"]
-                # duration2 = ((len(message_clean.split()) / 130) * 60) + data["wait_time"]
-                duration3 = ((words * 0.007) * 60) + data["wait_time"] #+ (period*0.2)
-                self.log(f"DURATION-WAIT: {duration3}")
-                # self.log(f"\n| DURATION     | PERIODO = {period} | PAROLE = {words} | CHARS = {chars} \n| \
-                #     (Char*0.00133) = {round(duration,2)} \n| (OLD) = {round(duration1,2)} \n| \
-                #     (char/130) = {round(duration2,2)} \n| (Parole*0.007) = {round(duration3,2)}")
+                    # self.log(f"ADDED EXTRA TIME: {data["wait_time"]}"), level="WARNING")
+                duration = ((words * 0.007) * 60) + data["wait_time"] #+ (period*0.2)
+                self.log(f"DURATION-WAIT: {duration}")
 
                 """ SPEAK """
-                if 'group' in alexa_player:
-                    self.volume_set(alexa_player, data["volume"])
                 self.call_service(__NOTIFY__ + data["alexa_notifier"], data = alexa_data, target = alexa_player, message = message_clean)
                 self.volume_set(alexa_player, data["volume"])
-
+                
                 """ SLEEP AND WAIT FOR THE TTS TO FINISH """
-                time.sleep(duration3)
+                time.sleep(duration)
 
                 """ RESTORE VOLUME """
                 if self.dict_volumes:
                     for i,j in self.dict_volumes.items():
                         self.call_service("media_player/volume_set", entity_id = i, volume_level = j)
                         # self.log(f"VOLUME RIPROGRAMMATO: {j} - {i}")
-                        # Force Set state
-                        self.set_state(i, state = "", attributes = {"volume_level": j})
+                        ## Force Set state
+                        # self.set_state(i, state = "", attributes = {"volume_level": j})
 
             except:
                 self.log("Errore nel ciclo principale", level="ERROR")
