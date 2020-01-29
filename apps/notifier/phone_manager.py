@@ -33,14 +33,15 @@ class Phone_Manager(hass.Hass):
         #self.log("[LANG]: {}".format(lang))
 
         lang = self.dict_lingua.get(data["language"])
-        if called_number != "":
-            if phone_name.find("voip_call") != -1:
+        if phone_name.find("voip_call") != -1:
+            if called_number != "":
                 called_number = ("sip:{}@{}".format(called_number, sip_server_name))
                 self.call_service("hassio/addon_stdin", 
                         addon="89275b70_dss_voip", 
                         input = {"call_sip_uri":called_number,"message_tts":message}
                         )
-            else:
+        else:
+            if called_number != "":
                 url_tts = ("http://api.callmebot.com/start.php?user={}&text={}&lang={}".format(called_number, message_tts,lang))
                 #self.call_service(__NOTIFY__ + phone_name, message = message)
                 self.call_service("shell_command/telegram_call", url = url_tts)
