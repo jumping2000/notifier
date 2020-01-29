@@ -74,7 +74,7 @@ class Notifier_Dispatch(hass.Hass):
         ### NOTIFICATION ###
         if priority_status:
             useNotification = True
-        elif self.get_state(self.text_notifications) == "on" and (data["location"] != "home" or location_status != "home") and data["notify"] != "0":
+        elif self.get_state(self.text_notifications) == "on" and (data["location"] == "" or data["location"] == location_status) and data["notify"] != "0":
             useNotification = True
         else:
             useNotification = False
