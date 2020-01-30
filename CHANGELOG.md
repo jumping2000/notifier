@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.4] - 31-01-2020
+
+### Added
+
+- Fix message in Telegram Call
+
 ## [1.2.3] - 30-01-2020
 
 ### Added
