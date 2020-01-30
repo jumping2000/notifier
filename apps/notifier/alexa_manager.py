@@ -1,4 +1,5 @@
-import appdaemon.plugins.hass.hassapi as hass
+import hassapi as hass
+import time
 import globals
 from queue import Queue
 from threading import Thread
