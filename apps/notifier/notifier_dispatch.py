@@ -45,7 +45,11 @@ class Notifier_Dispatch(hass.Hass):
         self.phone_called_number = globals.get_arg(self.args, "phone_called_number")
 
         #### FROM SECRET FILE ####
-        with open("/config/packages/secrets.yaml", 'r') as ymlfile:
+        config = self.get_plugin_config()
+        config_dir = config["config_dir"]
+        self.log(f"configuration dir: {config_dir}")
+        secretsFile = config_dir+"/packages/secrets.yaml"
+        with open(secretsFile, 'r') as ymlfile:
             cfg = yaml.load(ymlfile)
         self.ariela_tts_mqtt = cfg['ariela_tts_mqtt']
         self.gh_tts = cfg['tts_google']
