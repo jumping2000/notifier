@@ -60,6 +60,7 @@ APP_SCHEMA = vol.Schema(
     }
 )
 
+
 class Alexa_Manager(hass.Hass):
     def initialize(self) -> None:
         # self.depends_on_module(globals)
