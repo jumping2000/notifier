@@ -1,6 +1,7 @@
 import hassapi as hass
 import yaml
 import globals
+import voluptuous as vol
 #
 # Centralizes messaging.
 #
@@ -9,8 +10,21 @@ import globals
 # Version 1.0:
 #   Initial Version
 
-class Notifier_Dispatch(hass.Hass):
+NULL = None
+SECRET_SCHEMA = vol.Schema({
+    vol.Required('location_tracker_hub', default=[]): list,
+    vol.Required('notification_media_player_google_hub', default=[]): list,
+    vol.Required('notification_media_player_alexa_hub', default=[]): list,
+    vol.Required('text_notify_hub', default=[]): list,
 
+    vol.Optional('tts_google', default=None): vol.Any(str,None,NULL),
+    vol.Optional('notify_google', default=None): vol.Any(str,None,NULL),
+    vol.Optional('notify_alexa', default=None): vol.Any(str,None,NULL),
+    vol.Optional('sip_server_name', default=None): vol.Any(str,None,NULL),
+    vol.Optional('ariela_tts_mqtt', default=None):  vol.Any(str,None,NULL),
+}, extra=vol.ALLOW_EXTRA)
+
+class Notifier_Dispatch(hass.Hass):
     def initialize(self):
         self.gh_tts_google_mode = globals.get_arg(self.args, "gh_tts_google_mode")
         self.gh_switch_entity = globals.get_arg(self.args, "gh_switch")
@@ -50,12 +64,13 @@ class Notifier_Dispatch(hass.Hass):
         self.log(f"configuration dir: {config_dir}")
         secretsFile = config_dir+"/packages/secrets.yaml"
         with open(secretsFile, 'r') as ymlfile:
-            cfg = yaml.load(ymlfile)
+            cfg = SECRET_SCHEMA(yaml.load(ymlfile))
         self.ariela_tts_mqtt = cfg['ariela_tts_mqtt']
         self.gh_tts = cfg['tts_google']
         self.gh_notify = cfg['notify_google']
         self.alexa_notify = cfg['notify_alexa']
         self.phone_sip_server = cfg['sip_server_name']
+        self.log(f"SECRET SCHEMA --->\n {cfg}", ascii_encode=False)
         ### APP MANAGER ###
         self.notification_manager = self.get_app("Notification_Manager")
         self.gh_manager = self.get_app("GH_Manager")
