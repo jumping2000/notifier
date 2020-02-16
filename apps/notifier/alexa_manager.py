@@ -177,7 +177,7 @@ class Alexa_Manager(hass.Hass):
                         f"ADDED EXTRA TIME: {data['wait_time']}", level=self._level
                     )
                 duration = ((words * 0.007) * 60) + data["wait_time"]  # + (period*0.2)
-                self.log(f"DURATION-WAIT: {duration}")
+                self.log(f"DURATION-WAIT: {duration}", level=self._level)
 
                 # Speak
                 self.call_service(
