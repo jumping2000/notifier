@@ -28,7 +28,7 @@ class Notification_Manager(hass.Hass):
         ### SAVE IN INPUT_TEXT.LAST_MESSAGE
         self.set_state(self.text_last_message, state = message[:245])
         if notify_name.find("telegram") != -1:
-            message.replace("_","\_")
+            message = message.replace("_","\_")
             if title !="":
                 title = ("*[{} - {}] {}*".format(assistant_name, timestamp, title))
             else:
