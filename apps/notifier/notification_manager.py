@@ -6,7 +6,7 @@ import globals
 Class Notification_Manager handles sending text to notfyng service
 """
 __NOTIFY__ = "notify/"
-SUB_NOTIFICHE = [("[\s]+"," ")]
+SUB_NOTIFICHE = [(" +"," "),("\s\s+","\n")]
 
 class Notification_Manager(hass.Hass):
 
@@ -16,7 +16,7 @@ class Notification_Manager(hass.Hass):
     def send_notify(self, data, notify_name: str, notify_alexa: str, assistant_name: str):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         title = data["title"]
-        message = globals.replace_regular(data["message"], SUB_NOTIFICHE).replace("_","\_")
+        message = globals.replace_regular(data["message"], SUB_NOTIFICHE)
         url = data["url"]
         _file = data["file"]
         caption = data["caption"]
@@ -28,6 +28,7 @@ class Notification_Manager(hass.Hass):
         ### SAVE IN INPUT_TEXT.LAST_MESSAGE
         self.set_state(self.text_last_message, state = message[:245])
         if notify_name.find("telegram") != -1:
+            message.replace("_","\_")
             if title !="":
                 title = ("*[{} - {}] {}*".format(assistant_name, timestamp, title))
             else:
