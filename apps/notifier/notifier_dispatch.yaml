@@ -34,6 +34,11 @@ Notifier_Dispatch:
   intercom_message_hub: input_text.intercom_message_hub
   phone_called_number: input_text.phone_called_number
 
+  tts_google: secret_tts_google
+  notify_google: secret_notify_google
+  notify_alexa: secret_notify_alexa
+  sip_server: secret_sip_server
+
   dependencies: 
     - Notification_Manager
     - GH_Manager

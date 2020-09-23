@@ -1,6 +1,6 @@
 import hassapi as hass
 import datetime
-import globals
+import re
 
 """
 Class Notification_Manager handles sending text to notfyng service
@@ -11,16 +11,18 @@ SUB_NOTIFICHE = [("[\s]+"," ")]
 class Notification_Manager(hass.Hass):
 
     def initialize(self):
-        self.text_last_message = globals.get_arg(self.args, "text_last_message")
-
-    def send_notify(self, data, notify_name: str, notify_alexa: str, assistant_name: str):
+        #self.text_last_message = globals.get_arg(self.args, "text_last_message")
+        self.text_last_message = self.args["text_last_message"]
+    def send_notify(self, data, notify_name: str, assistant_name: str):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         title = data["title"]
-        message = globals.replace_regular(data["message"], SUB_NOTIFICHE).replace("_","\_")
+        message = self.replace_regular(data["message"], SUB_NOTIFICHE)
+        message = message.replace("_","\_")
         url = data["url"]
         _file = data["file"]
         caption = data["caption"]
         link = data["link"]
+        #self.log("[DATA]: {}".format(data), ascii_encode = False)
         #self.log("[MESSAGGIO]: {}".format(message), ascii_encode = False)
         #self.log("[Notifier]: {}".format(notify_name), ascii_encode = False)
         if (data["notify"] != ""):
@@ -55,14 +57,6 @@ class Notification_Manager(hass.Hass):
             self.call_service(__NOTIFY__ + notify_name,
                             message = "",
                             data = extra_data)
-        elif (url == "" and _file == "") and (notify_name.find("alexa") != -1 or data["alexa_push"] == "1"):
-            notify_name = notify_alexa
-            #self.log("[Notifier]: {}".format(notify_name), ascii_encode = False)
-            self.call_service(__NOTIFY__ + notify_name, 
-                            data = {"type": "push"}, 
-                            target = data["media_player_alexa"], 
-                            title = title,
-                            message = message)
         else:
             self.call_service(__NOTIFY__ + notify_name,
                             message = message,
@@ -76,7 +70,7 @@ class Notification_Manager(hass.Hass):
             per_not_info = "null"
             #self.log(sys.exc_ingo())
         #message = data["message"].replace("\n","").replace("   ","").replace("  "," ").replace("_"," ")
-        message = globals.replace_regular(data["message"], SUB_NOTIFICHE)
+        message = self.replace_regular(data["message"], SUB_NOTIFICHE)
         message = ("{} - {}".format(timestamp, message))
         if per_not_info == "notifying":
             message = self.get_state(persistent_notification_info, attribute="message") + "\n" + message
@@ -86,3 +80,7 @@ class Notification_Manager(hass.Hass):
                         title = "Centro Messaggi"
                         )
 
+    def replace_regular(self, text: str, substitutions: list):
+        for old,new in substitutions:
+            text = re.sub(old, new, text.strip())
+        return text
