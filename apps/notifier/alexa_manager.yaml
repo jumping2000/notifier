@@ -8,3 +8,5 @@ Alexa_Manager:
   global_dependencies:
     - globals
     - secrets
+
+  # log_level: INFO
