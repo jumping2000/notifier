@@ -72,7 +72,7 @@ class Notifier_Dispatch(hass.Hass):
     def createTTSdict(self,data) -> list:
         dizionario = ""
         if data == "":
-            flag = False
+            flag = True
         else:
             if "OrderedDict([(" in data:
                 dizionario = self.convert(list(data.split("'")))
@@ -166,7 +166,7 @@ class Notifier_Dispatch(hass.Hass):
             try:
                 self.notification_manager.send_notify(data, notify_name, self.get_state(self.personal_assistant_name))
             except Exception as ex:
-                self.log("An error occurred in text notification: {}".format(ex), level="ERROR")
+                self.log("An error occurred in text-telegram notification: {}".format(ex), level="ERROR")
                 self.log(sys.exc_info())
                 pass
         if useTTS:
@@ -186,13 +186,22 @@ class Notifier_Dispatch(hass.Hass):
                         if  "language" not in google:
                             google["language"] = self.get_state(self.tts_language).lower()                  
                     else:
-                        google = {"media_player": self.get_state(self.gh_selected_media_player), "volume": self.get_state(self.tts_period_of_day_volume), "media_content_id":"", "media_content_type": "", "message_tts":""  }
+                        google = {"media_player": self.get_state(self.gh_selected_media_player), "volume": self.get_state(self.tts_period_of_day_volume), "language:": self.get_state(self.tts_language).lower(), "media_content_id":"", "media_content_type": "", "message_tts": data["message"] }
                     self.gh_manager.speak(google, self.get_state(self.gh_tts_google_mode), gh_notifica)
-                
+            except Exception as ex:
+                self.log("An error occurred in Google notification: {}".format(ex),level="ERROR")
+                self.log(sys.exc_info())
+                pass
+            try:    
                 if alexa_switch == "on" and alexa_flag:
+                    if (data["alexa"]) != "":
+                        if  "message_tts" not in alexa:
+                            alexa["message_tts"] = data["message"]
+                    else: 
+                        alexa = {"media_player": self.get_state(self.gh_selected_media_player), "volume": self.get_state(self.tts_period_of_day_volume), "language:": self.get_state(self.tts_language).lower(), "media_content_id":"", "media_content_type": "", "message_tts": data["message"] }
                     self.alexa_manager.speak(alexa)
             except Exception as ex:
-                self.log("An error occurred in text notification: {}".format(ex),level="ERROR")
+                self.log("An error occurred in Alexa notification: {}".format(ex),level="ERROR")
                 self.log(sys.exc_info())
                 pass
         if usePhone:
