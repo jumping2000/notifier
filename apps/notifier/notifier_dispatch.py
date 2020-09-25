@@ -1,5 +1,6 @@
 import hassapi as hass
 import globals
+import yaml
 import sys
 #
 # Centralizes messaging.
@@ -45,9 +46,21 @@ class Notifier_Dispatch(hass.Hass):
         self.phone_called_number = globals.get_arg(self.args, "phone_called_number")
 
         #### FROM SECRET FILE ####
-        self.gh_tts = globals.get_arg(self.args, "tts_google")
-        self.gh_notify = globals.get_arg(self.args, "notify_google")
-        self.phone_sip_server = globals.get_arg(self.args, "sip_server")
+        #self.gh_tts = globals.get_arg(self.args, "tts_google")
+        #self.gh_notify = globals.get_arg(self.args, "notify_google")
+        #self.phone_sip_server = globals.get_arg(self.args, "sip_server")
+        ####
+        config = self.get_plugin_config()
+        config_dir = config["config_dir"]
+        self.log(f"configuration dir: {config_dir}") 
+        secretsFile = config_dir + "/packages/secrets.yaml"
+        with open(secretsFile, "r") as ymlfile:
+            cfg = yaml.load(ymlfile)
+        self.gh_tts = cfg['tts_google']
+        self.gh_notify = cfg['notify_google']
+        self.alexa_notify = cfg['notify_alexa']
+        self.phone_sip_server = cfg['sip_server_name']
+        
         ### APP MANAGER ###
         self.notification_manager = self.get_app("Notification_Manager")
         self.gh_manager = self.get_app("GH_Manager")
