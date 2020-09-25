@@ -199,7 +199,7 @@ class Notifier_Dispatch(hass.Hass):
                         if  "language" not in google:
                             google["language"] = self.get_state(self.tts_language).lower()                  
                     else:
-                        google = {"media_player": self.get_state(self.gh_selected_media_player), "volume": self.get_state(self.tts_period_of_day_volume), "language:": self.get_state(self.tts_language).lower(), "media_content_id":"", "media_content_type": "", "message_tts": data["message"] }
+                        google = {"media_player": self.get_state(self.gh_selected_media_player), "volume": self.get_state(self.tts_period_of_day_volume), "language": self.get_state(self.tts_language).lower(), "media_content_id":"", "media_content_type": "", "message_tts": data["message"] }
                     self.gh_manager.speak(google, self.get_state(self.gh_tts_google_mode), gh_notifica)
             except Exception as ex:
                 self.log("An error occurred in Google notification: {}".format(ex),level="ERROR")
@@ -211,7 +211,7 @@ class Notifier_Dispatch(hass.Hass):
                         if  "message_tts" not in alexa:
                             alexa["message_tts"] = data["message"]
                     else: 
-                        alexa = {"media_player": self.get_state(self.gh_selected_media_player), "volume": self.get_state(self.tts_period_of_day_volume), "language:": self.get_state(self.tts_language).lower(), "media_content_id":"", "media_content_type": "", "message_tts": data["message"] }
+                        alexa = {"media_player": self.get_state(self.gh_selected_media_player), "volume": self.get_state(self.tts_period_of_day_volume), "language": self.get_state(self.tts_language).lower(), "media_content_id":"", "media_content_type": "", "message_tts": data["message"] }
                     self.alexa_manager.speak(alexa)
             except Exception as ex:
                 self.log("An error occurred in Alexa notification: {}".format(ex),level="ERROR")
