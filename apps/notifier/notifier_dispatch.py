@@ -1,7 +1,6 @@
 import hassapi as hass
 import globals
 import sys
-import yaml
 #
 # Centralizes messaging.
 #
@@ -17,12 +16,7 @@ class Notifier_Dispatch(hass.Hass):
         self.gh_switch_entity = globals.get_arg(self.args, "gh_switch")
         self.gh_selected_media_player = globals.get_arg(self.args, "gh_selected_media_player")
 
-        self.alexa_tts_alexa_type = globals.get_arg(self.args, "alexa_tts_alexa_type")
-        self.alexa_tts_alexa_method = globals.get_arg(self.args, "alexa_tts_alexa_method")
         self.alexa_switch_entity = globals.get_arg(self.args, "alexa_switch")
-        self.alexa_selected_media_player = globals.get_arg(self.args, "alexa_selected_media_player")
-
-        self.ariela_switch_entity = globals.get_arg(self.args, "ariela_switch")
 
         self.tts_language = globals.get_arg(self.args, "tts_language")
         self.tts_period_of_day_volume = globals.get_arg(self.args, "tts_period_of_day_volume")
@@ -46,25 +40,24 @@ class Notifier_Dispatch(hass.Hass):
         self.phone_called_number = globals.get_arg(self.args, "phone_called_number")
 
         #### FROM SECRET FILE ####
-        #self.gh_tts = globals.get_arg(self.args, "tts_google")
-        #self.gh_notify = globals.get_arg(self.args, "notify_google")
-        #self.phone_sip_server = globals.get_arg(self.args, "sip_server")
-        ###
-        config = self.get_plugin_config()
-        config_dir = config["config_dir"]
-        self.log(f"configuration dir: {config_dir}") 
-        secretsFile = config_dir + "/packages/secrets.yaml"
-        with open(secretsFile, "r") as ymlfile:
-            cfg = yaml.load(ymlfile)
-        self.gh_tts = cfg['tts_google']
-        self.gh_notify = cfg['notify_google']
-        self.alexa_notify = cfg['notify_alexa']
-        self.phone_sip_server = cfg['sip_server_name']
-        
+        self.gh_tts = globals.get_arg(self.args, "tts_google")
+        self.gh_notify = globals.get_arg(self.args, "notify_google")
+        self.phone_sip_server = globals.get_arg(self.args, "sip_server")
+
+        #config = self.get_plugin_config()
+        #config_dir = config["config_dir"]
+        #self.log(f"configuration dir: {config_dir}") 
+        #secretsFile = config_dir + "/packages/secrets.yaml"
+        #with open(secretsFile, "r") as ymlfile:
+        #    cfg = yaml.load(ymlfile)
+        #self.gh_tts = cfg['tts_google']
+        #self.gh_notify = cfg['notify_google']
+        #self.phone_sip_server = cfg['sip_server_name']
+
         ### APP MANAGER ###
         self.notification_manager = self.get_app("Notification_Manager")
         self.gh_manager = self.get_app("GH_Manager")
-        self.alexa_manager = self.get_app("Alexa_Manager")
+        #self.alexa_manager = self.get_app("Alexa_Manager")
         self.phone_manager = self.get_app("Phone_Manager")
         ### LISTEN EVENT ###
         self.listen_event(self.notify_hub, "hub")
@@ -77,7 +70,7 @@ class Notifier_Dispatch(hass.Hass):
         return True if (str(data).lower() =="" or str(data).lower()==location) else False 
 
     def check_notify(self, data):
-        return False if str(data).lower() in ["O","false","off","no"] else True
+        return False if (str(data).lower() in ["false","off","no"] or data == "0" or data == 0) else True
     
     def convert(self, lst):  
         return {lst[1]: lst[3]}
@@ -133,7 +126,6 @@ class Notifier_Dispatch(hass.Hass):
             useNotification = True
         else:
             useNotification = False
-        #self.log(" Notify flag - location flag: {} - {}".format(notify_flag,location_flag))
         ### PERSISTENT ###
         if priority_status:
             usePersistentNotification = True
@@ -200,6 +192,7 @@ class Notifier_Dispatch(hass.Hass):
                             google["language"] = self.get_state(self.tts_language).lower()                  
                     else:
                         google = {"media_player": self.get_state(self.gh_selected_media_player), "volume": self.get_state(self.tts_period_of_day_volume), "language": self.get_state(self.tts_language).lower(), "media_content_id":"", "media_content_type": "", "message_tts": data["message"] }
+                        #self.log("GOOGLE in dispatch: {}".format(google))
                     self.gh_manager.speak(google, self.get_state(self.gh_tts_google_mode), gh_notifica)
             except Exception as ex:
                 self.log("An error occurred in Google notification: {}".format(ex),level="ERROR")
@@ -210,8 +203,12 @@ class Notifier_Dispatch(hass.Hass):
                     if (data["alexa"]) != "":
                         if  "message_tts" not in alexa:
                             alexa["message_tts"] = data["message"]
+                        if  "title" not in alexa:
+                            alexa["title"] = data["title"]
+                        if "volume" not in alexa:
+                            alexa["volume"] = self.get_state(self.tts_period_of_day_volume)  
                     else: 
-                        alexa = {"media_player": self.get_state(self.gh_selected_media_player), "volume": self.get_state(self.tts_period_of_day_volume), "language": self.get_state(self.tts_language).lower(), "media_content_id":"", "media_content_type": "", "message_tts": data["message"] }
+                        alexa = {"volume": self.get_state(self.tts_period_of_day_volume), "title": data["title"], "message_tts": data["message"] }
                     self.alexa_manager.speak(alexa)
             except Exception as ex:
                 self.log("An error occurred in Alexa notification: {}".format(ex),level="ERROR")
@@ -249,3 +246,4 @@ class Notifier_Dispatch(hass.Hass):
 #self.log("[GOOGLE POST]: {}".format(google))
 #        if data["message"] =="":
 #            data.update({"message": data["message_tts"]})
+#self.log(" Notify flag - location flag: {} - {}".format(notify_flag,location_flag))

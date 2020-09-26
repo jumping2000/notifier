@@ -41,7 +41,7 @@ class GH_Manager(hass.Hass):
 
     def replace_regular(self, text: str, substitutions: list):
         for old,new in substitutions:
-            text = re.sub(old, new, text.strip())
+            text = re.sub(old, new, str(text).strip())
         return text
 
     def speak(self, google, gh_mode: bool, gh_notifier: str):
@@ -52,7 +52,7 @@ class GH_Manager(hass.Hass):
             #self.dict_volumes[i] = float(self.get_state(globals.get_arg(self.args, "gh_restore_volume")))/100
             self.dict_volumes[i] = float(self.get_state(self.args["gh_restore_volume"]))/100
         wait_time = float(self.get_state(self.gh_wait_time))
-        message = self.replace_regular(google["message_tts"], SUB_TTS)
+        message = self.replace_regular(google["message_tts"], SUB_TTS).replace("\n","").replace(" ","")
         #self.log("MESSAGE TTS: {}".format(message))
         #
         # queues the message to be handled async, use when_tts_done_do method to supply callback when tts is done
@@ -60,8 +60,8 @@ class GH_Manager(hass.Hass):
             self.call_service("media_extractor/play_media", entity_id = gh_player, media_content_id= google["media_content_id"], 
                             media_content_type = google["media_content_type"])  
         else:
-            self.queue.put({"type": "tts", "text": message, "volume": google["volume"], "language": google["language"],
-                            "gh_player": google["media_player"], "wait_time": wait_time, "gh_mode": gh_mode, "gh_notifier": gh_notifier})
+            self.queue.put({"type": "tts", "text": message, "volume": google["volume"], "language": google["language"], 
+                    "gh_player": google["media_player"], "wait_time": wait_time, "gh_mode": gh_mode, "gh_notifier": gh_notifier})
 
     def when_tts_done_do(self, callback:callable)->None:
         """Callback when the queue of tts messages are done"""
@@ -77,21 +77,13 @@ class GH_Manager(hass.Hass):
                 gh_player = self.converti(data["gh_player"])
                 ### set volume
                 self.volume_set(gh_player,data["volume"])
-                """ SPEECH TIME CALCULATOR """
-                period = data["text"].count(', ') + data["text"].count('. ')
-                words = len(data["text"].split())
-                #chars = data["text"].count('')
+
                 ### Let's hope GH will get up
                 time.sleep(data["wait_time"])
                 ### SPEAK
                 #self.log("[GH NOTIFICA]: {} - {} - {}".format(data["gh_mode"], data["gh_notifier"], data["text"]))
                 if data["gh_mode"] == 'on':
-
                     self.call_service(__NOTIFY__ + data["gh_notifier"], message = data["text"])
-                    #duration = ((words * 0.008) * 60) + data["wait_time"] + (period*0.2)
-                    # duration = (len(data["text"].split()) / 3) + data["wait_time"]
-                    #Sleep and wait for the tts to finish
-                    #time.sleep(duration)
                 else:
                     for entity in gh_player:
                         self.call_service(__TTS__ + data["gh_notifier"], entity_id = entity, message = data["text"], language = data["language"])
@@ -103,8 +95,8 @@ class GH_Manager(hass.Hass):
                             #self.log("DURATION-WAIT {}:".format(duration))
                         #Sleep and wait for the tts to finish
                         time.sleep(duration)
-            except:
-                self.log("Errore nel ciclo principale", level="ERROR")
+            except Exception as ex:
+                self.log("An error occurred in GH Manager: {}".format(ex),level="ERROR")
                 self.log(sys.exc_info()) 
 
             self.queue.task_done()
@@ -129,7 +121,14 @@ class GH_Manager(hass.Hass):
                     self.log(sys.exc_info()) 
                     pass # Nothing in queue
 
-
+#               """ SPEECH TIME CALCULATOR """
+#                period = data["text"].count(', ') + data["text"].count('. ')
+#                words = len(data["text"].split())
+                #chars = data["text"].count('')
+                    #duration = ((words * 0.008) * 60) + data["wait_time"] + (period*0.2)
+                    # duration = (len(data["text"].split()) / 3) + data["wait_time"]
+                    #Sleep and wait for the tts to finish
+                    #time.sleep(duration)
 """
     def retry(exceptions, tries=4, delay=3, backoff=2, logger=None):
         

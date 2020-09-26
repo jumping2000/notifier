@@ -13,6 +13,10 @@ class Notification_Manager(hass.Hass):
     def initialize(self):
         #self.text_last_message = globals.get_arg(self.args, "text_last_message")
         self.text_last_message = self.args["text_last_message"]
+    
+    def rewrite_notify(self, data, notify_name):
+        return notify_name if (str(data).lower() in ["true","on","yes"] or data == "1" or data == 1 or data == "") else data
+
     def send_notify(self, data, notify_name: str, assistant_name: str):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         title = data["title"]
@@ -22,11 +26,7 @@ class Notification_Manager(hass.Hass):
         _file = data["file"]
         caption = data["caption"]
         link = data["link"]
-        #self.log("[DATA]: {}".format(data), ascii_encode = False)
-        #self.log("[MESSAGGIO]: {}".format(message), ascii_encode = False)
-        #self.log("[Notifier]: {}".format(notify_name), ascii_encode = False)
-        if (data["notify"] != ""):
-            notify_name = data["notify"]
+        notify_name = self.rewrite_notify(data["notify"], notify_name)
         ### SAVE IN INPUT_TEXT.LAST_MESSAGE
         self.set_state(self.text_last_message, state = message[:245])
         if notify_name.find("telegram") != -1:
@@ -68,7 +68,6 @@ class Notification_Manager(hass.Hass):
             per_not_info = self.get_state(persistent_notification_info)
         except:
             per_not_info = "null"
-            #self.log(sys.exc_ingo())
         #message = data["message"].replace("\n","").replace("   ","").replace("  "," ").replace("_"," ")
         message = self.replace_regular(data["message"], SUB_NOTIFICHE)
         message = ("{} - {}".format(timestamp, message))
@@ -84,3 +83,7 @@ class Notification_Manager(hass.Hass):
         for old,new in substitutions:
             text = re.sub(old, new, text.strip())
         return text
+
+#self.log("[DATA]: {}".format(data), ascii_encode = False)
+#self.log("[MESSAGGIO]: {}".format(message), ascii_encode = False)
+#self.log("[Notifier] post: {}".format(notify_name), ascii_encode = False)
