@@ -1,7 +1,6 @@
 import hassapi as hass
 import globals
 import sys
-import yaml
 #
 # Centralizes messaging.
 #
@@ -37,34 +36,41 @@ class Notifier_Dispatch(hass.Hass):
         
         self.location_tracker = globals.get_arg(self.args, "location_tracker") 
         self.personal_assistant_name = globals.get_arg(self.args, "personal_assistant_name") 
-        self.intercom_message_hub = globals.get_arg(self.args, "intercom_message_hub")
+        #self.intercom_message_hub = globals.get_arg(self.args, "intercom_message_hub")
         self.phone_called_number = globals.get_arg(self.args, "phone_called_number")
 
+        self.sensor = globals.get_arg(self.args, "sensor")
+        self.set_state(self.sensor, state="on")
+
         #### FROM SECRET FILE ####
-        config = self.get_plugin_config()
-        config_dir = config["config_dir"]
-        self.log(f"configuration dir: {config_dir}") 
-        secretsFile = config_dir + "/packages/secrets.yaml"
-        with open(secretsFile, "r") as ymlfile:
-            cfg = yaml.load(ymlfile)
-        self.gh_tts = cfg['tts_google']
-        self.gh_notify = cfg['notify_google']
-        self.phone_sip_server = cfg['sip_server_name']
+        self.gh_tts = globals.get_arg(self.args, "tts_google")
+        self.gh_notify = globals.get_arg(self.args, "notify_google")
+        self.phone_sip_server = globals.get_arg(self.args, "sip_server")
+
+        #config = self.get_plugin_config()
+        #config_dir = config["config_dir"]
+        #self.log(f"configuration dir: {config_dir}") 
+        #secretsFile = config_dir + "/packages/secrets.yaml"
+        #with open(secretsFile, "r") as ymlfile:
+        #    cfg = yaml.load(ymlfile)
+        #self.gh_tts = cfg['tts_google']
+        #self.gh_notify = cfg['notify_google']
+        #self.phone_sip_server = cfg['sip_server_name']
 
         ### APP MANAGER ###
         self.notification_manager = self.get_app("Notification_Manager")
         self.gh_manager = self.get_app("GH_Manager")
-        #self.alexa_manager = self.get_app("Alexa_Manager")
+        self.alexa_manager = self.get_app("Alexa_Manager")
         self.phone_manager = self.get_app("Phone_Manager")
         ### LISTEN EVENT ###
         self.listen_event(self.notify_hub, "hub")
 
 #####################################################################
     def check_flag(self, data):
-        return True if str(data).lower() in ["1","true","on","yes"] else False
+        return str(data).lower() in ["1","true","on","yes"]
     
     def check_location(self, data, location):
-        return True if (str(data).lower() =="" or str(data).lower()==location) else False 
+        return (str(data).lower() =="" or str(data).lower()==location)
 
     def check_notify(self, data):
         return False if (str(data).lower() in ["false","off","no"] or data == "0" or data == 0) else True
@@ -75,7 +81,7 @@ class Notifier_Dispatch(hass.Hass):
     def createTTSdict(self,data) -> list:
         dizionario = ""
         if data == "":
-            flag = True
+            flag = False
         else:
             if "OrderedDict([(" in data:
                 dizionario = self.convert(list(data.split("'")))
@@ -98,7 +104,6 @@ class Notifier_Dispatch(hass.Hass):
         ### FLAG
         priority_flag = self.check_flag(data["priority"])
         noshow_flag = self.check_flag(data["no_show"])
-        mute_flag = self.check_flag(data["mute"])
         location_flag = self.check_location(data["location"],location_status)
         notify_flag = self.check_notify(data["notify"])
         
@@ -133,14 +138,14 @@ class Notifier_Dispatch(hass.Hass):
         ### TTS ###
         if priority_status:
             useTTS = True
-        elif self.get_state(self.speech_notifications) == "on" and not mute_flag and dnd_status == "off" and (location_status == "home" or guest_status == "on"):
+        elif self.get_state(self.speech_notifications) == "on" and dnd_status == "off" and (location_status == "home" or guest_status == "on"):
             useTTS = True
         else:
             useTTS = False
         ### PHONE ###
         if priority_status:
             usePhone = True
-        elif self.get_state(self.phone_notifications) == "on" and data["message"] !="" and not mute_flag and dnd_status == "off":
+        elif self.get_state(self.phone_notifications) == "on" and data["message"] !="" and dnd_status == "off":
             usePhone = True
         else:
             usePhone = False
@@ -162,62 +167,57 @@ class Notifier_Dispatch(hass.Hass):
                 self.notification_manager.send_persistent(data, self.persistent_notification_info)
             except Exception as ex:
                 self.log("An error occurred in persistent notification: {}".format(ex),level="ERROR")
+                self.set_state(self.sensor, state="Error in Persistent Notification: {}".format(ex))
                 self.log(sys.exc_info()) 
-                pass
         if useNotification:
             try:
                 self.notification_manager.send_notify(data, notify_name, self.get_state(self.personal_assistant_name))
             except Exception as ex:
                 self.log("An error occurred in text-telegram notification: {}".format(ex), level="ERROR")
+                self.set_state(self.sensor, state="Error in Text Notification: {}".format(ex))
                 self.log(sys.exc_info())
-                pass
         if useTTS:
-            try:
-                if gh_switch == "on" and google_flag:
-                    if (data["google"]) != "":
-                        if "media_player" not in google:
-                            google["media_player"] = self.get_state(self.gh_selected_media_player) 
-                        if "volume" not in google:
-                            google["volume"] = self.get_state(self.tts_period_of_day_volume)    
-                        if "media_content_id" not in google:
-                            google["media_content_id"] = ""
-                        if "media_content_type" not in google:
-                            google["media_content_type"] = ""
-                        if  "message_tts" not in google:
-                            google["message_tts"] = data["message"]
-                        if  "language" not in google:
-                            google["language"] = self.get_state(self.tts_language).lower()                  
-                    else:
-                        google = {"media_player": self.get_state(self.gh_selected_media_player), "volume": self.get_state(self.tts_period_of_day_volume), "language": self.get_state(self.tts_language).lower(), "media_content_id":"", "media_content_type": "", "message_tts": data["message"] }
-                        #self.log("GOOGLE in dispatch: {}".format(google))
-                    self.gh_manager.speak(google, self.get_state(self.gh_tts_google_mode), gh_notifica)
-            except Exception as ex:
-                self.log("An error occurred in Google notification: {}".format(ex),level="ERROR")
-                self.log(sys.exc_info())
-                pass
-            try:    
-                if alexa_switch == "on" and alexa_flag:
-                    if (data["alexa"]) != "":
-                        if  "message_tts" not in alexa:
-                            alexa["message_tts"] = data["message"]
-                        if  "title" not in alexa:
-                            alexa["title"] = data["title"]
-                        if "volume" not in alexa:
-                            alexa["volume"] = self.get_state(self.tts_period_of_day_volume)  
-                    else: 
-                        alexa = {"volume": self.get_state(self.tts_period_of_day_volume), "title": data["title"], "message_tts": data["message"] }
-                    self.alexa_manager.speak(alexa)
-            except Exception as ex:
-                self.log("An error occurred in Alexa notification: {}".format(ex),level="ERROR")
-                self.log(sys.exc_info())
-                pass
+            if gh_switch == "on" and google_flag:
+                if (data["google"]) != "":
+                    if "media_player" not in google:
+                        google["media_player"] = self.get_state(self.gh_selected_media_player) 
+                    if "volume" not in google:
+                        google["volume"] = self.get_state(self.tts_period_of_day_volume)    
+                    if "media_content_id" not in google:
+                        google["media_content_id"] = ""
+                    if "media_content_type" not in google:
+                        google["media_content_type"] = ""
+                    if  "message_tts" not in google:
+                        google["message_tts"] = data["message"]
+                    if  "language" not in google:
+                        google["language"] = self.get_state(self.tts_language).lower()                  
+                self.gh_manager.speak(google, self.get_state(self.gh_tts_google_mode), gh_notifica)
+            if alexa_switch == "on" and alexa_flag:
+                if (data["alexa"]) != "":
+                    if  "message_tts" not in alexa:
+                        alexa["message_tts"] = data["message"]
+                    if  "title" not in alexa:
+                        alexa["title"] = data["title"]
+                    if "volume" not in alexa:
+                        alexa["volume"] = self.get_state(self.tts_period_of_day_volume)
+                    if  "language" not in alexa:
+                        alexa["language"] = self.get_state(self.tts_language).lower()   
+                self.alexa_manager.speak(alexa)
         if usePhone:
             try:
-                self.phone_manager.send_voice_call(data, phone_notify_name, self.phone_sip_server)
+                if alexa_flag:
+                    language = alexa["language"]
+                else:
+                    language = self.get_state(self.tts_language).lower()
+                if google_flag:
+                    language = google["language"]
+                else:
+                    language = self.get_state(self.tts_language).lower()
+                self.phone_manager.send_voice_call(data, phone_notify_name, self.phone_sip_server, language)
             except Exception as ex:
                 self.log("An error occurred in phone notification: {}".format(ex),level="ERROR")
+                self.set_state(self.sensor, state="Error in Phone Notification: {}".format(ex))
                 self.log(sys.exc_info())
-                pass
 
         ### ripristino del priority a OFF
         if (self.get_state(self.priority_message) == "on"):
@@ -244,3 +244,7 @@ class Notifier_Dispatch(hass.Hass):
 #        if data["message"] =="":
 #            data.update({"message": data["message_tts"]})
 #self.log(" Notify flag - location flag: {} - {}".format(notify_flag,location_flag))
+#        self.log("[DATA]: {}".format(data))
+#        self.log("[GOOGLE POST]: {}".format(google))
+#        self.log("Notify flag - location flag: {} - {}".format(notify_flag,location_flag))
+#        self.log("useNotification - useTTS: {} - {}".format(useNotification,useTTS))
