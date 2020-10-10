@@ -89,7 +89,7 @@ class GH_Manager(hass.Hass):
                         time.sleep(data["wait_time"])
                         duration = 1.0
                         if entity == "all":
-                            duration = (len(int(data["text"].split())) / 3) + data["wait_time"]
+                            duration = float(len(data["text"].split())) / 3 + data["wait_time"]
                         else: 
                             duration = self.get_state(entity, attribute='media_duration')
                         #Sleep and wait for the tts to finish
