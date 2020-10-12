@@ -410,24 +410,24 @@ class Alexa_Manager(hass.Hass):
         return regex.sub(lambda m: self.say_as_tag(m.group()), value)
 
     def player_get(self, user_player):
-        user_player = str(user_player.lower())
-        media_player = [m.lower() for m in self.converti(user_player) if self.entity_exists(m)]
-        if media_player:
-            if "group." in user_player:
-                media_player = self.get_state(user_player, attribute="entity_id")
-            elif "sensor." in user_player:
-                media_player = self.converti(self.get_state(user_player))
-            elif "media_player." in user_player:
-                media_player = self.converti(user_player)
+        media_player = []
+        user_player = self.converti(str(user_player.lower()))
+        for mpu in user_player:
+            if self.entity_exists(mpu):
+                if "group." in mpu:
+                    media_player.extend(self.get_state(mpu, attribute="entity_id"))
+                elif "sensor." in mpu:
+                    media_player.append(self.get_state(mpu))
+                elif "media_player." in mpu:
+                    media_player.append(mpu)
+                else:
+                    self.log(f"Invalid group, sensor or player ENTITY-ID ({mpu})", level="WARNING")
             else:
-                self.log(f"Invalid group, sensor or player ENTITY-ID ({user_player})", level="WARNING")
-                media_player = []  # raise Exception(f"Sorry, {media_player} is a invalid option")
-        if not media_player:  # TODO self.cehck_alexa?
-            media_player = [m for m in self.cehck_alexa if self.friendly_name(m).lower() in user_player]
-            self.log(f"No Entity found! I will try with the friendly name! (Found: {media_player})", level="WARNING")
-            if not media_player:
-                media_player.append(self.get_state(self.alexa_sensor_media_player))
-                self.log(f"No media player found. I use the default one. ({media_player})", level="WARNING")
+                media_player.extend([m for m in self.cehck_alexa if self.friendly_name(m).lower() in mpu]) # = friendly
+        if not media_player:
+            media_player.append(self.get_state(self.alexa_sensor_media_player))
+            self.log(f"No media player found. I use the default one. ({media_player})", level="WARNING")
+        media_player = list(set(media_player))
         self.lg(f"GET PLAYER: {media_player}")
         return media_player
 
