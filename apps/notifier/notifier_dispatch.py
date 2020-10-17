@@ -99,7 +99,6 @@ class Notifier_Dispatch(hass.Hass):
 
     def notify_hub(self, event_name, data, kwargs):
         self.log("#### START NOTIFIER_DISPATCH ####")
-        
         location_status = self.get_state(self.location_tracker)
         ### FLAG
         priority_flag = self.check_flag(data["priority"])
@@ -184,7 +183,7 @@ class Notifier_Dispatch(hass.Hass):
                     if "media_player" not in google:
                         google["media_player"] = self.get_state(self.gh_selected_media_player)
                     if "volume" not in google:
-                        google["volume"] = self.get_state(self.tts_period_of_day_volume)
+                        google["volume"] = float(self.get_state(self.tts_period_of_day_volume)) / 100
                     if "media_content_id" not in google:
                         google["media_content_id"] = ""
                     if "media_content_type" not in google:
@@ -202,7 +201,7 @@ class Notifier_Dispatch(hass.Hass):
                     if  "title" not in alexa:
                         alexa["title"] = data["title"]
                     if "volume" not in alexa:
-                        alexa["volume"] = self.get_state(self.tts_period_of_day_volume)
+                        alexa["volume"] = float(self.get_state(self.tts_period_of_day_volume)) / 100
                     if  "language" not in alexa:
                         alexa["language"] = self.get_state(self.tts_language) #.lower()
                 self.alexa_manager.speak(alexa)
