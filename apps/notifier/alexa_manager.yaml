@@ -2,7 +2,7 @@ Alexa_Manager:
   module: alexa_manager
   class: Alexa_Manager
 
-  debug: True
+  log_level: DEBUG
 
 # Service
   alexa_service: alexa_media
@@ -14,14 +14,13 @@ Alexa_Manager:
   alexa_type: input_select.default_alexa_type
   alexa_method: input_select.default_alexa_method
   alexa_sensor_media_player: sensor.media_player_alexa
+  # alexa_language: input_select.alexa_language
   alexa_voice: input_select.alexa_voice
-  # alexa_language: input_select.alexa_language ##?
   ssml_switch: input_boolean.alexa_ssml
   prosody:
     rate: input_number.alexa_prosody_rate
     pitch: input_number.alexa_prosody_pitch
     volume: input_number.alexa_prosody_volume
-
 
 # Main hub
   default_restore_volume: input_number.default_restore_volume
