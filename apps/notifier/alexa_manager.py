@@ -20,7 +20,7 @@ SUB_VOICE = [
     # ("[\s]+", " ") (r"^\s+|\s+$", "")
     # ("[?!:;]+", ","),
     ("[.]{2,}", "."),
-    ("[\.](?=(((?!\}).)*\{)|[^\{\}]*\n)", ". "),
+    ("[\.](?=(((?!\}).)*\{)|[^\{\}]*\n)", ". "), # Template from DevTools
     # ("(?<!\d)\.(?!\d)", ". "),
     ("(?<!\d),(?!\d)", ", "),
     ("[\n\*]", " "),
@@ -30,43 +30,20 @@ SUB_VOICE = [
 SUB_TEXT = [(" +", " "), ("\s\s+", "\n")]
 
 VOICE_NAMES = (
-    "Carla",
-    "Giorgio",
-    "Bianca",
-    "Ivy",
-    "Joanna",
-    "Joey",
-    "Justin",
-    "Kendra",
-    "Kimberly",
-    "Matthew",
-    "Salli",
-    "Nicole",
-    "Russell",
-    "Amy",
-    "Brian",
-    "Emma",
-    "Aditi",
-    "Raveena",
+    "Carla", "Giorgio", "Bianca",
+    "Ivy", "Joanna", "Joey", "Justin", "Kendra", "Kimberly", "Matthew", "Salli",
+    "Nicole", "Russell",
+    "Amy", "Brian", "Emma",
+    "Aditi", "Raveena",
     "Chantal",
-    "Celine",
-    "Lea",
-    "Mathieu",
+    "Celine", "Lea", "Mathieu",
     "Hans",
-    "Marlene",
-    "Vicki",
+    "Marlene", "Vicki",
     "Aditi",
-    "Mizuki",
-    "Takumi",
-    "Vitoria",
-    "Camila",
-    "Ricardo",
-    "Penelope",
-    "Lupe",
-    "Miguel",
-    "Conchita",
-    "Enrique",
-    "Lucia",
+    "Mizuki", "Takumi",
+    "Vitoria", "Camila", "Ricardo",
+    "Penelope", "Lupe", "Miguel",
+    "Conchita", "Enrique", "Lucia",
     "Mia",
 )
 
@@ -264,7 +241,7 @@ MOBILE_PUSH = ["push", "dropin", "dropin_notification"]
 
 class Alexa_Manager(hass.Hass):
     def initialize(self) -> None:
-        self.debug = bool(self.args.get("debug", False))
+        # self.set_log_level("DEBUG")
         self.alexa_service = self.args.get("alexa_service")
         # self.alexa_switch_entity = self.args.get("alexa_switch")
         self.alexa_select_media_player = self.args.get("alexa_select_media_player")
@@ -275,7 +252,7 @@ class Alexa_Manager(hass.Hass):
         # self.alexa_language = self.args.get("alexa_language")
         self.prosody = self.args.get("prosody")
         self.wait_time = self.args.get("wait_time")
-        self.cehck_alexa = self._checkAlexa(self.alexa_service)
+        self.cehck_alexa_service = self._check_alexa(self.alexa_service)
 
         self.queue = Queue(maxsize=0)
         self._when_tts_done_callback_queue = Queue()
@@ -285,24 +262,21 @@ class Alexa_Manager(hass.Hass):
 
     def speak(self, alexa):
         """Speak the provided text through the media player."""
-        if self.cehck_alexa is None:
-            self.set_state("sensor.centro_notifiche", state="I can't find the Alexa Media component")
-            return  ## self.stop_app("Alexa_Manager")
+        if not self.cehck_alexa_service:
+            self.set_sensor(
+                "I can't find the Alexa Media component", "https://github.com/custom-components/alexa_media_player"
+            )
+            return
         self.lg(f"-------------------- ALEXA START DISPATCH --------------------")
         self.lg(f"FROM DISPATCH: {type(alexa)} value {alexa}")
         # remove keys with None value from a dict # TODO
         alexa = {k: v for k, v in alexa.items() if v is not None}
         self.lg(f"REMOVE [NONE] VALUE: {type(alexa)} value {alexa}")
 
-        # TODO language ?? options: ["it-IT","en-US","en-GB","fr-FR","de-DE","ja-JP","es-ES", "nl-NL", "cn-CN"]
         default_restore_volume = float(self.get_state(self.args.get("default_restore_volume"))) / 100
         volume = float(alexa.get("volume", default_restore_volume))
         message = str(alexa.get("message", alexa["message_tts"]))
-
-        if alexa.get("notifier"):
-            alexa_player = self.player_get(alexa.get("notifier").replace("alexa_media_", "media_player."))
-        else:
-            alexa_player = self.player_get(alexa.get("media_player", self.get_state(self.alexa_sensor_media_player)))
+        alexa_player = self.player_get(alexa.get("media_player", self.get_state(self.alexa_sensor_media_player)))
         alexa_type = (
             str(alexa.get("type", self.get_state(self.alexa_type))).lower().replace("dropin", "dropin_notification")
         )
@@ -319,7 +293,7 @@ class Alexa_Manager(hass.Hass):
                 message=message_push,
             )
             self.lg(f"PUSH: {push} - TYPE: {alexa_type} - MESSAGE: {message_push}")
-        # Media Content # Wait 0 queues?? Restore volume?? TODO Manca un riferimento di inizio/fine riproduzione
+        # Media Content # TODO Restore volume??
         if alexa.get("media_content_id", ""):
             self.volume_get(alexa_player, default_restore_volume)
             self.volume_set(alexa_player, volume)
@@ -357,8 +331,7 @@ class Alexa_Manager(hass.Hass):
         self.lg(f"-------------------- ALEXA  END  DISPATCH --------------------")
 
     def lg(self, message):
-        if self.debug:
-            self.log(message, level="INFO", ascii_encode=False)
+        self.log(message, level="DEBUG", ascii_encode=False)
 
     def check_bool(self, value):
         return str(value).lower() in ["true", "on", "yes", "1"]
@@ -370,7 +343,7 @@ class Alexa_Manager(hass.Hass):
         return value if "<speak>" in value or not "</" in value else f"<speak>{value}</speak>"
 
     def effect_tag(self, value):
-        return f"<amazon:effect name='whispered'>{value}</amazon:effect>"  # if self.whisper else value
+        return f"<amazon:effect name='whispered'>{value}</amazon:effect>"
 
     def prosody_tag(self, value, rate, pitch, volume):
         if rate != 100.0 or pitch != 0.0 or volume != 0.0:
@@ -412,8 +385,12 @@ class Alexa_Manager(hass.Hass):
     def player_get(self, user_player):
         media_player = []
         user_player = self.converti(str(user_player.lower()))
-        for mpu in user_player:
-            if self.entity_exists(mpu):
+        for mpu in user_player: # MediaPlayerUser
+            if "test" in mpu:
+                media_player.extend(self.player_alexa)
+            if not self.entity_exists(mpu):
+                mpu = self.dict_select.get(mpu)
+            if mpu:
                 if "group." in mpu:
                     media_player.extend(self.get_state(mpu, attribute="entity_id"))
                 elif "sensor." in mpu:
@@ -422,11 +399,9 @@ class Alexa_Manager(hass.Hass):
                     media_player.append(mpu)
                 else:
                     self.log(f"Invalid group, sensor or player ENTITY-ID ({mpu})", level="WARNING")
-            else:
-                media_player.extend([m for m in self.cehck_alexa if self.friendly_name(m).lower() in mpu]) # = friendly
         if not media_player:
             media_player.append(self.get_state(self.alexa_sensor_media_player))
-            self.log(f"No media player found. I use the default one. ({media_player})", level="WARNING")
+            self.log(f"No media player {user_player} found. I use the default one. ({media_player})", level="WARNING")
         media_player = list(set(media_player))
         self.lg(f"GET PLAYER: {media_player}")
         return media_player
@@ -467,8 +442,23 @@ class Alexa_Manager(hass.Hass):
         return re.sub(regex, "", str(text).strip())
 
     def converti(self, stringa) -> list:
-        return list(stringa.replace(" ", "").split(","))
-        # return self.split_device_list(stringa.replace(" ", ""))
+        # return list(stringa.replace(" ", "").split(","))
+        # return self.split_device_list(stringa.replace(", ", ","))
+        convertito = self.split_device_list(re.sub(r'\s*,\s*', ',', stringa))
+        self.lg(f'CONVERTI: {stringa} -> {convertito}')
+        return convertito
+        
+    def set_sensor(self, state, error):
+        attributes = {}
+        attributes['icon'] = 'mdi:amazon-alexa'
+        attributes['Error'] = error
+        self.set_state("sensor.centro_notifiche", state=state, attributes=attributes)
+
+    def has_numbers(self, string):
+        # return any(char.isdigit() for char in string)
+        # return bool(re.search(r'\d\d\d\.\d', string))
+        numbers = re.compile('\d{4,}|\d{3,}\.\d')
+        return numbers.search(string)
 
     def when_tts_done_do(self, callback: callable) -> None:
         """Callback when the queue of tts messages are done."""
@@ -481,7 +471,7 @@ class Alexa_Manager(hass.Hass):
                 self.lg(f"WORKER: {type(data)} value {data}")
                 alexa_player = data["alexa_player"]
                 self.volume_get(alexa_player, data["default_restore_volume"])
-                self.volume_set(alexa_player, data["volume"])  # Set volume # TODO
+                self.volume_set(alexa_player, data["volume"])
 
                 # Replace and clean message
                 message_clean = self.replace_regular(data["text"], SUB_VOICE)
@@ -505,7 +495,7 @@ class Alexa_Manager(hass.Hass):
                 if data["ssml_switch"] and not "<speak>" in message_clean:  # == "on"
                     voice = "Alexa" if data["alexa_voice"] not in VOICE_NAMES else data["alexa_voice"]
                     whisper = data["whisper"]
-                    if "Alexa" in voice and not whisper:  # self.whisper:
+                    if "Alexa" in voice and not whisper:
                         message_clean = self.find_speechcon(message_clean)
                     message_clean = self.lang_tag(message_clean, data["language"])
                     if "Alexa" not in voice:
@@ -517,7 +507,11 @@ class Alexa_Manager(hass.Hass):
                     if "tts" in data["alexa_type"]:
                         message_clean = self.speak_tag(message_clean)
                     self.lg(f"OK SSML TAGS: {message_clean}")
-                # Estimated time
+
+                # Estimate reading time ## TODO
+                if self.has_numbers(message_clean):
+                    data["wait_time"] += 4
+                    self.lg(f"OK NUMBER! ADDED EXTRA TIME: {data['wait_time']}")
                 if (chars / words) > 7 and chars > 90 or data["alexa_audio"] is not None:
                     data["wait_time"] += 7
                     self.lg(f"OK ADDED EXTRA TIME: {data['wait_time']}")
@@ -541,12 +535,11 @@ class Alexa_Manager(hass.Hass):
                 time.sleep(duration)
 
                 # Restore volume
-                self.volume_set(alexa_player, data["volume"], restore=True)  # Set volume # TODO
+                self.volume_set(alexa_player, data["volume"], restore=True)
             except Exception as ex:
                 self.log("An error occurred in Alexa Manager (worker): {}".format(ex), level="ERROR")
                 self.log(f"DATA: {data}", level="ERROR")
-                self.log(sys.exc_info())
-                self.set_state("sensor.centro_notifiche", state=f"Alexa Manager - worker: {ex}")
+                self.set_sensor("Alexa Manager - Warker Error ", ex)
             self.queue.task_done()
 
             if self.queue.qsize() == 0:
@@ -557,38 +550,66 @@ class Alexa_Manager(hass.Hass):
                         self._when_tts_done_callback_queue.task_done()
                 except:
                     self.log("Errore nel CallBack", level="ERROR")
-                    self.log(sys.exc_info())
-                    self.set_state("sensor.centro_notifiche", state=f"Alexa Manager - CallBack: {ex}")
+                    self.set_sensor("Alexa Manager - CallBack Error ", ex)
                     pass  # Nothing in queue
             self.lg("---------------------------------------------------------\n")
 
-    def _checkAlexa(self, service):
+    def _check_alexa(self, service):
         """ Get the media players from the alexa_media service in home assistant. """
         self.hass_config = self.get_plugin_config()
         components = self.hass_config["components"]
         if service in components:
             exclude = [service, "this_device", "_apps"]
+            # Trova servizi alexa_media, alexa_media_xxname... 
             cehck_alexa = [
-                s["service"].replace("alexa_media_", "media_player.")
+                s["service"] #.replace("alexa_media_", "media_player.")
                 for s in self.list_services(namespace="default")
                 if "notify" in s["domain"] and service in s["service"]
             ]
-            self.lg(f"OK, Entity and Service: {cehck_alexa}")
-            cehck_alexa = [
-                s for s in cehck_alexa if self.entity_exists(s) and not any(player in s for player in exclude)
-            ]
-            self.lg(f"OK, found the Alexa Media component. List of media players: {cehck_alexa}")
+            self.lg(f"OK, Service: {cehck_alexa}")
 
+            # converti servizi alexa_media_ in media_player. e controlla se esistono media_player.xxname...
+            service_replace = [mp.replace("alexa_media_", "media_player.") # Extra
+                for mp in cehck_alexa if mp != "alexa_media" 
+            ]
+            self.lg(f"OK, Entity: {service_replace}") 
+
+            # Filtro lista exclude - player_alexa list media_player
+            self.player_alexa = [
+                s for s in service_replace if self.entity_exists(s) and not any(player in s for player in exclude)
+            ]
+            self.lg(f"OK, found the Alexa Media component. List of media players: {self.player_alexa}")
+
+###---------
             # """ GEt Friendly Name from Entity. """
-            names = [self.friendly_name(name) for name in cehck_alexa]
+            names = [self.friendly_name(name) for name in self.player_alexa]
             self.lg(f"FRIENDLY_NAME: {names}")
             selectoptions = self.get_state(self.alexa_select_media_player, attribute="options")
-            check_alexa_options = [x for x in cehck_alexa if self.friendly_name(x) in selectoptions]
-            self.lg(str(f"OPTIONS INPUT SELECT: {selectoptions} - TYPE: {type(selectoptions)}"))
-            self.lg(str(f"Entity_id Media Player in Input Select {check_alexa_options}"))
+            self.lg(str(f"INPUT SELECT OPTIONS: {selectoptions} - TYPE: {type(selectoptions)}"))
+
+            # controlla se il friendly name esiste nel input select
+            check_alexa_options = [x for x in self.player_alexa if self.friendly_name(x) in selectoptions]
+            self.lg(str(f"ENTITY_ID MEDIA_PLAYER IN INPUT SELECTS {check_alexa_options}"))
+###---------
+            ##Prova conversione da friendly name ad entity id - return list and dict entity in input select
+            # selectoptions = self.get_state(self.alexa_select_media_player, attribute="options")
+            all_state = self.get_state()
+            self.list_select = []
+            self.dict_select = {}
+            for entity, state in all_state.items():
+                domain, name = entity.split(".")
+                friendly_name = state["attributes"].get("friendly_name")
+                if domain in ["media_player","group","sensor"] and friendly_name in selectoptions:
+                    self.list_select.append(entity)
+                    for select in selectoptions:
+                        if select.lower() == friendly_name.lower(): #.casefold()
+                            self.dict_select[friendly_name.lower()] = entity
+            self.lg(str(f"LIST ENTITY_ID SELECT OPTIONS: {self.list_select}"))
+            self.lg(str(f"DICTIONARY NAME-ENTITY_ID: {self.dict_select}"))
+
             return cehck_alexa
-        self.log(
-            f"I can't find the Alexa Media component\n- https://github.com/custom-components/alexa_media_player",
-            level="ERROR",
-        )
+        # self.log(
+        #     f"I can't find the Alexa Media component\n- https://github.com/custom-components/alexa_media_player",
+        #     level="ERROR",
+        # )
         return
