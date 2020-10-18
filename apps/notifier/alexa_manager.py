@@ -442,11 +442,8 @@ class Alexa_Manager(hass.Hass):
         return re.sub(regex, "", str(text).strip())
 
     def converti(self, stringa) -> list:
-        # return list(stringa.replace(" ", "").split(","))
-        # return self.split_device_list(stringa.replace(", ", ","))
-        convertito = self.split_device_list(re.sub(r'\s*,\s*', ',', stringa))
-        self.lg(f'CONVERTI: {stringa} -> {convertito}')
-        return convertito
+        regex = re.compile(r'\s*,\s*')
+        return self.split_device_list(re.sub(regex, ',', stringa))
         
     def set_sensor(self, state, error):
         attributes = {}
@@ -455,8 +452,6 @@ class Alexa_Manager(hass.Hass):
         self.set_state("sensor.centro_notifiche", state=state, attributes=attributes)
 
     def has_numbers(self, string):
-        # return any(char.isdigit() for char in string)
-        # return bool(re.search(r'\d\d\d\.\d', string))
         numbers = re.compile('\d{4,}|\d{3,}\.\d')
         return numbers.search(string)
 
@@ -481,6 +476,15 @@ class Alexa_Manager(hass.Hass):
                 # Speech time calculator
                 words = len(message_clean.split())
                 chars = message_clean.count("")
+                duration = ((words * 0.007) * 60)
+
+                # Extra time ## TODO
+                if self.has_numbers(message_clean):
+                    data["wait_time"] += 4
+                    self.lg(f"OK NUMBER! ADDED EXTRA TIME: {data['wait_time']}")
+                if (chars / words) > 7 and chars > 90 or data["alexa_audio"] is not None:
+                    data["wait_time"] += 7
+                    self.lg(f"OK ADDED EXTRA TIME: {data['wait_time']}")
 
                 # Alexa type-method
                 if "tts" in data["alexa_type"]:
@@ -491,8 +495,9 @@ class Alexa_Manager(hass.Hass):
                         "type": data["alexa_type"],
                         "method": data["alexa_method"],
                     }
+
                 # TAGS SSML
-                if data["ssml_switch"] and not "<speak>" in message_clean:  # == "on"
+                if data["ssml_switch"] and not "<speak>" in message_clean:
                     voice = "Alexa" if data["alexa_voice"] not in VOICE_NAMES else data["alexa_voice"]
                     whisper = data["whisper"]
                     if "Alexa" in voice and not whisper:
@@ -502,26 +507,21 @@ class Alexa_Manager(hass.Hass):
                         message_clean = self.voice_tag(message_clean, voice)
                     message_clean = self.audio_tag(data["alexa_audio"]) + message_clean
                     message_clean = self.prosody_tag(message_clean, data["rate"], data["pitch"], data["ssml_volume"])
+                    #-->
+                    rate = self.inbetween(20, data["rate"], 200) #?
+                    if rate < 100:
+                        duration += (100 - rate) * (duration / 100)
+                    elif rate > 100:
+                        duration /= 2
+                    #-->
                     if whisper:
                         message_clean = self.effect_tag(message_clean)
                     if "tts" in data["alexa_type"]:
                         message_clean = self.speak_tag(message_clean)
                     self.lg(f"OK SSML TAGS: {message_clean}")
 
-                # Estimate reading time ## TODO
-                if self.has_numbers(message_clean):
-                    data["wait_time"] += 4
-                    self.lg(f"OK NUMBER! ADDED EXTRA TIME: {data['wait_time']}")
-                if (chars / words) > 7 and chars > 90 or data["alexa_audio"] is not None:
-                    data["wait_time"] += 7
-                    self.lg(f"OK ADDED EXTRA TIME: {data['wait_time']}")
-                duration = ((words * 0.007) * 60) + data["wait_time"]
-                #### TODO extra time for rate
-                rate = self.inbetween(20, data["rate"], 200)
-                if rate < 100:
-                    duration += (100 - rate) * (duration / 100)
-                elif rate <= 200 and rate > 100:
-                    duration /= 2
+                # Estimate reading time
+                duration += data["wait_time"]
                 self.lg(f"DURATION-WAIT: {duration} - words: {words} - Chars: {chars}")
 
                 # Speak >>>
@@ -613,3 +613,4 @@ class Alexa_Manager(hass.Hass):
         #     level="ERROR",
         # )
         return
+
