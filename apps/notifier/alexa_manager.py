@@ -17,11 +17,8 @@ from threading import Thread
 NOTIFY = "notify/"
 
 SUB_VOICE = [
-    # ("[\s]+", " ") (r"^\s+|\s+$", "")
-    # ("[?!:;]+", ","),
     ("[.]{2,}", "."),
-    ("[\.](?=(((?!\}).)*\{)|[^\{\}]*\n)", ". "), # Template from DevTools
-    # ("(?<!\d)\.(?!\d)", ". "),
+    ("[\.](?=(((?!\}).)*\{)|[^\{\}]*\n)", ". "), # {{Template}} from DevTools
     ("(?<!\d),(?!\d)", ", "),
     ("[\n\*]", " "),
     (" +", " "),
@@ -313,11 +310,11 @@ class Alexa_Manager(hass.Hass):
                     "text": message,
                     "volume": volume,
                     "alexa_type": alexa_type,
-                    "alexa_player": alexa_player,
+                    "alexa_player": alexa_player, #media_player
                     "default_restore_volume": default_restore_volume,
                     "alexa_notifier": str(alexa.get("notifier", self.alexa_service)),
                     "wait_time": float(self.get_state(self.wait_time)),
-                    "language": alexa.get("language"),  # self.get_state(self.alexa_language)),
+                    "language": alexa.get("language"), # self.get_state(self.alexa_language)),
                     "alexa_method": str(alexa.get("method", self.get_state(self.alexa_method)).lower()),
                     "alexa_voice": str(alexa.get("voice", self.get_state(self.alexa_voice))).capitalize(),
                     "alexa_audio": alexa.get("audio", None),
@@ -474,11 +471,13 @@ class Alexa_Manager(hass.Hass):
                 self.lg(f"MESSAGE CLEAN: {message_clean}")
 
                 # Speech time calculator
-                words = len(message_clean.split())
-                chars = message_clean.count("")
+                # words = len(message_clean.split())
+                # chars = message_clean.count("")
+                words = len(self.remove_tags(message_clean).split()) 
+                chars = self.remove_tags(message_clean).count("")
                 duration = ((words * 0.007) * 60)
 
-                # Extra time ## TODO
+                # Extra time ## TODO exclude tags?
                 if self.has_numbers(message_clean):
                     data["wait_time"] += 4
                     self.lg(f"OK NUMBER! ADDED EXTRA TIME: {data['wait_time']}")
@@ -508,7 +507,7 @@ class Alexa_Manager(hass.Hass):
                     message_clean = self.audio_tag(data["alexa_audio"]) + message_clean
                     message_clean = self.prosody_tag(message_clean, data["rate"], data["pitch"], data["ssml_volume"])
                     #-->
-                    rate = self.inbetween(20, data["rate"], 200) #?
+                    rate = self.inbetween(20, data["rate"], 200) # TODO
                     if rate < 100:
                         duration += (100 - rate) * (duration / 100)
                     elif rate > 100:
