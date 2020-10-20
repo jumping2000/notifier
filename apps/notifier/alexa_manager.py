@@ -17,9 +17,10 @@ from threading import Thread
 NOTIFY = "notify/"
 
 SUB_VOICE = [
-    ("[.]{2,}", "."),
-    ("[\.](?=(((?!\}).)*\{)|[^\{\}]*\n)", ". "), # {{Template}} from DevTools
-    ("(?<!\d),(?!\d)", ", "),
+    # ("[.]{2,}", "."),
+    ("[\?\.\!,]+(?=[\?\.\!,])", ""), # Exclude duplicate
+    ("(\s+\.|\s+\.\s+|[\.])(?! )(?![^{]*})(?![^\d.]*\d)", ". "), 
+    # ("(?<!\d),(?!\d)", ", "),
     ("[\n\*]", " "),
     (" +", " "),
 ]
@@ -313,7 +314,7 @@ class Alexa_Manager(hass.Hass):
                     "alexa_player": alexa_player, #media_player
                     "default_restore_volume": default_restore_volume,
                     "alexa_notifier": str(alexa.get("notifier", self.alexa_service)),
-                    "wait_time": float(self.get_state(self.wait_time)),
+                    "wait_time": float(alexa.get("wait_time", self.get_state(self.wait_time))),
                     "language": alexa.get("language"), # self.get_state(self.alexa_language)),
                     "alexa_method": str(alexa.get("method", self.get_state(self.alexa_method)).lower()),
                     "alexa_voice": str(alexa.get("voice", self.get_state(self.alexa_voice))).capitalize(),
@@ -430,7 +431,8 @@ class Alexa_Manager(hass.Hass):
 
     def replace_regular(self, text: str, substitutions: list):
         for old, new in substitutions:
-            text = re.sub(old, new, str(text).strip())
+            regex = re.compile(old)
+            text = re.sub(regex, new, str(text).strip())
         return text
 
     def remove_tags(self, text: str):
@@ -442,15 +444,15 @@ class Alexa_Manager(hass.Hass):
         regex = re.compile(r'\s*,\s*')
         return self.split_device_list(re.sub(regex, ',', stringa))
         
+    def has_numbers(self, string):
+        numbers = re.compile('\d{4,}|\d{3,}\.\d')
+        return numbers.search(string)
+
     def set_sensor(self, state, error):
         attributes = {}
         attributes['icon'] = 'mdi:amazon-alexa'
         attributes['Error'] = error
         self.set_state("sensor.centro_notifiche", state=state, attributes=attributes)
-
-    def has_numbers(self, string):
-        numbers = re.compile('\d{4,}|\d{3,}\.\d')
-        return numbers.search(string)
 
     def when_tts_done_do(self, callback: callable) -> None:
         """Callback when the queue of tts messages are done."""
@@ -477,7 +479,7 @@ class Alexa_Manager(hass.Hass):
                 chars = self.remove_tags(message_clean).count("")
                 duration = ((words * 0.007) * 60)
 
-                # Extra time ## TODO exclude tags?
+                # Extra time
                 if self.has_numbers(message_clean):
                     data["wait_time"] += 4
                     self.lg(f"OK NUMBER! ADDED EXTRA TIME: {data['wait_time']}")
@@ -531,7 +533,7 @@ class Alexa_Manager(hass.Hass):
                     message=message_clean.strip(),
                 )
 
-                time.sleep(duration)
+                time.sleep(duration if duration > 0 else 0)
 
                 # Restore volume
                 self.volume_set(alexa_player, data["volume"], restore=True)
