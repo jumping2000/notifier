@@ -182,7 +182,7 @@ class Notifier_Dispatch(hass.Hass):
                     if "media_player" not in google:
                         google["media_player"] = self.get_state(self.gh_selected_media_player) 
                     if "volume" not in google:
-                        google["volume"] = self.get_state(self.tts_period_of_day_volume)    
+                        google["volume"] = float(self.get_state(self.tts_period_of_day_volume))/100  
                     if "media_content_id" not in google:
                         google["media_content_id"] = ""
                     if "media_content_type" not in google:
@@ -190,7 +190,7 @@ class Notifier_Dispatch(hass.Hass):
                     if  "message_tts" not in google:
                         google["message_tts"] = data["message"]
                     if  "language" not in google:
-                        google["language"] = self.get_state(self.tts_language).lower()                  
+                        google["language"] = self.get_state(self.tts_language).lower()                
                 self.gh_manager.speak(google, self.get_state(self.gh_tts_google_mode), gh_notifica)
             if alexa_switch == "on" and alexa_flag:
                 if (data["alexa"]) != "":
@@ -201,18 +201,11 @@ class Notifier_Dispatch(hass.Hass):
                     if "volume" not in alexa:
                         alexa["volume"] = self.get_state(self.tts_period_of_day_volume)
                     if  "language" not in alexa:
-                        alexa["language"] = self.get_state(self.tts_language).lower()   
+                        alexa["language"] = self.get_state(self.tts_language) 
                 self.alexa_manager.speak(alexa)
         if usePhone:
             try:
-                if alexa_flag:
-                    language = alexa["language"]
-                else:
-                    language = self.get_state(self.tts_language).lower()
-                if google_flag:
-                    language = google["language"]
-                else:
-                    language = self.get_state(self.tts_language).lower()
+                language = self.get_state(self.tts_language)
                 self.phone_manager.send_voice_call(data, phone_notify_name, self.phone_sip_server, language)
             except Exception as ex:
                 self.log("An error occurred in phone notification: {}".format(ex),level="ERROR")

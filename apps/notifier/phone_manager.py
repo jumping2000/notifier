@@ -13,15 +13,12 @@ SUB_TTS = [("[\*\-\[\]_\(\)\{\~\|\}\s]+"," ")]
 class Phone_Manager(hass.Hass):
     def initialize(self):
         self.dict_lingua = {
-        "it-it": "it-IT-Standard-A",
+        "it-IT": "it-IT-Standard-A",
         "en-GB": "en-GB-Standard-A",
         "en-US": "en-US-Standard-A",
         "fr-FR": "fr-FR-Standard-A",
         "de-DE": "de-DE-Standard-A",
-        "es-ES": "es-ES-Standard-A",
-        "nl-NL": "nl-NL-Standard-A",
-        "cn-CN": "cn-CN-Standard-A",
-        "jp-JP": "jp-JP-Standard-A"
+        "es-ES": "es-ES-Standard-A"
         }
 
     def replace_regular(self, text: str, substitutions: list):

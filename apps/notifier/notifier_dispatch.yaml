@@ -6,12 +6,8 @@ Notifier_Dispatch:
   gh_switch: input_boolean.google_switch
   gh_selected_media_player: sensor.media_player_google
 
-  alexa_tts_alexa_type: input_select.default_alexa_type
-  alexa_tts_alexa_method: input_select.default_alexa_method
   alexa_switch: input_boolean.alexa_switch
   alexa_selected_media_player: sensor.media_player_alexa
-
-  ariela_switch: input_boolean.ariela_switch
 
   tts_period_of_day_volume: sensor.period_of_day_volume
   tts_language: input_select.language
