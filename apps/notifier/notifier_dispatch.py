@@ -7,7 +7,7 @@ import yaml
 #
 # Args:
 #
-# Version 1.0:
+# Version 2.0:
 #   Initial Version
 
 class Notifier_Dispatch(hass.Hass):
@@ -74,7 +74,7 @@ class Notifier_Dispatch(hass.Hass):
 
     def check_notify(self, data):
         return False if (str(data).lower() in ["false","off","no"] or data == "0" or data == 0) else True
-
+    
     def convert(self, lst):  
         return {lst[1]: lst[3]}
     
@@ -99,6 +99,7 @@ class Notifier_Dispatch(hass.Hass):
 
     def notify_hub(self, event_name, data, kwargs):
         self.log("#### START NOTIFIER_DISPATCH ####")
+        
         location_status = self.get_state(self.location_tracker)
         ### FLAG
         priority_flag = self.check_flag(data["priority"])
@@ -168,7 +169,6 @@ class Notifier_Dispatch(hass.Hass):
                 self.log("An error occurred in persistent notification: {}".format(ex),level="ERROR")
                 self.set_state(self.sensor, state="Error in Persistent Notification: {}".format(ex))
                 self.log(sys.exc_info()) 
-
         if useNotification:
             try:
                 self.notification_manager.send_notify(data, notify_name, self.get_state(self.personal_assistant_name))
@@ -176,14 +176,13 @@ class Notifier_Dispatch(hass.Hass):
                 self.log("An error occurred in text-telegram notification: {}".format(ex), level="ERROR")
                 self.set_state(self.sensor, state="Error in Text Notification: {}".format(ex))
                 self.log(sys.exc_info())
-
         if useTTS:
             if gh_switch == "on" and google_flag:
                 if (data["google"]) != "":
                     if "media_player" not in google:
-                        google["media_player"] = self.get_state(self.gh_selected_media_player)
+                        google["media_player"] = self.get_state(self.gh_selected_media_player) 
                     if "volume" not in google:
-                        google["volume"] = float(self.get_state(self.tts_period_of_day_volume)) / 100
+                        google["volume"] = float(self.get_state(self.tts_period_of_day_volume))/100  
                     if "media_content_id" not in google:
                         google["media_content_id"] = ""
                     if "media_content_type" not in google:
@@ -191,29 +190,24 @@ class Notifier_Dispatch(hass.Hass):
                     if  "message_tts" not in google:
                         google["message_tts"] = data["message"]
                     if  "language" not in google:
-                        google["language"] = self.get_state(self.tts_language) #.lower()
-
+                        google["language"] = self.get_state(self.tts_language).lower()                
                 self.gh_manager.speak(google, self.get_state(self.gh_tts_google_mode), gh_notifica)
-            if alexa_switch == "on" and alexa_flag: 
+            if alexa_switch == "on" and alexa_flag:
                 if (data["alexa"]) != "":
                     if  "message_tts" not in alexa:
                         alexa["message_tts"] = data["message"]
                     if  "title" not in alexa:
                         alexa["title"] = data["title"]
                     if "volume" not in alexa:
-                        alexa["volume"] = float(self.get_state(self.tts_period_of_day_volume)) / 100
+                        alexa["volume"] = float(self.get_state(self.tts_period_of_day_volume))/100
                     if  "language" not in alexa:
-                        alexa["language"] = self.get_state(self.tts_language) #.lower()
+                        alexa["language"] = self.get_state(self.tts_language) 
                 self.alexa_manager.speak(alexa)
-
         if usePhone:
             try:
-                if alexa_flag:
-                    language = alexa.get("language", self.get_state(self.tts_language))
-                if google_flag:
-                    language = google.get("language", self.get_state(self.tts_language))
+                language = self.get_state(self.tts_language)
                 self.phone_manager.send_voice_call(data, phone_notify_name, self.phone_sip_server, language)
-            except Exception as ex: 
+            except Exception as ex:
                 self.log("An error occurred in phone notification: {}".format(ex),level="ERROR")
                 self.set_state(self.sensor, state="Error in Phone Notification: {}".format(ex))
                 self.log(sys.exc_info())

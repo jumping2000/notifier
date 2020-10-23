@@ -6,7 +6,8 @@ import re
 Class Notification_Manager handles sending text to notfyng service
 """
 __NOTIFY__ = "notify/"
-SUB_NOTIFICHE = [(" +"," "),("\s\s+","\n")] # Gianpi -> #[("\s+"," "),(" +"," ")] #[("[\s]+"," ")]
+#SUB_NOTIFICHE = [("\s+"," "),(" +"," ")]
+SUB_NOTIFICHE = [(" +"," "),("\s\s+","\n")]
 
 class Notification_Manager(hass.Hass):
 
@@ -72,8 +73,7 @@ class Notification_Manager(hass.Hass):
         message = ("{} - {}".format(timestamp, message))
         if per_not_info == "notifying":
             old_message = self.get_state(persistent_notification_info, attribute="message")
-            message = old_message + "\n" + message if len(old_message)<2000 else message
-            # message = self.get_state(persistent_notification_info, attribute="message") + "\n" + message
+            message = old_message + "\n" + message if len(old_message)<2500 else message
         self.call_service("persistent_notification/create",
                         notification_id = "info_messages",
                         message = message,

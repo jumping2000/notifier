@@ -5,6 +5,7 @@ Notifier_Dispatch:
   gh_tts_google_mode: input_boolean.tts_google_mode
   gh_switch: input_boolean.google_switch
   gh_selected_media_player: sensor.media_player_google
+
   alexa_switch: input_boolean.alexa_switch
 
   tts_period_of_day_volume: sensor.period_of_day_volume
@@ -27,10 +28,10 @@ Notifier_Dispatch:
   personal_assistant_name: input_text.personal_assistant_name
   phone_called_number: input_text.phone_called_number
 
-  # tts_google: !secret tts_google
-  # notify_google: !secret notify_google
-  # notify_alexa: !secret notify_alexa
-  # sip_server: !secret sip_server_name #sip_server
+  # tts_google: secret_tts_google #!secret tts_google
+  # notify_google: secret_notify_google #!secret notify_google
+  # notify_alexa: secret_notify_alexa #!secret notify_alexa
+  # sip_server: secret_sip_server #!secret sip_server_name #sip_server
 
   sensor: sensor.centro_notifiche
 

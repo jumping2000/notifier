@@ -86,13 +86,18 @@ class GH_Manager(hass.Hass):
                 else:
                     for entity in gh_player:
                         self.call_service(__TTS__ + data["gh_notifier"], entity_id = entity, message = data["text"], language = data["language"])
-                        time.sleep(data["wait_time"])
-                        duration = 1.0
+                        #self.log("DATA {}:".format(data))
+                        #time.sleep(data["wait_time"])
+                        duration = 1.0          
                         if entity == "all":
                             duration = float(len(data["text"].split())) / 3 + data["wait_time"]
                         else: 
-                            duration = self.get_state(entity, attribute='media_duration')
+                            if self.get_state(entity, attribute='media_duration') is None:
+                                duration = float(len(data["text"].split())) / 3 + data["wait_time"]
+                            else: 
+                                duration = self.get_state(entity, attribute='media_duration') 
                         #Sleep and wait for the tts to finish
+                        #self.log("Duration {}:".format(duration))
                         time.sleep(duration)
             except Exception as ex:
                 self.log("An error occurred in GH Manager - Errore nel Worker: {}".format(ex),level="ERROR")
