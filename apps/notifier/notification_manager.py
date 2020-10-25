@@ -6,7 +6,6 @@ import re
 Class Notification_Manager handles sending text to notfyng service
 """
 __NOTIFY__ = "notify/"
-#SUB_NOTIFICHE = [("\s+"," "),(" +"," ")]
 SUB_NOTIFICHE = [(" +"," "),("\s\s+","\n")]
 
 class Notification_Manager(hass.Hass):
