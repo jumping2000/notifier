@@ -53,9 +53,9 @@ class Notifier_Dispatch(hass.Hass):
         secretsFile = config_dir + "/packages/secrets.yaml"
         with open(secretsFile, "r") as ymlfile:
             cfg = yaml.load(ymlfile, Loader=yaml.FullLoader) #yaml.safe_load
-        self.gh_tts = cfg.get('tts_google', None)
-        self.gh_notify = cfg.get('notify_google', None)
-        self.phone_sip_server = cfg.get('sip_server_name', None)
+        self.gh_tts = cfg.get('tts_google', "google_translate_say")
+        self.gh_notify = cfg.get('notify_google', "google_assistant")
+        self.phone_sip_server = cfg.get('sip_server_name', "fritz.box:5060")
 
         ### APP MANAGER ###
         self.notification_manager = self.get_app("Notification_Manager")
