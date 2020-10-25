@@ -1,7 +1,7 @@
 import hassapi as hass
 import time
 import datetime
-import globals
+import re
 import sys
 from queue import Queue
 from threading import Thread
@@ -18,13 +18,14 @@ Following features are implemented:
 
 __NOTIFY__ = "notify/"
 __TTS__ = "tts/"
-SUB_TTS = [("[\*\-\[\]_\(\)\{\~\|\}]+"," ")]
+SUB_TTS = [("[\*\-\[\]_\(\)\{\~\|\}\s]+"," ")]
 
 class GH_Manager(hass.Hass):
 
     def initialize(self)->None:
-        self.gh_wait_time = globals.get_arg(self.args, "gh_wait_time")
-        #self.dict_volumes = {}
+        #self.gh_wait_time = globals.get_arg(self.args, "gh_wait_time")
+        self.gh_wait_time = self.args["gh_wait_time"]
+
         self.queue = Queue(maxsize=0)
         self._when_tts_done_callback_queue = Queue()
         t = Thread(target=self.worker)
@@ -32,67 +33,75 @@ class GH_Manager(hass.Hass):
         t.start()
 
     def volume_set(self, gh_player: list, volume: float):
-        for item in gh_player:
-            if self.get_state(item) == "off":
-                self.call_service("media_player/turn_on", entity_id = item)  ### Set to the desired volume
-            #self.log("SET MEDIA_PLAYER/VOLUME: {} / {}".format(item,volume))
-            self.call_service("media_player/volume_set", entity_id = item, volume_level = volume)
+        if gh_player != ["all"]:
+            for item in gh_player:
+                #if self.get_state(item) == "off":
+                #    self.call_service("media_player/turn_on", entity_id = item)  ### Set to the desired volume
+                #self.log("SET MEDIA_PLAYER/VOLUME: {} / {}".format(item,volume))
+                self.call_service("media_player/volume_set", entity_id = item, volume_level = volume)
+#        else:
+#            for item in self.get_state("media_player").keys():
+#                if self.get_state(item) is not "unavailable":
+#                    self.call_service("media_player/volume_set", entity_id = item, volume_level = volume)
 
-    def speak(self, data, gh_mode: bool, gh_notifier: str):
+    def replace_regular(self, text: str, substitutions: list):
+        for old,new in substitutions:
+            text = re.sub(old, new, str(text).strip())
+        return text
+
+    def replace_language(self, s: str):
+        return (s[:2])
+
+    def speak(self, google, gh_mode: bool, gh_notifier: str):
         """Speak the provided text through the media player"""
         self.dict_volumes = {}
-        gh_player = self.converti(data["media_player_google"])
+        gh_player = self.split_device_list(google["media_player"])
         for i in gh_player:
-            self.dict_volumes[i] = float(self.get_state(globals.get_arg(self.args, "gh_restore_volume")))/100
-        
+            #self.dict_volumes[i] = float(self.get_state(globals.get_arg(self.args, "gh_restore_volume")))/100
+            self.dict_volumes[i] = float(self.get_state(self.args["gh_restore_volume"]))/100
         wait_time = float(self.get_state(self.gh_wait_time))
-        #message = data["message_tts"].replace("\n","").replace("*","").replace("   ","").replace("  "," ")
-        message = globals.replace_regular(data["message_tts"], SUB_TTS)
+        message = self.replace_regular(google["message_tts"], SUB_TTS)
+        ### set volume
+        self.volume_set(gh_player,google["volume"])
         # queues the message to be handled async, use when_tts_done_do method to supply callback when tts is done
-        self.queue.put({"type": "tts", "text": message, "volume": data["volume"], "language": data["language"],
-                        "gh_player": data["media_player_google"], "wait_time": wait_time, "gh_mode": gh_mode, "gh_notifier": gh_notifier})
-    
+        if google["media_content_id"] != '':
+            self.call_service("media_extractor/play_media", entity_id = gh_player, media_content_id= google["media_content_id"], 
+                            media_content_type = google["media_content_type"])  
+        else:
+            self.queue.put({"type": "tts", "text": message, "volume": google["volume"], "language": self.replace_language(google["language"]), 
+                    "gh_player": google["media_player"], "wait_time": wait_time, "gh_mode": gh_mode, "gh_notifier": gh_notifier})
+
     def when_tts_done_do(self, callback:callable)->None:
         """Callback when the queue of tts messages are done"""
         self._when_tts_done_callback_queue.put(callback)
-
-    def converti(self, stringa)->list: 
-        return list(stringa.replace(" ", "").split(","))
 
     def worker(self):
         while True:
             try:
                 data = self.queue.get()
-                gh_player = self.converti(data["gh_player"])
-                ### set volume
-                self.volume_set(gh_player,data["volume"])
-                """ SPEECH TIME CALCULATOR """
-                period = data["text"].count(', ') + data["text"].count('. ')
-                words = len(data["text"].split())
-                #chars = data["text"].count('')
-                ### Let's hope GH will get up
-                time.sleep(data["wait_time"])
+                gh_player = self.split_device_list(data["gh_player"])
                 ### SPEAK
                 if data["gh_mode"] == 'on':
                     self.call_service(__NOTIFY__ + data["gh_notifier"], message = data["text"])
-                    duration = ((words * 0.008) * 60) + data["wait_time"] + (period*0.2)
-                    # duration = (len(data["text"].split()) / 3) + data["wait_time"]
-                    #Sleep and wait for the tts to finish
-                    time.sleep(duration)
                 else:
                     for entity in gh_player:
                         self.call_service(__TTS__ + data["gh_notifier"], entity_id = entity, message = data["text"], language = data["language"])
-                        time.sleep(data["wait_time"])
-                        duration = self.get_state(entity, attribute='media_duration')
-                        if not duration:
-                            #The TTS already played, set a small duration
-                            duration = (len(data["text"].split()) / 3) + data["wait_time"]
-                            self.log("DURATION-WAIT {}:".format(duration))
+                        #self.log("DATA {}:".format(data))
+                        #time.sleep(data["wait_time"])
+                        duration = 1.0          
+                        if entity == "all":
+                            duration = float(len(data["text"].split())) / 3 + data["wait_time"]
+                        else: 
+                            if self.get_state(entity, attribute='media_duration') is None:
+                                duration = float(len(data["text"].split())) / 3 + data["wait_time"]
+                            else: 
+                                duration = self.get_state(entity, attribute='media_duration') 
                         #Sleep and wait for the tts to finish
+                        #self.log("Duration {}:".format(duration))
                         time.sleep(duration)
-            except:
-                self.log("Errore nel ciclo principale", level="ERROR")
-                self.log(sys.exc_info()) 
+            except Exception as ex:
+                self.log("An error occurred in GH Manager - Errore nel Worker: {}".format(ex),level="ERROR")
+                self.log(sys.exc_info())
 
             self.queue.task_done()
 
@@ -102,7 +111,6 @@ class GH_Manager(hass.Hass):
                 if self.dict_volumes:
                     for i,j in self.dict_volumes.items():
                         self.call_service("media_player/volume_set", entity_id = i, volume_level = j)
-                        #self.log("VOLUME RIPROGRAMMATO: {} - {}".format(j,i))
                         # Force Set state
                         self.set_state(i, state="", attributes = {"volume_level": j})
                 # It is empty, make callbacks
@@ -112,11 +120,35 @@ class GH_Manager(hass.Hass):
                         callback_func() # Call the callback
                         self._when_tts_done_callback_queue.task_done()
                 except:
-                    self.log("Errore nel CallBack", level="ERROR")
+                    self.log("An error occurred in GH Manager - Errore nel CallBack", level="ERROR")
                     self.log(sys.exc_info()) 
                     pass # Nothing in queue
 
+
 """
+self.log("[GH NOTIFICA]: {} - {} - {}".format(data["gh_mode"], data["gh_notifier"], data["text"]))
+                        #self.log("VOLUME RIPROGRAMMATO: {} - {}".format(j,i))
+                try:
+                    self.call_service("media_player/volume_set", entity_id = item, volume_level = volume)
+                except Exception as ex:
+                    self.log("An error occurred in GH Manager - Errore in VolumeSet: {}".format(ex),level="ERROR")
+                    self.log(sys.exc_info())
+                    pass
+        #self.log("MESSAGE TTS: {}".format(message))
+                ### Let's hope GH will get up
+                #time.sleep(data["wait_time"])
+#self.log("DURATION-WAIT {}:".format(duration))
+#    def converti(self, stringa)->list: 
+#        return list(stringa.replace(" ", "").split(","))
+SPEECH TIME CALCULATOR 
+#                period = data["text"].count(', ') + data["text"].count('. ')
+#                words = len(data["text"].split())
+                #chars = data["text"].count('')
+                    #duration = ((words * 0.008) * 60) + data["wait_time"] + (period*0.2)
+                    # duration = (len(data["text"].split()) / 3) + data["wait_time"]
+                    #Sleep and wait for the tts to finish
+                    #time.sleep(duration)
+
     def retry(exceptions, tries=4, delay=3, backoff=2, logger=None):
         
         Retry calling the decorated function using an exponential backoff.

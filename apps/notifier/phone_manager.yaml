@@ -2,6 +2,6 @@ Phone_Manager:
   module: phone_manager
   class: Phone_Manager
   
-  global_dependencies:
-    - globals
-    - secrets
+  #global_dependencies:
+  #  - globals
+  #  - secrets
