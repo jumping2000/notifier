@@ -1,61 +1,56 @@
 import hassapi as hass
-import globals
 import sys
+import yaml
+
 #
 # Centralizes messaging.
 #
 # Args:
 #
-# Version 1.0:
+# Version 2.0:
 #   Initial Version
 
 class Notifier_Dispatch(hass.Hass):
 
     def initialize(self):
-        self.gh_tts_google_mode = globals.get_arg(self.args, "gh_tts_google_mode")
-        self.gh_switch_entity = globals.get_arg(self.args, "gh_switch")
-        self.gh_selected_media_player = globals.get_arg(self.args, "gh_selected_media_player")
+        self.gh_tts_google_mode = self.args.get("gh_tts_google_mode")
+        self.gh_switch_entity = self.args.get("gh_switch")
+        self.gh_selected_media_player = self.args.get("gh_selected_media_player")
 
-        self.alexa_switch_entity = globals.get_arg(self.args, "alexa_switch")
+        self.alexa_switch_entity = self.args.get("alexa_switch")
 
-        self.tts_language = globals.get_arg(self.args, "tts_language")
-        self.tts_period_of_day_volume = globals.get_arg(self.args, "tts_period_of_day_volume")
-        self.tts_dnd = globals.get_arg(self.args, "dnd")
+        self.tts_language = self.args.get("tts_language")
+        self.tts_period_of_day_volume = self.args.get("tts_period_of_day_volume")
+        self.tts_dnd = self.args.get("dnd")
 
-        self.text_notifications = globals.get_arg(self.args, "text_notifications")
-        self.screen_notifications = globals.get_arg(self.args, "screen_notifications")
-        self.speech_notifications = globals.get_arg(self.args, "speech_notifications")
-        self.phone_notifications = globals.get_arg(self.args, "phone_notifications")
+        self.text_notifications = self.args.get("text_notifications")
+        self.screen_notifications = self.args.get("screen_notifications")
+        self.speech_notifications = self.args.get("speech_notifications")
+        self.phone_notifications = self.args.get("phone_notifications")
 
-        self.text_notify = globals.get_arg(self.args, "text_notify")
-        self.phone_notify = globals.get_arg(self.args, "phone_notify")
-        self.priority_message = globals.get_arg(self.args, "priority_message")
-        self.guest_mode = globals.get_arg(self.args, "guest_mode")
+        self.text_notify = self.args.get("text_notify")
+        self.phone_notify = self.args.get("phone_notify")
+        self.priority_message = self.args.get("priority_message")
+        self.guest_mode = self.args.get("guest_mode")
 
-        self.persistent_notification_info = globals.get_arg(self.args, "persistent_notification_info")
+        self.persistent_notification_info = self.args.get("persistent_notification_info")
         
-        self.location_tracker = globals.get_arg(self.args, "location_tracker") 
-        self.personal_assistant_name = globals.get_arg(self.args, "personal_assistant_name") 
-        #self.intercom_message_hub = globals.get_arg(self.args, "intercom_message_hub")
-        self.phone_called_number = globals.get_arg(self.args, "phone_called_number")
+        self.location_tracker = self.args.get("location_tracker") 
+        self.personal_assistant_name = self.args.get("personal_assistant_name") 
+        self.phone_called_number = self.args.get("phone_called_number")
 
-        self.sensor = globals.get_arg(self.args, "sensor")
-        self.set_state(self.sensor, state="on")
+        self.sensor = self.args.get("sensor")
+        self.set_state(self.sensor, state="on") 
 
-        #### FROM SECRET FILE ####
-        self.gh_tts = globals.get_arg(self.args, "tts_google")
-        self.gh_notify = globals.get_arg(self.args, "notify_google")
-        self.phone_sip_server = globals.get_arg(self.args, "sip_server")
-
-        #config = self.get_plugin_config()
-        #config_dir = config["config_dir"]
-        #self.log(f"configuration dir: {config_dir}") 
-        #secretsFile = config_dir + "/packages/secrets.yaml"
-        #with open(secretsFile, "r") as ymlfile:
-        #    cfg = yaml.load(ymlfile)
-        #self.gh_tts = cfg['tts_google']
-        #self.gh_notify = cfg['notify_google']
-        #self.phone_sip_server = cfg['sip_server_name']
+        config = self.get_plugin_config()
+        config_dir = config["config_dir"]
+        self.log(f"configuration dir: {config_dir}") 
+        secretsFile = config_dir + "/packages/secrets.yaml"
+        with open(secretsFile, "r") as ymlfile:
+            cfg = yaml.load(ymlfile, Loader=yaml.FullLoader) #yaml.safe_load
+        self.gh_tts = cfg.get('tts_google', "google_translate_say")
+        self.gh_notify = cfg.get('notify_google', "google_assistant")
+        self.phone_sip_server = cfg.get('sip_server_name', "fritz.box:5060
 
         ### APP MANAGER ###
         self.notification_manager = self.get_app("Notification_Manager")
@@ -198,8 +193,8 @@ class Notifier_Dispatch(hass.Hass):
                         alexa["message_tts"] = data["message"]
                     if  "title" not in alexa:
                         alexa["title"] = data["title"]
-                    if "volume" not in alexa:
-                        alexa["volume"] = self.get_state(self.tts_period_of_day_volume)
+                    if "volume" not in alexa
+                        alexa["volume"] = float(self.get_state(self.tts_period_of_day_volume))/100
                     if  "language" not in alexa:
                         alexa["language"] = self.get_state(self.tts_language) 
                 self.alexa_manager.speak(alexa)
@@ -215,29 +210,3 @@ class Notifier_Dispatch(hass.Hass):
         ### ripristino del priority a OFF
         if (self.get_state(self.priority_message) == "on"):
             self.set_state(self.priority_message, state = "off")
-
-#####################################################################
-#        if data["volume"] == "":
-#            data.update({"volume": self.get_state(self.tts_period_of_day_volume)})
-#            if data["media_player_google"] == "":
-#                data.update({"media_player_google": self.get_state(self.gh_selected_media_player)})
-#            if data["media_player_alexa"] == "":
-#                data.update({"media_player_alexa": self.get_state(self.alexa_selected_media_player)})
-#            if data["alexa_type"] =="":
-#                data.update({"alexa_type": alexa_tts_type})
-#            if data["alexa_method"] =="":
-#                data.update({"alexa_method": alexa_tts_method})
-### CALL and NOTIFY MANAGER ###
-#self.log("[USE PHONE]: {}".format(usePhone))
-#self.log("[PHONE CALLED]: {}".format(self.phone_called_number))
-#self.log("[PHONE CALLED STATUS]: {}".format(self.get_state(self.phone_called_number)))
-#self.log("[PRIORITY]: {}".format(priority_status))
-#self.log("[GH NOTIFICA]: {}".format(gh_notifica))
-#self.log("[GOOGLE POST]: {}".format(google))
-#        if data["message"] =="":
-#            data.update({"message": data["message_tts"]})
-#self.log(" Notify flag - location flag: {} - {}".format(notify_flag,location_flag))
-#        self.log("[DATA]: {}".format(data))
-#        self.log("[GOOGLE POST]: {}".format(google))
-#        self.log("Notify flag - location flag: {} - {}".format(notify_flag,location_flag))
-#        self.log("useNotification - useTTS: {} - {}".format(useNotification,useTTS))

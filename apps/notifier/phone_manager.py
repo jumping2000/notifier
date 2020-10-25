@@ -1,7 +1,6 @@
 import hassapi as hass
 import datetime
 import re
-#import globals
 
 """
 Class Phone_Manager handles sending call to voice notfyng service
@@ -30,13 +29,6 @@ class Phone_Manager(hass.Hass):
         message = self.replace_regular(data["message"], SUB_TTS)
         message_tts = message.replace(" ","%20")
         called_number= data["called_number"]
-        #self.log("[MESSAGGIO]: {}".format(message))
-        #self.log("[CALLED NUMBER]: {}".format(called_number))
-        #self.log("[PHONE_NAME]: {}".format(phone_name))
-        #self.log("[SIP_SERVER]: {}".format(sip_server_name))
-        #self.log("[DICT_LAN]: {}".format(self.dict_lingua))
-        #self.log("[data language]: {}".format(data["language"]))
-        #self.log("[LANG]: {}".format(lang))
 
         lang = self.dict_lingua.get(language)
         if phone_name.find("voip_call") != -1:

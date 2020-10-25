@@ -1,6 +1,8 @@
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/jumping2000/notifier?style=for-the-badge) ![GitHub Release Date](https://img.shields.io/github/release-date/jumping2000/notifier?style=for-the-badge) ![GitHub Releases](https://img.shields.io/github/downloads/jumping2000/notifier/latest/total?color=purple&label=%20release%20Downloads&style=for-the-badge) ![GitHub All Releases](https://img.shields.io/github/downloads/jumping2000/notifier/total?color=orange&label=Total%20downloads&style=for-the-badge)
+
 # Appdaemon Notifier for Home Assistant
-[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/custom-components/hacs)
+[![Buy me a coffee](https://cdn.buymeacoffee.com/buttons/bmc-new-btn-logo.svg)](https://www.buymeacoffee.com/jumping)<span style="margin-left:15px;font-size:28px !important;">Buy me a coffee</span></a>
+
 ### [Support our work with a donation](https://paypal.me/hassiohelp)
 
 Notifier Centre for Home Assistant [jumping2000](https://github.com/jumping2000/appdaemon/commits?author=jumping2000)<br>

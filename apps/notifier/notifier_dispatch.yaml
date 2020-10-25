@@ -7,7 +7,6 @@ Notifier_Dispatch:
   gh_selected_media_player: sensor.media_player_google
 
   alexa_switch: input_boolean.alexa_switch
-  alexa_selected_media_player: sensor.media_player_alexa
 
   tts_period_of_day_volume: sensor.period_of_day_volume
   tts_language: input_select.language
@@ -29,11 +28,6 @@ Notifier_Dispatch:
   personal_assistant_name: input_text.personal_assistant_name
   phone_called_number: input_text.phone_called_number
 
-  tts_google: secret_tts_google
-  notify_google: secret_notify_google
-  notify_alexa: secret_notify_alexa
-  sip_server: secret_sip_server
-
   sensor: sensor.centro_notifiche
 
   dependencies: 
@@ -42,6 +36,3 @@ Notifier_Dispatch:
     - Alexa_Manager
     - Phone_Manager
 
-  global_dependencies:
-    - globals
-    - secrets
