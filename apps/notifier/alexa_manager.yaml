@@ -1,9 +1,6 @@
 Alexa_Manager:
   module: alexa_manager
   class: Alexa_Manager
-
-  # log_level: DEBUG
-
 # Service
   alexa_service: alexa_media
 

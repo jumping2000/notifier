@@ -255,6 +255,7 @@ class Alexa_Manager(hass.Hass):
 
         self.queue = Queue(maxsize=0)
         self._when_tts_done_callback_queue = Queue()
+
         t = Thread(target=self.worker)
         t.daemon = True
         t.start()
@@ -545,6 +546,7 @@ class Alexa_Manager(hass.Hass):
             self.queue.task_done()
 
             if self.queue.qsize() == 0:
+
                 try:
                     while self._when_tts_done_callback_queue.qsize() > 0:
                         callback_func = self._when_tts_done_callback_queue.get_nowait()
