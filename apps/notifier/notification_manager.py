@@ -84,11 +84,3 @@ class Notification_Manager(hass.Hass):
         for old,new in substitutions:
             text = re.sub(old, new, text.strip())
         return text
-
-#self.log("[DATA]: {}".format(data), ascii_encode = False)
-#self.log("[MESSAGGIO]: {}".format(message), ascii_encode = False)
-#self.log("[Notifier] post: {}".format(notify_name), ascii_encode = False)
-#        self.log("[DATA]: {}".format(data), ascii_encode = False)
-#        self.log("[MESSAGGIO]: {}".format(message), ascii_encode = False)
-#        self.log("[Notifier]: {}".format(notify_name), ascii_encode = False)
-#        self.log("[MESSAGGIO post: {}".format(message), ascii_encode = False)
