@@ -9,6 +9,7 @@
 ### Improvments
 
 - Message dispatch more efficient
+- Deleted "globals" file
 
 ### Added
 
