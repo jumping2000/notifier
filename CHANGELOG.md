@@ -10,6 +10,7 @@
 
 - Message dispatch more efficient
 - Deleted "globals" file
+- Added management of Whatsapp messages
 
 ### Added
 
