@@ -34,6 +34,13 @@ class Notification_Manager(hass.Hass):
                 title = ("*[{} - {}] {}*".format(assistant_name, timestamp, title))
             else:
                 title = ("*[{} - {}]*".format(assistant_name, timestamp))
+        elif notify_name.find("whatsapp") != -1:
+            if title !="":
+                title = ("*[{} - {}] {}*".format(assistant_name, timestamp, title))
+            else:
+                title = ("*[{} - {}]*".format(assistant_name, timestamp))
+            message = title + " " + message
+            self.log("[MESSAGGIO]: {}".format(message), ascii_encode = False)
         else:
             if title !="":
                 title = ("[{} - {}] {}".format(assistant_name, timestamp, title))
