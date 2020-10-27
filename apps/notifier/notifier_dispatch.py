@@ -27,6 +27,8 @@ class Notifier_Dispatch(hass.Hass):
         self.screen_notifications = self.args.get("screen_notifications")
         self.speech_notifications = self.args.get("speech_notifications")
         self.phone_notifications = self.args.get("phone_notifications")
+        
+        self.html_mode = self.args.get("html_mode")
 
         self.text_notify = self.args.get("text_notify")
         self.phone_notify = self.args.get("phone_notify")
@@ -155,7 +157,8 @@ class Notifier_Dispatch(hass.Hass):
         ### FROM SCRIPT_NOTIFY ###
         if data["called_number"] == "":
             data.update({"called_number": self.get_state(self.phone_called_number)})
-
+        if data["html"] == "":
+            data.update({"html": self.get_state(self.html_mode)})
         ###########################
         if usePersistentNotification:
             try:
