@@ -3,17 +3,16 @@
 ## [2.0.0] - 26-10-2020
 
 ### Breacking Changes
-
 - New Google and Alexa sintax
 
 ### Improvments
-
 - Message dispatch more efficient
 - Deleted "globals" file
-- Added management of Whatsapp messages
+- DEleted Ariela support
 
 ### Added
-
+- Added management of Whatsapp messages
+- Added HTML management in Telegram messages
 - Media extractor function
 
 ## [1.2.4] - 31-01-2020
