@@ -1,7 +1,7 @@
 import hassapi as hass
-# import globals
 import sys
 import yaml
+
 #
 # Centralizes messaging.
 #
@@ -27,6 +27,8 @@ class Notifier_Dispatch(hass.Hass):
         self.screen_notifications = self.args.get("screen_notifications")
         self.speech_notifications = self.args.get("speech_notifications")
         self.phone_notifications = self.args.get("phone_notifications")
+        
+        self.html_mode = self.args.get("html_mode")
 
         self.text_notify = self.args.get("text_notify")
         self.phone_notify = self.args.get("phone_notify")
@@ -42,11 +44,6 @@ class Notifier_Dispatch(hass.Hass):
         self.sensor = self.args.get("sensor")
         self.set_state(self.sensor, state="on") 
 
-        #### FROM SECRET FILE ####
-        # self.gh_tts = globals.get_arg(self.args, "tts_google")
-        # self.gh_notify = globals.get_arg(self.args, "notify_google")
-        # self.phone_sip_server = globals.get_arg(self.args, "sip_server")
-
         config = self.get_plugin_config()
         config_dir = config["config_dir"]
         self.log(f"configuration dir: {config_dir}") 
@@ -55,7 +52,7 @@ class Notifier_Dispatch(hass.Hass):
             cfg = yaml.load(ymlfile, Loader=yaml.FullLoader) #yaml.safe_load
         self.gh_tts = cfg.get('tts_google', "google_translate_say")
         self.gh_notify = cfg.get('notify_google', "google_assistant")
-        self.phone_sip_server = cfg.get('sip_server_name', "fritz.box:5060")
+        self.phone_sip_server = cfg.get('sip_server_name', "fritz.box:5060
 
         ### APP MANAGER ###
         self.notification_manager = self.get_app("Notification_Manager")
@@ -160,7 +157,8 @@ class Notifier_Dispatch(hass.Hass):
         ### FROM SCRIPT_NOTIFY ###
         if data["called_number"] == "":
             data.update({"called_number": self.get_state(self.phone_called_number)})
-
+        if data["html"] == "":
+            data.update({"html": self.get_state(self.html_mode)})
         ###########################
         if usePersistentNotification:
             try:
@@ -198,7 +196,7 @@ class Notifier_Dispatch(hass.Hass):
                         alexa["message_tts"] = data["message"]
                     if  "title" not in alexa:
                         alexa["title"] = data["title"]
-                    if "volume" not in alexa:
+                    if "volume" not in alexa
                         alexa["volume"] = float(self.get_state(self.tts_period_of_day_volume))/100
                     if  "language" not in alexa:
                         alexa["language"] = self.get_state(self.tts_language) 
@@ -215,29 +213,3 @@ class Notifier_Dispatch(hass.Hass):
         ### ripristino del priority a OFF
         if (self.get_state(self.priority_message) == "on"):
             self.set_state(self.priority_message, state = "off")
-
-#####################################################################
-#        if data["volume"] == "":
-#            data.update({"volume": self.get_state(self.tts_period_of_day_volume)})
-#            if data["media_player_google"] == "":
-#                data.update({"media_player_google": self.get_state(self.gh_selected_media_player)})
-#            if data["media_player_alexa"] == "":
-#                data.update({"media_player_alexa": self.get_state(self.alexa_selected_media_player)})
-#            if data["alexa_type"] =="":
-#                data.update({"alexa_type": alexa_tts_type})
-#            if data["alexa_method"] =="":
-#                data.update({"alexa_method": alexa_tts_method})
-### CALL and NOTIFY MANAGER ###
-#self.log("[USE PHONE]: {}".format(usePhone))
-#self.log("[PHONE CALLED]: {}".format(self.phone_called_number))
-#self.log("[PHONE CALLED STATUS]: {}".format(self.get_state(self.phone_called_number)))
-#self.log("[PRIORITY]: {}".format(priority_status))
-#self.log("[GH NOTIFICA]: {}".format(gh_notifica))
-#self.log("[GOOGLE POST]: {}".format(google))
-#        if data["message"] =="":
-#            data.update({"message": data["message_tts"]})
-#self.log(" Notify flag - location flag: {} - {}".format(notify_flag,location_flag))
-#        self.log("[DATA]: {}".format(data))
-#        self.log("[GOOGLE POST]: {}".format(google))
-#        self.log("Notify flag - location flag: {} - {}".format(notify_flag,location_flag))
-#        self.log("useNotification - useTTS: {} - {}".format(useNotification,useTTS))

@@ -15,6 +15,8 @@ Notifier_Dispatch:
   screen_notifications: input_boolean.screen_notifications
   speech_notifications: input_boolean.speech_notifications
   phone_notifications: input_boolean.phone_notifications
+  
+  html_mode: input_boolean.html_mode
 
   persistent_notification_info: persistent_notification.info_messages
   
@@ -28,11 +30,6 @@ Notifier_Dispatch:
   personal_assistant_name: input_text.personal_assistant_name
   phone_called_number: input_text.phone_called_number
 
-  # tts_google: secret_tts_google #!secret tts_google
-  # notify_google: secret_notify_google #!secret notify_google
-  # notify_alexa: secret_notify_alexa #!secret notify_alexa
-  # sip_server: secret_sip_server #!secret sip_server_name #sip_server
-
   sensor: sensor.centro_notifiche
 
   dependencies: 
@@ -41,6 +38,3 @@ Notifier_Dispatch:
     - Alexa_Manager
     - Phone_Manager
 
-  # global_dependencies:
-  #   - globals
-  #   - secrets

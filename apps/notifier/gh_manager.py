@@ -39,10 +39,6 @@ class GH_Manager(hass.Hass):
                 #    self.call_service("media_player/turn_on", entity_id = item)  ### Set to the desired volume
                 #self.log("SET MEDIA_PLAYER/VOLUME: {} / {}".format(item,volume))
                 self.call_service("media_player/volume_set", entity_id = item, volume_level = volume)
-#        else:
-#            for item in self.get_state("media_player").keys():
-#                if self.get_state(item) is not "unavailable":
-#                    self.call_service("media_player/volume_set", entity_id = item, volume_level = volume)
 
     def replace_regular(self, text: str, substitutions: list):
         for old,new in substitutions:
@@ -123,89 +119,3 @@ class GH_Manager(hass.Hass):
                     self.log("An error occurred in GH Manager - Errore nel CallBack", level="ERROR")
                     self.log(sys.exc_info()) 
                     pass # Nothing in queue
-
-
-"""
-self.log("[GH NOTIFICA]: {} - {} - {}".format(data["gh_mode"], data["gh_notifier"], data["text"]))
-                        #self.log("VOLUME RIPROGRAMMATO: {} - {}".format(j,i))
-                try:
-                    self.call_service("media_player/volume_set", entity_id = item, volume_level = volume)
-                except Exception as ex:
-                    self.log("An error occurred in GH Manager - Errore in VolumeSet: {}".format(ex),level="ERROR")
-                    self.log(sys.exc_info())
-                    pass
-        #self.log("MESSAGE TTS: {}".format(message))
-                ### Let's hope GH will get up
-                #time.sleep(data["wait_time"])
-#self.log("DURATION-WAIT {}:".format(duration))
-#    def converti(self, stringa)->list: 
-#        return list(stringa.replace(" ", "").split(","))
-SPEECH TIME CALCULATOR 
-#                period = data["text"].count(', ') + data["text"].count('. ')
-#                words = len(data["text"].split())
-                #chars = data["text"].count('')
-                    #duration = ((words * 0.008) * 60) + data["wait_time"] + (period*0.2)
-                    # duration = (len(data["text"].split()) / 3) + data["wait_time"]
-                    #Sleep and wait for the tts to finish
-                    #time.sleep(duration)
-
-    def retry(exceptions, tries=4, delay=3, backoff=2, logger=None):
-        
-        Retry calling the decorated function using an exponential backoff.
-        Args:
-        exceptions: The exception to check. may be a tuple of exceptions to check.
-        tries: Number of times to try (not retry) before giving up.
-        delay: Initial delay between retries in seconds.
-        backoff: Backoff multiplier (e.g. value of 2 will double the delay each retry).
-        logger: Logger to use. If None, print.
-        
-        def deco_retry(f):
-            @wraps(f)
-            def f_retry(*args, **kwargs):
-                mtries, mdelay = tries, delay
-                while mtries > 1:
-                    try:
-                        return f(*args, **kwargs)
-                    except exceptions as e:
-                        msg = '{}, Retrying in {} seconds...'.format(e, mdelay)
-                        if logger:
-                            logger.warning(msg)
-                        else:
-                            self.log("retry decorator: {} ".format(msg))
-                        time.sleep(mdelay)
-                        mtries -= 1
-                        mdelay *= backoff
-                return f(*args, **kwargs)
-            return f_retry  # true decorator
-        return deco_retry
-
-    def volume_get(self, entity):
-        Retrieve the audio player"s volume.
-        self.log("STATO MEDIA_PLAYER: {}".format(self.get_state(entity)))
-        if self.get_state(entity) == "off":
-            self.log("accendo il media player: {}".format(entity))
-            self.call_service("media_player/turn_on", entity_id = entity)
-        return round(float(self.get_state(entity = entity, attribute="volume_level") or 0.24),2)
-
-    def volume_callback(self, kwargs):
-        for item in self.get_state(globals.get_arg(self.args, "gh_mplayer"), attribute="all")["attributes"]["entity_id"]:
-            try:
-                if self.get_state(item) == "off":
-                    self.call_service("media_player/turn_on", entity_id = item)
-                    time.sleep(wait_time)
-                self.dict_volumes[item] = round(float(self.get_state(entity = item, attribute="volume_level") or 0.3),2)
-            except:
-                self.log ("Errore nel salvataggio volumi")
-        self.log("DICT SALVA VOLUMI: {} ".format(self.dict_volumes))
-
-    def terminate(self):
-        self.cancel_timer(self.handle_mplayer)
-
-    def volume_save(self, volume_level)->dict:
-        dict_volumes = {}
-        for item in self.get_state(globals.get_arg(self.args, "gh_mplayer"), attribute="all")["attributes"]["entity_id"]:
-            dict_volumes[item] = volume_level
-        self.log("DICT SALVA VOLUMI: {} ".format(dict_volumes))
-        return dict_volumes
-
-"""
