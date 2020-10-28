@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.0.0] - 26-10-2020
+## [2.0.0] - 30-10-2020
 
 ### Breacking Changes
 - New Google and Alexa sintax
