@@ -8,7 +8,7 @@
 ### Improvments
 - Message dispatch more efficient
 - Deleted "globals" file
-- DEleted Ariela support
+- Deleted Ariela support
 
 ### Added
 - Added management of Whatsapp messages
