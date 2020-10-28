@@ -38,12 +38,11 @@ class Notification_Manager(hass.Hass):
         notify_name = self.rewrite_notify(data["notify"], notify_name)
         ### SAVE IN INPUT_TEXT.LAST_MESSAGE
         self.set_state(self.text_last_message, state=message[:245])
-
+        if link != "":
+            message = "{} {}".format(message, link)
         if notify_name.find("telegram") != -1:
             message, title = self.prepare_text(html, message, title, timestamp, assistant_name)
             message = message.replace("_", "\_")
-            if link != "":
-                message = "{} {}".format(message, link)
             if caption == "":
                 caption = "{}\n{}".format(title, message)
             if url != "":
