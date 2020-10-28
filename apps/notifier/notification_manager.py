@@ -20,11 +20,12 @@ class Notification_Manager(hass.Hass):
         )
 
     def prepare_text(self, html, message, title, timestamp, assistant_name):
-        if str(html).lower() in ["true", "on", "yes", "1"]:
-            title = "<b>[{} - {}] {}</b>".format(assistant_name, timestamp, title)
+        if str(html).lower() in ["true","on","yes","1"]:
+            title = ("<b>[{} - {}] {}</b>".format(assistant_name, timestamp, title))
+            title =self.replace_regular(title,[("\s<","<")])
         else:
-            title = "*[{} - {}] {}*".format(assistant_name, timestamp, title)
-        return message, title
+            title = ("*[{} - {}] {}*".format(assistant_name, timestamp, title))
+            title =self.replace_regular(title,[("\s\*","*")])
 
     def send_notify(self, data, notify_name: str, assistant_name: str):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
