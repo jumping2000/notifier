@@ -70,7 +70,7 @@ class Notification_Manager(hass.Hass):
             else:
                 self.call_service(__NOTIFY__ + notify_name, message=message, title=title)
         elif notify_name.find("whatsapp") != -1:
-            message, title = self.prepare_title(html, message, title, timestamp, assistant_name)
+            message, title = self.prepare_text(html, message, title, timestamp, assistant_name)
             message = title + " " + message
             self.call_service(__NOTIFY__ + notify_name, message=message)
         else:
