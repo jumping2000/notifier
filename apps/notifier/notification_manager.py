@@ -39,7 +39,7 @@ class Notification_Manager(hass.Hass):
             title = "<b>[{} - {}] {}</b>".format(assistant_name, timestamp, title)
         else:
             title = "*[{} - {}] {}*".format(assistant_name, timestamp, title)
-        return message.replace("_", "\_"), title
+        return message, title
 
     def send_notify(self, data, notify_name: str, assistant_name: str):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
@@ -56,7 +56,7 @@ class Notification_Manager(hass.Hass):
 
         if notify_name.find("telegram") != -1:
             message, title = self.prepare_text(html, message, title, timestamp, assistant_name)
-            self.log("[TITLE-1]: {}".format(title), ascii_encode=False)
+            message = message.replace("_", "\_")
             if link != "":
                 message = "{} {}".format(message, link)
             if caption == "":
