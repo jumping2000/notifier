@@ -8,23 +8,8 @@ Class Notification_Manager handles sending text to notfyng service
 __NOTIFY__ = "notify/"
 SUB_NOTIFICHE = [(" +", " "), ("\s\s+", "\n")]
 
-
 class Notification_Manager(hass.Hass):
     def initialize(self):
-        # self.text_last_message = globals.get_arg(self.args, "text_last_message")
-        self.text_last_message = self.args["text_last_message"]
-
-    def rewrite_notify(self, data, notify_name):
-        return (
-            notify_name
-            if (str(data).lower() in ["true", "on", "yes"] or data == "1" or data == 1 or data == "")
-            else data
-        )
-
-
-class Notification_Manager(hass.Hass):
-    def initialize(self):
-        # self.text_last_message = globals.get_arg(self.args, "text_last_message")
         self.text_last_message = self.args["text_last_message"]
 
     def rewrite_notify(self, data, notify_name):
