@@ -8,23 +8,8 @@ Class Notification_Manager handles sending text to notfyng service
 __NOTIFY__ = "notify/"
 SUB_NOTIFICHE = [(" +", " "), ("\s\s+", "\n")]
 
-
 class Notification_Manager(hass.Hass):
     def initialize(self):
-        # self.text_last_message = globals.get_arg(self.args, "text_last_message")
-        self.text_last_message = self.args["text_last_message"]
-
-    def rewrite_notify(self, data, notify_name):
-        return (
-            notify_name
-            if (str(data).lower() in ["true", "on", "yes"] or data == "1" or data == 1 or data == "")
-            else data
-        )
-
-
-class Notification_Manager(hass.Hass):
-    def initialize(self):
-        # self.text_last_message = globals.get_arg(self.args, "text_last_message")
         self.text_last_message = self.args["text_last_message"]
 
     def rewrite_notify(self, data, notify_name):
@@ -35,11 +20,12 @@ class Notification_Manager(hass.Hass):
         )
 
     def prepare_text(self, html, message, title, timestamp, assistant_name):
-        if str(html).lower() in ["true", "on", "yes", "1"]:
-            title = "<b>[{} - {}] {}</b>".format(assistant_name, timestamp, title)
+        if str(html).lower() in ["true","on","yes","1"]:
+            title = ("<b>[{} - {}] {}</b>".format(assistant_name, timestamp, title))
+            title =self.replace_regular(title,[("\s<","<")])
         else:
-            title = "*[{} - {}] {}*".format(assistant_name, timestamp, title)
-        return message.replace("_", "\_"), title
+            title = ("*[{} - {}] {}*".format(assistant_name, timestamp, title))
+            title =self.replace_regular(title,[("\s\*","*")])
 
     def send_notify(self, data, notify_name: str, assistant_name: str):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
@@ -53,12 +39,11 @@ class Notification_Manager(hass.Hass):
         notify_name = self.rewrite_notify(data["notify"], notify_name)
         ### SAVE IN INPUT_TEXT.LAST_MESSAGE
         self.set_state(self.text_last_message, state=message[:245])
-
+        if link != "":
+            message = "{} {}".format(message, link)
         if notify_name.find("telegram") != -1:
             message, title = self.prepare_text(html, message, title, timestamp, assistant_name)
-            self.log("[TITLE-1]: {}".format(title), ascii_encode=False)
-            if link != "":
-                message = "{} {}".format(message, link)
+            message = message.replace("_", "\_")
             if caption == "":
                 caption = "{}\n{}".format(title, message)
             if url != "":
@@ -70,7 +55,7 @@ class Notification_Manager(hass.Hass):
             else:
                 self.call_service(__NOTIFY__ + notify_name, message=message, title=title)
         elif notify_name.find("whatsapp") != -1:
-            message, title = self.prepare_title(html, message, title, timestamp, assistant_name)
+            message, title = self.prepare_text(html, message, title, timestamp, assistant_name)
             message = title + " " + message
             self.call_service(__NOTIFY__ + notify_name, message=message)
         else:
