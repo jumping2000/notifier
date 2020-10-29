@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.0.0] - 26-10-2020
+## [2.0.0] - 30-10-2020
 
 ### Breacking Changes
 - New Google and Alexa sintax
@@ -8,7 +8,7 @@
 ### Improvments
 - Message dispatch more efficient
 - Deleted "globals" file
-- DEleted Ariela support
+- Deleted Ariela support
 
 ### Added
 - Added management of Whatsapp messages

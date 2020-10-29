@@ -26,6 +26,7 @@ class Notification_Manager(hass.Hass):
         else:
             title = ("*[{} - {}] {}*".format(assistant_name, timestamp, title))
             title =self.replace_regular(title,[("\s\*","*")])
+        return message, title
 
     def send_notify(self, data, notify_name: str, assistant_name: str):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
