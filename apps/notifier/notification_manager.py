@@ -45,6 +45,8 @@ class Notification_Manager(hass.Hass):
         if notify_name.find("telegram") != -1:
             message, title = self.prepare_text(html, message, title, timestamp, assistant_name)
             message = message.replace("_", "\_")
+            if link !="":
+                message = ("{} {}".format(message,link))
             if caption == "":
                 caption = "{}\n{}".format(title, message)
             if url != "":
@@ -57,6 +59,8 @@ class Notification_Manager(hass.Hass):
                 self.call_service(__NOTIFY__ + notify_name, message=message, title=title)
         elif notify_name.find("whatsapp") != -1:
             message, title = self.prepare_text(html, message, title, timestamp, assistant_name)
+            if link !="":
+                message = ("{} {}".format(message,link))
             message = title + " " + message
             self.call_service(__NOTIFY__ + notify_name, message=message)
         else:
@@ -64,6 +68,8 @@ class Notification_Manager(hass.Hass):
                 title = "[{} - {}] {}".format(assistant_name, timestamp, title)
             else:
                 title = "[{} - {}]".format(assistant_name, timestamp)
+            if link !="":
+                message = ("{} {}".format(message,link))
             self.call_service(__NOTIFY__ + notify_name, message=message, title=title)
 
     def send_persistent(self, data, persistent_notification_info):
