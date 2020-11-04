@@ -42,7 +42,8 @@ class Notification_Manager(hass.Hass):
         self.set_state(self.text_last_message, state=message[:245])
         if notify_name.find("telegram") != -1:
             message, title = self.prepare_text(html, message, title, timestamp, assistant_name)
-            message = message.replace("_", "\_")
+            if str(html).lower() not in ["true","on","yes","1"]:  
+              message = message.replace("_", "\_")
             if link !="":
                 message = ("{} {}".format(message,link))
             if caption == "":

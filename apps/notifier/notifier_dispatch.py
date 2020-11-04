@@ -79,6 +79,9 @@ class Notifier_Dispatch(hass.Hass):
         dizionario = ""
         if data == "":
             flag = False
+        elif str(data).lower() in ["1","true","on","yes"]:
+            flag = True
+            dizionario = {}
         else:
             if "OrderedDict([(" in data:
                 dizionario = self.convert(list(data.split("'")))
