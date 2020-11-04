@@ -293,12 +293,11 @@ class Alexa_Manager(hass.Hass):
         self.lg(f"-------------------- ALEXA START DISPATCH --------------------")
         self.lg(f"FROM DISPATCH: {type(alexa)} value {alexa}")
         # remove keys with None value from a dict # TODO
-        alexa = {k: v for k, v in alexa.items() if v is not None}
+        alexa = {k: v for k, v in alexa.items()  if v not in [None, "None", ""]}
         self.lg(f"REMOVE [NONE] VALUE: {type(alexa)} value {alexa}")
-
         default_restore_volume = float(self.get_state(self.args.get("default_restore_volume"))) / 100
         volume = float(alexa.get("volume", default_restore_volume))
-        message = str(alexa.get("message", alexa["message_tts"]))
+        message = str(alexa.get("message", alexa.get("message_tts")))
         alexa_player = self.player_get(alexa.get("media_player", self.get_state(self.alexa_sensor_media_player)))
         alexa_type = (
             str(alexa.get("type", self.get_state(self.alexa_type))).lower().replace("dropin", "dropin_notification")
@@ -323,8 +322,8 @@ class Alexa_Manager(hass.Hass):
             self.call_service(
                 "media_player/play_media",
                 entity_id=alexa_player,
-                media_content_id=alexa["media_content_id"],
-                media_content_type=alexa["media_content_type"],
+                media_content_id=alexa.get("media_content_id"),
+                media_content_type=alexa.get("media_content_type"),
                 # extra = {"timer": 10} ##??
             )
             self.lg(f'Content id: {alexa["media_content_id"]} - Content type: {alexa["media_content_type"]}')
@@ -377,7 +376,7 @@ class Alexa_Manager(hass.Hass):
         return value
 
     def audio_tag(self, value: None):
-        if value is None:
+        if value is None: # or value == "":
             return ""
         return f"<audio src='{value}'/>" if "<audio src=" not in value else value
 
