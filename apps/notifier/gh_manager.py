@@ -33,10 +33,10 @@ class GH_Manager(hass.Hass):
     def check_mplayer(self, gh_player: list):
         media_p = list(self.get_state("media_player").keys())
         gh = []
-        for item in gh_player:
+        for item in [x.strip(" ") for x in gh_player]:
             if item in media_p:
                 gh.append(item)
-        return [x.strip(" ") for x in gh]
+        return gh
 
     def volume_set(self, gh_player: list, volume: float):
         if gh_player != ["all"]:
