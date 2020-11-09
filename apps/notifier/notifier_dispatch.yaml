@@ -6,12 +6,7 @@ Notifier_Dispatch:
   gh_switch: input_boolean.google_switch
   gh_selected_media_player: sensor.media_player_google
 
-  alexa_tts_alexa_type: input_select.default_alexa_type
-  alexa_tts_alexa_method: input_select.default_alexa_method
   alexa_switch: input_boolean.alexa_switch
-  alexa_selected_media_player: sensor.media_player_alexa
-
-  ariela_switch: input_boolean.ariela_switch
 
   tts_period_of_day_volume: sensor.period_of_day_volume
   tts_language: input_select.language
@@ -20,6 +15,8 @@ Notifier_Dispatch:
   screen_notifications: input_boolean.screen_notifications
   speech_notifications: input_boolean.speech_notifications
   phone_notifications: input_boolean.phone_notifications
+  
+  html_mode: input_boolean.html_mode
 
   persistent_notification_info: persistent_notification.info_messages
   
@@ -31,8 +28,9 @@ Notifier_Dispatch:
   dnd: binary_sensor.dnd
 
   personal_assistant_name: input_text.personal_assistant_name
-  intercom_message_hub: input_text.intercom_message_hub
   phone_called_number: input_text.phone_called_number
+
+  sensor: sensor.centro_notifiche
 
   dependencies: 
     - Notification_Manager
@@ -40,6 +38,3 @@ Notifier_Dispatch:
     - Alexa_Manager
     - Phone_Manager
 
-  global_dependencies:
-    - globals
-    - secrets

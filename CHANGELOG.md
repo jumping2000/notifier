@@ -1,14 +1,29 @@
 # Changelog
 
-## [1.2.4] - 31-01-2020
+## [2.0.0] - 30-10-2020
+
+### Breacking Changes
+- New Google and Alexa sintax
+
+### Improvments
+- Message dispatch more efficient
+- Deleted "globals" file
+- Deleted Ariela support
 
 ### Added
+- Added management of Whatsapp messages
+- Added HTML management in Telegram messages
+- Media extractor function
+
+## [1.2.4] - 31-01-2020
+
+### Improvments
 
 - Fix message in Telegram Call
 
 ## [1.2.3] - 30-01-2020
 
-### Added
+### Improvments
 
 - Bug Fixes
 
@@ -22,7 +37,7 @@
 
 ## [1.2.1] - 26-01-2020
 
-### Added
+### Improvments
 
 - Bug Fixes
 

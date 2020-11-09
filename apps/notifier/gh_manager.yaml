@@ -4,7 +4,3 @@ GH_Manager:
 
   gh_restore_volume: input_number.default_restore_volume
   gh_wait_time: input_number.tts_wait_time
-
-  global_dependencies:
-    - globals
-    - secrets
