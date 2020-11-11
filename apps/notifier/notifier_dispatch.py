@@ -90,7 +90,7 @@ class Notifier_Dispatch(hass.Hass):
                 else:
                     flag = True
             else:
-                dizionario = eval(data)  # convert to dict
+                dizionario = data if isinstance(data, dict) else eval(data)  #dizionario = eval(data)  # convert to dict
                 if dizionario.get("mode") != None:
                     flag = self.check_flag(dizionario["mode"])
                 else:
