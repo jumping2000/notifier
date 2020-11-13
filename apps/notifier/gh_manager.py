@@ -23,10 +23,8 @@ SUB_TTS = [("[\*\-\[\]_\(\)\{\~\|\}\s]+"," ")]
 class GH_Manager(hass.Hass):
 
     def initialize(self)->None:
-        #self.gh_wait_time = globals.get_arg(self.args, "gh_wait_time")
         self.gh_wait_time = self.args["gh_wait_time"]
         self.gh_select_media_player = self.args["gh_select_media_player"]
-
         self.queue = Queue(maxsize=0)
         self._when_tts_done_callback_queue = Queue()
         t = Thread(target=self.worker)
@@ -41,8 +39,17 @@ class GH_Manager(hass.Hass):
                 gh.append(item)
         return gh
 
+    def check_volume(self, gh_volume):
+        media_state = self.get_state("media_player")
+        gh = []
+        for entity, state in media_state.items(): 
+            friendly_name = state["attributes"].get("friendly_name") 
+            for item in gh_volume:
+                if "gruppo" not in str(item).lower() and item == friendly_name:
+                    gh.append(entity)
+        return gh
+
     def volume_set(self, gh_player: list, volume: float):
-        #self.log("GH PLAYER volume_set: {} ".format(gh_player))
         if gh_player != ["all"]:
             for item in gh_player:
                 self.call_service("media_player/volume_set", entity_id = item, volume_level = volume)
@@ -50,9 +57,7 @@ class GH_Manager(hass.Hass):
     def volume_get(self, media_player:list, volume: float):
         self.dict_volumes = {}
         for i in media_player:
-            self.dict_volumes[i] = (
-                self.get_state(i, attribute="volume_level", default=volume)
-            )
+            self.dict_volumes[i] = self.get_state(i, attribute="volume_level", default=volume)
         return self.dict_volumes
 
     def replace_regular(self, text: str, substitutions: list):
@@ -66,13 +71,8 @@ class GH_Manager(hass.Hass):
     def speak(self, google, gh_mode: bool, gh_notifier: str):
         """Speak the provided text through the media player"""
         gh_player = self.check_mplayer(self.split_device_list(google["media_player"]))
-        gh_volume = []
-        for item in self.get_state(self.gh_select_media_player, attribute="options"):
-            if "gruppo" not in str(item).lower():
-                gh_volume.append("media_player."+str(item).lower())
-        self.log("gh_volume: {} ".format(gh_volume))
+        gh_volume = self.check_volume(self.get_state(self.gh_select_media_player, attribute="options"))
         self.volume_get(gh_volume,float(self.get_state(self.args["gh_restore_volume"]))/100)
-        #float(self.get_state(globals.get_arg(self.args, "gh_restore_volume")))/100
         wait_time = float(self.get_state(self.gh_wait_time))
         message = self.replace_regular(google["message_tts"], SUB_TTS)
         ### set volume
@@ -99,7 +99,6 @@ class GH_Manager(hass.Hass):
                 data = self.queue.get()
                 gh_player = self.check_mplayer(self.split_device_list(data["gh_player"]))
                 ### SPEAK
-                self.log("GH PLAYER 1: {} ".format(gh_player))
                 if data["gh_mode"] == 'on':
                     self.call_service(__NOTIFY__ + data["gh_notifier"], message = data["text"])
                 else:
@@ -126,7 +125,6 @@ class GH_Manager(hass.Hass):
             self.queue.task_done()
 
             if self.queue.qsize() == 0:
-                #self.log("QSIZE = 0 - Worker thread exiting")
                 ## RESTORE VOLUME
                 if self.dict_volumes:
                     for i,j in self.dict_volumes.items():
