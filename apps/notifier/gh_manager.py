@@ -39,7 +39,6 @@ class GH_Manager(hass.Hass):
         for item in [x.strip(" ") for x in gh_player] :
             if item in media_p or item == "all":
                 gh.append(item)
-        #self.log("MEDIA/GH/GH_PLAYER  {} / {} / {}".format(media_p,gh,gh_player))
         return gh
 
     def check_volume(self, gh_volume):
@@ -47,12 +46,9 @@ class GH_Manager(hass.Hass):
         gh = []
         for entity, state in media_state.items(): 
             friendly_name = state["attributes"].get("friendly_name") 
-            self.log("MEDIA FRIENDLY NAME - Entity {} - {}".format(friendly_name, entity))
-
-            for item in self.get_state(self.gh_select_media_player, attribute="options"):
+            for item in gh_volume:
                 if "gruppo" not in str(item).lower() and item == friendly_name:
                     gh.append(entity)
-        self.log("GH: {}".format(gh))
         return gh
 
     def volume_set(self, gh_player: list, volume: float):
