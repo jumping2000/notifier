@@ -101,14 +101,14 @@ class GH_Manager(hass.Hass):
                 data = self.queue.get()
                 gh_player = self.check_mplayer(self.split_device_list(data["gh_player"]))
                 ### SPEAK
-                if data["gh_mode"] == 'on':
+                if data["gh_mode"].lower()  == 'google assistant':
                     self.call_service(__NOTIFY__ + data["gh_notifier"], message = data["text"])
                 else:
                     if len(gh_player) == 1:
                         entity = gh_player[0]
                     else:
                         entity = gh_player
-                    self.call_service(__TTS__ + data["gh_notifier"], entity_id = entity, message = data["text"], language = data["language"])
+                    self.call_service(__TTS__ + data["gh_notifier"], entity_id = entity, message = data["text"])#, language = data["language"])
                     if type(entity) is list:
                         duration = float(len(data["text"].split())) / 3 + data["wait_time"]
                     else:
