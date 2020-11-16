@@ -70,11 +70,9 @@ class GH_Manager(hass.Hass):
 
     def speak(self, google, gh_mode: bool, gh_notifier: str):
         """Speak the provided text through the media player"""
-        #self.log("google[media] / split {} / {}".format(google["media_player"],self.split_device_list(google["media_player"])))
         gh_player = self.check_mplayer(self.split_device_list(google["media_player"]))
         gh_volume = self.check_volume(self.get_state(self.gh_select_media_player, attribute="options"))
         self.volume_get(gh_volume,float(self.get_state(self.args["gh_restore_volume"]))/100)
-
         wait_time = float(self.get_state(self.gh_wait_time))
         message = self.replace_regular(google["message_tts"], SUB_TTS)
         ### set volume
@@ -101,14 +99,14 @@ class GH_Manager(hass.Hass):
                 data = self.queue.get()
                 gh_player = self.check_mplayer(self.split_device_list(data["gh_player"]))
                 ### SPEAK
-                if data["gh_mode"] == 'on':
+                if data["gh_mode"].lower()  == 'google assistant':
                     self.call_service(__NOTIFY__ + data["gh_notifier"], message = data["text"])
                 else:
                     if len(gh_player) == 1:
                         entity = gh_player[0]
                     else:
                         entity = gh_player
-                    self.call_service(__TTS__ + data["gh_notifier"], entity_id = entity, message = data["text"], language = data["language"])
+                    self.call_service(__TTS__ + data["gh_notifier"], entity_id = entity, message = data["text"])#, language = data["language"])
                     if type(entity) is list:
                         duration = float(len(data["text"].split())) / 3 + data["wait_time"]
                     else:
