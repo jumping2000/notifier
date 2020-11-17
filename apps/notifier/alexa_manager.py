@@ -563,7 +563,7 @@ class Alexa_Manager(hass.Hass):
             except Exception as ex:
                 self.log("An error occurred in Alexa Manager (worker): {}".format(ex), level="ERROR")
                 self.log(f"DATA: {data}", level="ERROR")
-                self.set_sensor("Alexa Manager - Warker Error ", ex)
+                self.set_sensor("Alexa Manager - Worker Error ", ex)
             self.queue.task_done()
 
             if self.queue.qsize() == 0:
