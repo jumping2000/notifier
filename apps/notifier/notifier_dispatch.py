@@ -43,7 +43,7 @@ class Notifier_Dispatch(hass.Hass):
 
         self.sensor = self.args.get("sensor")
         self.set_state(self.sensor, state="on")
-
+#### FROM SECRET FILE ###
         config = self.get_plugin_config()
         config_dir = config["config_dir"]
         self.log(f"configuration dir: {config_dir}")
