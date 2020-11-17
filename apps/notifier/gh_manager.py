@@ -70,11 +70,9 @@ class GH_Manager(hass.Hass):
 
     def speak(self, google, gh_mode: bool, gh_notifier: str):
         """Speak the provided text through the media player"""
-        #self.log("google[media] / split {} / {}".format(google["media_player"],self.split_device_list(google["media_player"])))
         gh_player = self.check_mplayer(self.split_device_list(google["media_player"]))
         gh_volume = self.check_volume(self.get_state(self.gh_select_media_player, attribute="options"))
         self.volume_get(gh_volume,float(self.get_state(self.args["gh_restore_volume"]))/100)
-
         wait_time = float(self.get_state(self.gh_wait_time))
         message = self.replace_regular(google["message_tts"], SUB_TTS)
         ### set volume

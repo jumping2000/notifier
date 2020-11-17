@@ -3,7 +3,6 @@ Notifier_Dispatch:
   class: Notifier_Dispatch
 
   gh_tts_google_mode: input_select.tts_notify
-  #gh_tts_google_mode: input_boolean.tts_google_mode
   gh_switch: input_boolean.google_switch
   gh_selected_media_player: sensor.media_player_google
 
@@ -38,4 +37,3 @@ Notifier_Dispatch:
     - GH_Manager
     - Alexa_Manager
     - Phone_Manager
-

@@ -53,9 +53,8 @@ class Notifier_Dispatch(hass.Hass):
         self.gh_tts = cfg.get("tts_google", "google_translate_say")
         self.gh_notify = cfg.get("notify_google", "google_assistant")
         self.phone_sip_server = cfg.get("sip_server_name", "fritz.box:5060")
-        
-        #self.gh_tts_cloud = globals.get_arg(self.args, "tts_google_cloud")
-        #self.reverso_tts = globals.get_arg(self.args, "reverso_tts")
+        self.gh_tts_cloud = cfg.get("tts_google_cloud", "google_cloud")
+        self.reverso_tts = cfg.get("reverso_tts", "reversotts_say")
 
         ### APP MANAGER ###
         self.notification_manager = self.get_app("Notification_Manager")
@@ -93,7 +92,7 @@ class Notifier_Dispatch(hass.Hass):
                 else:
                     flag = True
             else:
-                dizionario = eval(data)  # convert to dict
+                dizionario = eval(data)  # data if isinstance(data, dict) else eval(data)
                 if dizionario.get("mode") != None:
                     flag = self.check_flag(dizionario["mode"])
                 else:
