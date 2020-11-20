@@ -92,7 +92,7 @@ class Notifier_Dispatch(hass.Hass):
                 else:
                     flag = True
             else:
-                dizionario = eval(data)  # data if isinstance(data, dict) else eval(data)
+                dizionario = data if isinstance(data, dict) else eval(data)  # data if isinstance(data, dict) else eval(data)
                 if dizionario.get("mode") != None:
                     flag = self.check_flag(dizionario["mode"])
                 else:
@@ -161,14 +161,15 @@ class Notifier_Dispatch(hass.Hass):
         gh_switch = self.get_state(self.gh_switch_entity)
         alexa_switch = self.get_state(self.alexa_switch_entity)
         ### SERVIZIO TTS/NOTIFY DI GOOGLE ###
-        if self.get_state(self.gh_tts_google_mode).lower() == "reverso":
-            gh_notifica = self.reverso_tts
-        elif self.get_state(self.gh_tts_google_mode).lower() == "google cloud":
-            gh_notifica = self.gh_tts_cloud
-        elif self.get_state(self.gh_tts_google_mode).lower() == "google say":
-            gh_notifica = self.gh_tts
-        else: 
-            gh_notifica = self.gh_notify
+        if self.gh_tts_google_mode != None:
+            if self.get_state(self.gh_tts_google_mode).lower() == "reverso":
+                gh_notifica = self.reverso_tts
+            elif self.get_state(self.gh_tts_google_mode).lower() == "google cloud":
+                gh_notifica = self.gh_tts_cloud
+            elif self.get_state(self.gh_tts_google_mode).lower() == "google say":
+                gh_notifica = self.gh_tts
+            else: 
+                gh_notifica = self.gh_notify
         ### FROM SCRIPT_NOTIFY ###
         if data["called_number"] == "":
             data.update({"called_number": self.get_state(self.phone_called_number)})
