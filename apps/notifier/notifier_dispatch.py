@@ -79,25 +79,25 @@ class Notifier_Dispatch(hass.Hass):
 
     def createTTSdict(self, data) -> list:
         dizionario = ""
-        if data == "":
+        if data == "" or (not self.check_notify(data)):
             flag = False
         elif str(data).lower() in ["1","true","on","yes"]:
             flag = True
             dizionario = {}
         else:
-            if "OrderedDict([(" in data:
+            if "OrderedDict([(" in str(data):
                 dizionario = self.convert(list(data.split("'")))
                 if dizionario.get("mode") != None:
                     flag = self.check_flag(dizionario["mode"])
                 else:
                     flag = True
             else:
-                dizionario = data if isinstance(data, dict) else eval(data)  # data if isinstance(data, dict) else eval(data)
+                dizionario = data if isinstance(data, dict) else eval(data) # convert to dict
                 if dizionario.get("mode") != None:
                     flag = self.check_flag(dizionario["mode"])
                 else:
                     flag = True
-        return [flag, dizionario]
+        return [flag,dizionario]
 
     def notify_hub(self, event_name, data, kwargs):
         self.log("#### START NOTIFIER_DISPATCH ####")
@@ -110,11 +110,11 @@ class Notifier_Dispatch(hass.Hass):
         notify_flag = self.check_notify(data["notify"])
 
         ### GOOGLE ####
-        google_flag = self.createTTSdict(data["google"])[0]
-        google = self.createTTSdict(data["google"])[1]
+        google_flag = self.createTTSdict(data["google"])[0] if len(str(data["google"])) != 0 else False
+        google = self.createTTSdict(data["google"])[1] if len(str(data["google"])) != 0 else False
         ### ALEXA ####
-        alexa_flag = self.createTTSdict(data["alexa"])[0]
-        alexa = self.createTTSdict(data["alexa"])[1]
+        alexa_flag = self.createTTSdict(data["alexa"])[0] if len(str(data["alexa"])) != 0 else False
+        alexa = self.createTTSdict(data["alexa"])[1] if len(str(data["alexa"])) != 0 else False
 
         ### FROM INPUT BOOLEAN ###
         dnd_status = self.get_state(self.tts_dnd)
