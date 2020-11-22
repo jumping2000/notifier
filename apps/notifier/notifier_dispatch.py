@@ -161,7 +161,7 @@ class Notifier_Dispatch(hass.Hass):
         gh_switch = self.get_state(self.gh_switch_entity)
         alexa_switch = self.get_state(self.alexa_switch_entity)
         ### SERVIZIO TTS/NOTIFY DI GOOGLE ###
-        if self.gh_tts_google_mode != None:
+        if self.get_state(self.gh_tts_google_mode) != None:
             if self.get_state(self.gh_tts_google_mode).lower() == "reverso":
                 gh_notifica = self.reverso_tts
             elif self.get_state(self.gh_tts_google_mode).lower() == "google cloud":
