@@ -43,7 +43,7 @@ class Notifier_Dispatch(hass.Hass):
 
         self.sensor = self.args.get("sensor")
         self.set_state(self.sensor, state="on")
-
+#### FROM SECRET FILE ###
         config = self.get_plugin_config()
         config_dir = config["config_dir"]
         self.log(f"configuration dir: {config_dir}")
@@ -53,6 +53,8 @@ class Notifier_Dispatch(hass.Hass):
         self.gh_tts = cfg.get("tts_google", "google_translate_say")
         self.gh_notify = cfg.get("notify_google", "google_assistant")
         self.phone_sip_server = cfg.get("sip_server_name", "fritz.box:5060")
+        self.gh_tts_cloud = cfg.get("tts_google_cloud", "google_cloud")
+        self.reverso_tts = cfg.get("reverso_tts", "reversotts_say")
 
         ### APP MANAGER ###
         self.notification_manager = self.get_app("Notification_Manager")
@@ -77,25 +79,25 @@ class Notifier_Dispatch(hass.Hass):
 
     def createTTSdict(self, data) -> list:
         dizionario = ""
-        if data == "":
+        if data == "" or (not self.check_notify(data)):
             flag = False
         elif str(data).lower() in ["1","true","on","yes"]:
             flag = True
             dizionario = {}
         else:
-            if "OrderedDict([(" in data:
+            if "OrderedDict([(" in str(data):
                 dizionario = self.convert(list(data.split("'")))
                 if dizionario.get("mode") != None:
                     flag = self.check_flag(dizionario["mode"])
                 else:
                     flag = True
             else:
-                dizionario = data if isinstance(data, dict) else eval(data)  #dizionario = eval(data)  # convert to dict
+                dizionario = data if isinstance(data, dict) else eval(data) # convert to dict
                 if dizionario.get("mode") != None:
                     flag = self.check_flag(dizionario["mode"])
                 else:
                     flag = True
-        return [flag, dizionario]
+        return [flag,dizionario]
 
     def notify_hub(self, event_name, data, kwargs):
         self.log("#### START NOTIFIER_DISPATCH ####")
@@ -108,11 +110,11 @@ class Notifier_Dispatch(hass.Hass):
         notify_flag = self.check_notify(data["notify"])
 
         ### GOOGLE ####
-        google_flag = self.createTTSdict(data["google"])[0]
-        google = self.createTTSdict(data["google"])[1]
+        google_flag = self.createTTSdict(data["google"])[0] if len(str(data["google"])) != 0 else False
+        google = self.createTTSdict(data["google"])[1] if len(str(data["google"])) != 0 else False
         ### ALEXA ####
-        alexa_flag = self.createTTSdict(data["alexa"])[0]
-        alexa = self.createTTSdict(data["alexa"])[1]
+        alexa_flag = self.createTTSdict(data["alexa"])[0] if len(str(data["alexa"])) != 0 else False
+        alexa = self.createTTSdict(data["alexa"])[1] if len(str(data["alexa"])) != 0 else False
 
         ### FROM INPUT BOOLEAN ###
         dnd_status = self.get_state(self.tts_dnd)
@@ -159,10 +161,15 @@ class Notifier_Dispatch(hass.Hass):
         gh_switch = self.get_state(self.gh_switch_entity)
         alexa_switch = self.get_state(self.alexa_switch_entity)
         ### SERVIZIO TTS/NOTIFY DI GOOGLE ###
-        if self.get_state(self.gh_tts_google_mode) == "on":
-            gh_notifica = self.gh_notify
-        else:
-            gh_notifica = self.gh_tts
+        if self.get_state(self.gh_tts_google_mode) != None:
+            if self.get_state(self.gh_tts_google_mode).lower() == "reverso":
+                gh_notifica = self.reverso_tts
+            elif self.get_state(self.gh_tts_google_mode).lower() == "google cloud":
+                gh_notifica = self.gh_tts_cloud
+            elif self.get_state(self.gh_tts_google_mode).lower() == "google say":
+                gh_notifica = self.gh_tts
+            else: 
+                gh_notifica = self.gh_notify
         ### FROM SCRIPT_NOTIFY ###
         if data["called_number"] == "":
             data.update({"called_number": self.get_state(self.phone_called_number)})
