@@ -425,7 +425,7 @@ class Alexa_Manager(hass.Hass):
                     self.log(f"Invalid group, sensor or player ENTITY-ID ({mpu})", level="WARNING")
         if not media_player:
             # media_player.append(self.get_state(self.alexa_sensor_media_player))
-            media_player.append(self.player_alexa)
+            media_player = self.player_alexa
             self.log(f"No media player {user_player} found. I use the default one. ({media_player})", level="WARNING")
         media_player = list(set(media_player))
         self.lg(f"GET PLAYER: {media_player}")
