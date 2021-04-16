@@ -59,7 +59,18 @@ class GH_Manager(hass.Hass):
         for i in media_player:
             self.dict_volumes[i] = self.get_state(i, attribute="volume_level", default=volume)
         return self.dict_volumes
-
+    
+    def mediastate_get(self, media_player:list, volume: float):
+        self.dict_info_mplayer = {}
+        for i in media_player:
+            self.dict_info_mplayer[i] = {}
+        for i in media_player:
+            self.dict_info_mplayer[i]['volume'] = self.get_state(i, attribute="volume_level", default=volume)
+            self.dict_info_mplayer[i]['state'] = self.get_state(i, default='idle')
+            self.dict_info_mplayer[i]['media_id'] = self.get_state(i, attribute="media_content_id", default='')
+            self.dict_info_mplayer[i]['media_type'] = self.get_state(i, attribute="media_content_type", default='')
+        return self.dict_info_mplayer
+    
     def replace_regular(self, text: str, substitutions: list):
         for old,new in substitutions:
             text = re.sub(old, new, str(text).strip())
@@ -73,6 +84,7 @@ class GH_Manager(hass.Hass):
         gh_player = self.check_mplayer(self.split_device_list(google["media_player"]))
         gh_volume = self.check_volume(self.get_state(self.gh_select_media_player, attribute="options"))
         self.volume_get(gh_volume,float(self.get_state(self.args["gh_restore_volume"]))/100)
+        self.mediastate_get(gh_volume,float(self.get_state(self.args["gh_restore_volume"]))/100)
         wait_time = float(self.get_state(self.gh_wait_time))
         message = self.replace_regular(google["message_tts"], SUB_TTS)
         ### set volume
@@ -131,6 +143,23 @@ class GH_Manager(hass.Hass):
                         self.call_service("media_player/volume_set", entity_id = i, volume_level = j)
                         # Force Set state
                         self.set_state(i, state="", attributes = {"volume_level": j})
+                ## RESTORE MUSIC      
+                if self.dict_info_mplayer:
+                    temp_media_id = ''
+                    temp_media_type = ''
+                    playing = False
+                    for k,v in self.dict_info_mplayer.items():
+                        for k1,v1 in v.items():
+                            if v1 == 'playing':
+                                playing = True
+                            if k1 == 'media_id':
+                                temp_media_id = v1
+                            if k1 == 'media_type':
+                                temp_media_type = v1
+                        self.log("costruzione del servizio:  {} - {} - {} - {}".format(k, temp_media_id, temp_media_type, playing))
+                        if playing and (temp_media_id !=''):
+                            self.call_service("media_player/play_media", entity_id = k, media_content_id = temp_media_id, media_content_type = temp_media_type)
+                            
                 # It is empty, make callbacks
                 try:
                     while(self._when_tts_done_callback_queue.qsize() > 0):
