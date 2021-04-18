@@ -65,10 +65,11 @@ class GH_Manager(hass.Hass):
         for i in media_player:
             self.dict_info_mplayer[i] = {}
         for i in media_player:
-            self.dict_info_mplayer[i]['volume'] = self.get_state(i, attribute="volume_level", default=volume)
+            #self.dict_info_mplayer[i]['volume'] = self.get_state(i, attribute="volume_level", default=volume)
             self.dict_info_mplayer[i]['state'] = self.get_state(i, default='idle')
             self.dict_info_mplayer[i]['media_id'] = self.get_state(i, attribute="media_content_id", default='')
             self.dict_info_mplayer[i]['media_type'] = self.get_state(i, attribute="media_content_type", default='')
+            self.dict_info_mplayer[i]['app_name'] = self.get_state(i, attribute="app_name", default='')
         return self.dict_info_mplayer
     
     def replace_regular(self, text: str, substitutions: list):
@@ -127,7 +128,7 @@ class GH_Manager(hass.Hass):
                         elif self.get_state(entity, attribute='media_duration') is None:
                             duration = float(len(data["text"].split())) / 3 + data["wait_time"]
                         else: 
-                            duration = self.get_state(entity, attribute='media_duration')
+                            duration = float(self.get_state(entity, attribute='media_duration')) + data["wait_time"]
                     #Sleep and wait for the tts to finish
                     time.sleep(duration)
             except Exception as ex:
@@ -143,12 +144,13 @@ class GH_Manager(hass.Hass):
                         self.call_service("media_player/volume_set", entity_id = i, volume_level = j)
                         # Force Set state
                         self.set_state(i, state="", attributes = {"volume_level": j})
-                ## RESTORE MUSIC      
+                ## RESTORE MUSIC
                 if self.dict_info_mplayer:
-                    temp_media_id = ''
-                    temp_media_type = ''
-                    playing = False
                     for k,v in self.dict_info_mplayer.items():
+                        temp_media_id = ''
+                        temp_media_type = ''
+                        temp_app_name = ''
+                        playing = False
                         for k1,v1 in v.items():
                             if v1 == 'playing':
                                 playing = True
@@ -156,9 +158,13 @@ class GH_Manager(hass.Hass):
                                 temp_media_id = v1
                             if k1 == 'media_type':
                                 temp_media_type = v1
-                        self.log("costruzione del servizio:  {} - {} - {} - {}".format(k, temp_media_id, temp_media_type, playing))
-                        if playing and (temp_media_id !=''):
+                            if k1 == 'app_name':
+                                temp_app_name = v1
+                        #self.log("costruzione del servizio:  {} - {} - {} - {} - {}".format(k, temp_media_id, temp_media_type, temp_app_name, playing))
+                        if playing and (temp_media_id !='') and temp_app_name !='Spotify':
                             self.call_service("media_player/play_media", entity_id = k, media_content_id = temp_media_id, media_content_type = temp_media_type)
+                        elif playing and (temp_media_id !='') and temp_app_name =='Spotify':
+                            elf.call_service("spotcast/start", entity_id = k, uri = temp_media_id)
                             
                 # It is empty, make callbacks
                 try:
