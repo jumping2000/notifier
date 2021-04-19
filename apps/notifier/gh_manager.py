@@ -162,7 +162,7 @@ class GH_Manager(hass.Hass):
                                 temp_media_type = v1
                             if k1 == 'app_name':
                                 temp_app_name = v1
-                            if k1 == 'friendly_name'
+                            if k1 == 'friendly_name':
                                 temp_friendly_name = v1
                         #self.log("costruzione del servizio:  {} - {} - {} - {} - {} - {}".format(k, temp_media_id, temp_friendly_name, temp_media_type, temp_app_name, playing))
                         if playing and (temp_media_id !='') and temp_app_name !='Spotify':
