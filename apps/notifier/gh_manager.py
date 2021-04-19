@@ -70,6 +70,7 @@ class GH_Manager(hass.Hass):
             self.dict_info_mplayer[i]['media_id'] = self.get_state(i, attribute="media_content_id", default='')
             self.dict_info_mplayer[i]['media_type'] = self.get_state(i, attribute="media_content_type", default='')
             self.dict_info_mplayer[i]['app_name'] = self.get_state(i, attribute="app_name", default='')
+            self.dict_info_mplayer[i]['friendly_name'] = self.get_state(i, attribute="friendly_name", default='')
         return self.dict_info_mplayer
     
     def replace_regular(self, text: str, substitutions: list):
@@ -150,6 +151,7 @@ class GH_Manager(hass.Hass):
                         temp_media_id = ''
                         temp_media_type = ''
                         temp_app_name = ''
+                        temp_friendly_name = ''
                         playing = False
                         for k1,v1 in v.items():
                             if v1 == 'playing':
@@ -160,11 +162,15 @@ class GH_Manager(hass.Hass):
                                 temp_media_type = v1
                             if k1 == 'app_name':
                                 temp_app_name = v1
-                        #self.log("costruzione del servizio:  {} - {} - {} - {} - {}".format(k, temp_media_id, temp_media_type, temp_app_name, playing))
+                            if k1 == 'friendly_name'
+                                temp_friendly_name = v1
+                        #self.log("costruzione del servizio:  {} - {} - {} - {} - {} - {}".format(k, temp_media_id, temp_friendly_name, temp_media_type, temp_app_name, playing))
                         if playing and (temp_media_id !='') and temp_app_name !='Spotify':
                             self.call_service("media_player/play_media", entity_id = k, media_content_id = temp_media_id, media_content_type = temp_media_type)
                         elif playing and (temp_media_id !='') and temp_app_name =='Spotify':
-                            elf.call_service("spotcast/start", entity_id = k, uri = temp_media_id)
+                            self.call_service("spotcast/start", entity_id = k, uri = temp_media_id, device_name = temp_friendly_name)
+                            # self.call_service("spotcast/start", device_name = temp_friendly_name, uri = temp_media_id)
+
                             
                 # It is empty, make callbacks
                 try:
