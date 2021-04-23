@@ -49,9 +49,9 @@ class Notification_Manager(hass.Hass):
             if caption == "":
                 caption = "{}\n{}".format(title, message)
             if url != "":
-                extra_data = {"photo": {"url": url, "caption": caption}}
+                extra_data = {"photo": {"url": url, "caption": caption, "timeout": 60}}
             elif _file != "":
-                extra_data = {"photo": {"file": _file, "caption": caption}}
+                extra_data = {"photo": {"file": _file, "caption": caption, "timeout": 60}}
             if url != "" or _file != "":
                 self.call_service(__NOTIFY__ + notify_name, message="", data=extra_data)
             else:
