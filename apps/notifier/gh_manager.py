@@ -121,15 +121,12 @@ class GH_Manager(hass.Hass):
                     else:
                         entity = gh_player
                     self.call_service(__TTS__ + data["gh_notifier"], entity_id = entity, message = data["text"])#, language = data["language"])
-                    if type(entity) is list:
+                    if (type(entity) is list) or entity == "all" or \
+                            (self.get_state(entity, attribute='media_duration') is None) or \
+                        float(self.get_state(entity, attribute='media_duration')) > 60:
                         duration = float(len(data["text"].split())) / 3 + data["wait_time"]
                     else:
-                        if entity == "all":
-                            duration = float(len(data["text"].split())) / 3 + data["wait_time"]
-                        elif self.get_state(entity, attribute='media_duration') is None:
-                            duration = float(len(data["text"].split())) / 3 + data["wait_time"]
-                        else: 
-                            duration = float(self.get_state(entity, attribute='media_duration')) + data["wait_time"]
+                        duration = float(self.get_state(entity, attribute='media_duration')) + data["wait_time"]
                     #Sleep and wait for the tts to finish
                     time.sleep(duration)
             except Exception as ex:
