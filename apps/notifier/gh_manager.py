@@ -65,10 +65,15 @@ class GH_Manager(hass.Hass):
         for i in media_player:
             self.dict_info_mplayer[i] = {}
         for i in media_player:
-            self.dict_info_mplayer[i]['volume'] = self.get_state(i, attribute="volume_level", default=volume)
+            #self.dict_info_mplayer[i]['volume'] = self.get_state(i, attribute="volume_level", default=volume)
             self.dict_info_mplayer[i]['state'] = self.get_state(i, default='idle')
             self.dict_info_mplayer[i]['media_id'] = self.get_state(i, attribute="media_content_id", default='')
             self.dict_info_mplayer[i]['media_type'] = self.get_state(i, attribute="media_content_type", default='')
+            self.dict_info_mplayer[i]['app_name'] = self.get_state(i, attribute="app_name", default='')
+            self.dict_info_mplayer[i]['authSig'] = self.get_state(i, attribute="authSig", default='')
+            self.dict_info_mplayer[i]['media_position'] = self.get_state(i, attribute="media_position", default='')
+            self.dict_info_mplayer[i]['media_position_updated'] = self.get_state(i, attribute="media_position_updated", default='')
+            self.dict_info_mplayer[i]['friendly_name'] = self.get_state(i, attribute="friendly_name", default='')
         return self.dict_info_mplayer
     
     def replace_regular(self, text: str, substitutions: list):
@@ -119,15 +124,13 @@ class GH_Manager(hass.Hass):
                     else:
                         entity = gh_player
                     self.call_service(__TTS__ + data["gh_notifier"], entity_id = entity, message = data["text"])#, language = data["language"])
-                    if type(entity) is list:
+                    if (type(entity) is list) or entity == "all" or \
+                            (self.get_state(entity, attribute='media_duration') is None) or \
+                            float(self.get_state(entity, attribute='media_duration')) > 60 or \
+                            float(self.get_state(entity, attribute='media_duration')) == -1:
                         duration = float(len(data["text"].split())) / 3 + data["wait_time"]
                     else:
-                        if entity == "all":
-                            duration = float(len(data["text"].split())) / 3 + data["wait_time"]
-                        elif self.get_state(entity, attribute='media_duration') is None:
-                            duration = float(len(data["text"].split())) / 3 + data["wait_time"]
-                        else: 
-                            duration = self.get_state(entity, attribute='media_duration')
+                        duration = float(self.get_state(entity, attribute='media_duration')) + data["wait_time"]
                     #Sleep and wait for the tts to finish
                     time.sleep(duration)
             except Exception as ex:
@@ -143,12 +146,17 @@ class GH_Manager(hass.Hass):
                         self.call_service("media_player/volume_set", entity_id = i, volume_level = j)
                         # Force Set state
                         self.set_state(i, state="", attributes = {"volume_level": j})
-                ## RESTORE MUSIC      
+                ## RESTORE MUSIC
                 if self.dict_info_mplayer:
-                    temp_media_id = ''
-                    temp_media_type = ''
-                    playing = False
                     for k,v in self.dict_info_mplayer.items():
+                        temp_media_id = ''
+                        temp_media_type = ''
+                        temp_app_name = ''
+                        temp_friendly_name = ''
+                        temp_auth_sig = ''
+                        temp_media_pos = ''
+                        temp_media_pos_up = ''
+                        playing = False
                         for k1,v1 in v.items():
                             if v1 == 'playing':
                                 playing = True
@@ -156,9 +164,25 @@ class GH_Manager(hass.Hass):
                                 temp_media_id = v1
                             if k1 == 'media_type':
                                 temp_media_type = v1
-                        self.log("costruzione del servizio:  {} - {} - {} - {}".format(k, temp_media_id, temp_media_type, playing))
-                        if playing and (temp_media_id !=''):
+                            if k1 == 'app_name':
+                                temp_app_name = v1
+                            if k1 == 'authSig':
+                                temp_auth_sig = v1
+                            if k1 == 'friendly_name':
+                                temp_friendly_name = v1
+                            if k1 == 'media_position':
+                                temp_media_pos = v1
+                            if k1 == 'media_position_updated':
+                                temp_media_pos_up= v1
+                        self.log("costruzione del servizio:  {} - {} - {} - {} - {} - {} - {} - {}".format(k, temp_media_id, temp_friendly_name, temp_media_type, temp_media_pos, temp_app_name, temp_auth_sig, playing))
+                        if playing and (temp_media_id !='') and (temp_auth_sig !=''):
+                            self.call_service("media_player/play_media", entity_id = k, media_content_id = temp_media_id, media_content_type = temp_media_type, authSig = temp_auth_sig)
+                        elif playing and (temp_media_id !='') and temp_app_name =='Spotify':
+                            self.call_service("spotcast/start", device_name = temp_friendly_name, uri = temp_media_id, media_position = temp_media_pos, media_position_updated = temp_media_pos_up)
+                        elif playing:
                             self.call_service("media_player/play_media", entity_id = k, media_content_id = temp_media_id, media_content_type = temp_media_type)
+                            
+
                             
                 # It is empty, make callbacks
                 try:
