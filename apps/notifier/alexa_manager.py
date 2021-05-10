@@ -408,7 +408,7 @@ class Alexa_Manager(hass.Hass):
 
     def player_get(self, user_player):
         media_player = []
-        user_player = self.converti(str(user_player.lower()))
+        user_player = user_player if isinstance(user_player, list) else self.converti(str(user_player.lower()))
         for mpu in user_player:  # MediaPlayerUser
             if "test" in mpu:
                 media_player.extend(self.player_alexa)
