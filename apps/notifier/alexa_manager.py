@@ -297,7 +297,7 @@ class Alexa_Manager(hass.Hass):
         self.lg(f"REMOVE [NONE] VALUE: {type(alexa)} value {alexa}")
         default_restore_volume = float(self.get_state(self.args.get("default_restore_volume"))) / 100
         volume = float(alexa.get("volume", default_restore_volume))
-        message = str(alexa.get("message", alexa.get("message_tts")))
+        message = str(alexa.get("message", alexa.get("message_tts", "")))
         alexa_player = self.player_get(alexa.get("media_player", self.get_state(self.alexa_sensor_media_player)))
         alexa_type = (
             str(alexa.get("type", self.get_state(self.alexa_type))).lower().replace("dropin", "dropin_notification")
@@ -408,7 +408,7 @@ class Alexa_Manager(hass.Hass):
 
     def player_get(self, user_player):
         media_player = []
-        user_player = self.converti(str(user_player.lower()))
+        user_player = user_player if isinstance(user_player, list) else self.converti(str(user_player.lower()))
         for mpu in user_player:  # MediaPlayerUser
             if "test" in mpu:
                 media_player.extend(self.player_alexa)
