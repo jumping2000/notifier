@@ -6,9 +6,8 @@
 - Improvments in menagement of companion app messages
 
 ### Added
-- Added management of pushover and push bullet messages
+- Added management of mail, pushover and pushbullet messages
 - Messages to multiple notification service
-- Media extractor function
 
 ## [2.0.0] - 30-10-2020
 
