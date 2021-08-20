@@ -1,6 +1,9 @@
 # Changelog
 
-## [2.1.0] - 20-08-2021
+## [2.2.0] - 20-08-2021
+
+### Breacking Changes
+- Nothing
 
 ### Improvments
 - Improvments in menagement of companion app messages
@@ -8,6 +11,17 @@
 ### Added
 - Added management of mail, pushover and pushbullet messages
 - Messages to multiple notification service
+
+## [2.1.0] - 17-11-2020
+
+### Breacking Changes
+- Nothing
+
+### Improvments
+- Various fixes
+
+### Added
+- New TTS added: Reverso TTS e Goggle Cloud
 
 ## [2.0.0] - 30-10-2020
 
