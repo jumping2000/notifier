@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.1.0] - 20-08-2021
+
+### Improvments
+- Improvments in menagement of companion app messages
+
+### Added
+- Added management of pushover and push bullet messages
+- Messages to multiple notification service
+- Media extractor function
+
 ## [2.0.0] - 30-10-2020
 
 ### Breacking Changes
