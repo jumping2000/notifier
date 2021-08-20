@@ -46,6 +46,9 @@ class Notification_Manager(hass.Hass):
         for item in notify_vector:
             if item.find("notify.") == -1:
                 item = __NOTIFY__ + item
+            else:
+                item = self.replace_regular(item,[("\.","/")])
+        ### TELEGRAM ###
             if item.find("telegram") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
                 if str(html).lower() not in ["true","on","yes","1"]:
@@ -70,14 +73,14 @@ class Notification_Manager(hass.Hass):
                     self.call_service( item, messagge = "", data = extra_data)
                 else:
                     self.call_service( item, message = messaggio, title = titolo)
-
+            ### WHATSAPP ###
             elif item.find("whatsapp") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
                 if link !="":
                     messaggio = ("{} {}".format(messaggio,link))
                 messaggio = titolo + " " + messaggio
                 self.call_service( item, message = messaggio)
-
+            ### PUSHOVER ###
             elif item.find("pushover") != -1:
                 titolo = title
                 messaggio = message 
@@ -94,7 +97,7 @@ class Notification_Manager(hass.Hass):
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
                     self.call_service( item, message = messaggio, title = titolo)
-
+            ### PUSHBULLET ###
             elif item.find("pushbullet") != -1:
                 titolo = title
                 messaggio = message 
@@ -113,7 +116,7 @@ class Notification_Manager(hass.Hass):
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
                     self.call_service( item, message = messaggio, title = titolo)
-
+            ### MAIL ###
             elif item.find("mail") != -1:
                 titolo = title
                 messaggio = message 
@@ -128,7 +131,7 @@ class Notification_Manager(hass.Hass):
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
                     self.call_service( item, message = messaggio, title = titolo)
-
+            ### MOBILE ###
             elif item.find("mobile") != -1:
                 titolo = title
                 messaggio = message 
