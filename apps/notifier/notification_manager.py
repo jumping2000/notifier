@@ -28,6 +28,7 @@ class Notification_Manager(hass.Hass):
         if len(nt) == 1:
             nt[0] = notify_name if str(nt[0]).lower() in ["true","on","yes"] or nt[0] == "1" or nt[0] == 1 else nt[0]
         return nt
+    
     def send_notify(self, data, notify_name, assistant_name: str):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         title = data["title"]
@@ -39,9 +40,12 @@ class Notification_Manager(hass.Hass):
         html = data["html"]
         mobile = data["mobile"]
         notify_vector = self.check_notifier(self.split_device_list(str(data["notify"])),notify_name)
+        #self.log("[nt-vector]: {}".format(notify_vector), ascii_encode = False)
         ### SAVE IN INPUT_TEXT.LAST_MESSAGE
         self.set_state(self.text_last_message, state = message[:245])
         for item in notify_vector:
+            if item.find("notify.") == -1:
+                item = __NOTIFY__ + item
             if item.find("telegram") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
                 if str(html).lower() not in ["true","on","yes","1"]:
@@ -63,15 +67,17 @@ class Notification_Manager(hass.Hass):
                                     "timeout": 60}
                                 }
                 if url != "" or _file != "":
-                    self.call_service(__NOTIFY__ + item, messagge = "", data = extra_data)
+                    self.call_service( item, messagge = "", data = extra_data)
                 else:
-                    self.call_service(__NOTIFY__ + item, message = messaggio, title = titolo)
+                    self.call_service( item, message = messaggio, title = titolo)
+
             elif item.find("whatsapp") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
                 if link !="":
-                    messaggio = ("{} {}".format(message,link))
+                    messaggio = ("{} {}".format(messaggio,link))
                 messaggio = titolo + " " + messaggio
-                self.call_service(__NOTIFY__ + item, message = messaggio)
+                self.call_service( item, message = messaggio)
+
             elif item.find("pushover") != -1:
                 titolo = title
                 messaggio = message 
@@ -85,9 +91,10 @@ class Notification_Manager(hass.Hass):
                 if _file !="":
                     extra_data["attachment"] = _file
                 if extra_data:
-                    self.call_service(__NOTIFY__ + item, message = messaggio, title = titolo, data = extra_data)
+                    self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
-                    self.call_service(__NOTIFY__ + item, message = messaggio, title = titolo)
+                    self.call_service( item, message = messaggio, title = titolo)
+
             elif item.find("pushbullet") != -1:
                 titolo = title
                 messaggio = message 
@@ -103,9 +110,10 @@ class Notification_Manager(hass.Hass):
                 elif _file !="":
                     extra_data = {"file": _file}
                 if extra_data:
-                    self.call_service(__NOTIFY__ + item, message = messaggio, title = titolo, data = extra_data)
+                    self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
-                    self.call_service(__NOTIFY__ + item, message = messaggio, title = titolo)
+                    self.call_service( item, message = messaggio, title = titolo)
+
             elif item.find("mail") != -1:
                 titolo = title
                 messaggio = message 
@@ -117,9 +125,10 @@ class Notification_Manager(hass.Hass):
                     messaggio = ("{} {}".format(messaggio,link))
                 extra_data = ""
                 if extra_data:
-                    self.call_service(__NOTIFY__ + item, message = messaggio, title = titolo, data = extra_data)
+                    self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
-                    self.call_service(__NOTIFY__ + item, message = messaggio, title = titolo)
+                    self.call_service( item, message = messaggio, title = titolo)
+
             elif item.find("mobile") != -1:
                 titolo = title
                 messaggio = message 
@@ -131,9 +140,10 @@ class Notification_Manager(hass.Hass):
                     messaggio = ("{} {}".format(messaggio,link))
                 extra_data = mobile
                 if extra_data:
-                    self.call_service(__NOTIFY__ + item, message = messaggio, title = titolo, data = extra_data)
+                    self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
-                    self.call_service(__NOTIFY__ + item, message = messaggio, title = titolo)
+                    self.call_service( item, message = messaggio, title = titolo)
+    
     def send_persistent(self, data, persistent_notification_info):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         try:
