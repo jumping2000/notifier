@@ -3,7 +3,7 @@ import datetime
 import re
 
 """
-Class Notification_Manager handles sending text to notfyng service
+Class Notification_Manager handless sending text to notifyng service
 """
 __NOTIFY__ = "notify/"
 SUB_NOTIFICHE = [(" +"," "),("\s\s+","\n")]
@@ -11,7 +11,6 @@ SUB_NOTIFICHE = [(" +"," "),("\s\s+","\n")]
 class Notification_Manager(hass.Hass):
 
     def initialize(self):
-        #self.text_last_message = globals.get_arg(self.args, "text_last_message")
         self.text_last_message = self.args["text_last_message"]
         
     def prepare_text(self, html, message, title, timestamp, assistant_name):
@@ -27,10 +26,8 @@ class Notification_Manager(hass.Hass):
         nt = []
         for item in [x.strip(" ") for x in notifier]:
             nt.append(item)
-        self.log("[NT]: {}".format(nt), ascii_encode = False)
         if len(nt) == 1:
             nt[0] = notify_name if str(nt[0]).lower() in ["true","on","yes"] or nt[0] == "1" or nt[0] == 1 or nt[0] == "" else nt[0]
-        self.log("[NT] 2: {}".format(nt), ascii_encode = False)
         return nt
     
     def send_notify(self, data, notify_name, assistant_name: str):
@@ -44,7 +41,6 @@ class Notification_Manager(hass.Hass):
         html = data["html"]
         mobile = data["mobile"]
         notify_vector = self.check_notifier(self.split_device_list(str(data["notify"])),notify_name)
-        #self.log("[nt-vector]: {}".format(notify_vector), ascii_encode = False)
         ### SAVE IN INPUT_TEXT.LAST_MESSAGE
         self.set_state(self.text_last_message, state = message[:245])
         for item in notify_vector:
@@ -74,7 +70,7 @@ class Notification_Manager(hass.Hass):
                                     "timeout": 60}
                                 }
                 if url != "" or _file != "":
-                    self.call_service( item, messagge = "", data = extra_data)
+                    self.call_service( item, message = "", data = extra_data)
                 else:
                     self.call_service( item, message = messaggio, title = titolo)
             ### WHATSAPP ###
