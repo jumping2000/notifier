@@ -12,6 +12,7 @@ SUB_NOTIFICHE_WRAP = [(" +"," "),("\s\s+","\n")]
 class Notification_Manager(hass.Hass):
 
     def initialize(self):
+        #self.text_last_message = globals.get_arg(self.args, "text_last_message")
         self.text_last_message = self.args["text_last_message"]
         self.boolean_wrap_text = self.args["boolean_wrap_text"]
         self.boolean_tts_clock = self.args["boolean_tts_clock"]
@@ -23,6 +24,10 @@ class Notification_Manager(hass.Hass):
         else:
             title = ("*[{} - {}] {}*".format(assistant_name, timestamp, title))
             title = self.replace_regular(title,[("\s\*","*")])
+        if self.get_state(self.boolean_wrap_text) == 'on':
+            message = self.replace_regular(message, SUB_NOTIFICHE_WRAP)
+        else:
+            message = self.replace_regular(message, SUB_NOTIFICHE_NOWRAP)
         return message, title
 
     def check_notifier(self, notifier, notify_name: str):
@@ -36,11 +41,7 @@ class Notification_Manager(hass.Hass):
     def send_notify(self, data, notify_name, assistant_name: str):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         title = data["title"]
-        message = ""
-        if self.get_state(self.boolean_wrap_text) == 'on':
-            message = self.replace_regular(data["message"], SUB_NOTIFICHE_WRAP)
-        else:
-            message = self.replace_regular(data["message"], SUB_NOTIFICHE_NOWRAP)
+        message = data["message"]
         url = data["url"]
         _file = data["file"]
         caption = data["caption"]
@@ -57,6 +58,7 @@ class Notification_Manager(hass.Hass):
                 item = __NOTIFY__ + item
             else:
                 item = self.replace_regular(item,[("\.","/")])
+            #### TELEGRAM #######################
             if item.find("telegram") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
                 extra_data = ""
@@ -70,34 +72,29 @@ class Notification_Manager(hass.Hass):
                     extra_data = { "photo": 
                                     {"url": url,
                                     "caption": caption,
-                                    "timeout": 60}
+                                    "timeout": 90}
                                 }
                 elif _file !="":
                     extra_data = { "photo": 
                                     {"file": _file,
                                     "caption": caption,
-                                    "timeout": 60}
+                                    "timeout": 90}
                                 }
                 if url != "" or _file != "":
                     self.call_service(item, message = "", data = extra_data)
                 else:
                     self.call_service(item, message = messaggio, title = titolo)
-
+            #### WHATSAPP #######################
             elif item.find("whatsapp") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
                 if link !="":
                     messaggio = ("{} {}".format(messaggio,link))
                 messaggio = titolo + " " + messaggio
                 self.call_service( item, message = messaggio)
-
+            #### PUSHOVER #######################
             elif item.find("pushover") != -1:
-                titolo = title
-                messaggio = message
+                messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
                 extra_data = ""
-                if titolo !="":
-                    titolo = ("[{} - {}] {}".format(assistant_name, timestamp, titolo))
-                else:
-                    titolo = ("[{} - {}]".format(assistant_name, timestamp))
                 if url !="":
                     extra_data = {"url": url}
                 if _file !="":
@@ -106,15 +103,10 @@ class Notification_Manager(hass.Hass):
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
                     self.call_service( item, message = messaggio, title = titolo)
-
+            #### PUSHBULLET #####################
             elif item.find("pushbullet") != -1:
-                titolo = title
-                messaggio = message
+                messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
                 extra_data = ""
-                if titolo !="":
-                    titolo = ("[{} - {}] {}".format(assistant_name, timestamp, titolo))
-                else:
-                    titolo = ("[{} - {}]".format(assistant_name, timestamp))
                 if link !="":
                     message = ("{} {}".format(messaggio,link))
                 if url !="":
@@ -125,22 +117,17 @@ class Notification_Manager(hass.Hass):
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
                     self.call_service( item, message = messaggio, title = titolo)
-
+            #### MAIL ###########################
             elif item.find("mail") != -1:
-                titolo = title
-                messaggio = message
+                messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
                 extra_data = ""
-                if titolo !="":
-                    titolo = ("[{} - {}] {}".format(assistant_name, timestamp, titolo))
-                else:
-                    titolo = ("[{} - {}]".format(assistant_name, timestamp))
                 if link !="":
                     messaggio = ("{} {}".format(messaggio,link))
                 if extra_data:
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
                     self.call_service( item, message = messaggio, title = titolo)
-
+            #### MOBILE #########################
             elif item.find("mobile") != -1:
                 titolo = title
                 messaggio = message
@@ -165,7 +152,7 @@ class Notification_Manager(hass.Hass):
             per_not_info = self.get_state(persistent_notification_info)
         except:
             per_not_info = "null"
-        if self.get_state(self.boolean_wrap_text):
+        if self.get_state(self.boolean_wrap_text) == 'on':
             messaggio = self.replace_regular(data["message"], SUB_NOTIFICHE_WRAP)
         else:
             messaggio = self.replace_regular(data["message"], SUB_NOTIFICHE_NOWRAP)
