@@ -30,6 +30,11 @@ class Notification_Manager(hass.Hass):
             message = self.replace_regular(message, SUB_NOTIFICHE_NOWRAP)
         return message, title
 
+    def removekey(self, d, key):
+        r = dict(d)
+        del r[key]
+        return r
+
     def check_notifier(self, notifier, notify_name: str):
         nt = []
         for item in [x.strip(" ") for x in notifier]:
@@ -42,8 +47,7 @@ class Notification_Manager(hass.Hass):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         title = data["title"]
         message = data["message"]
-        url = data["url"]
-        _file = data["file"]
+        image = data["image"]
         caption = data["caption"]
         link = data["link"]
         html = data["html"]
@@ -52,7 +56,6 @@ class Notification_Manager(hass.Hass):
         ########## SAVE IN INPUT_TEXT ###########
         self.set_state(self.text_last_message, state = message[:245])
         #########################################
-
         for item in notify_vector:
             if item.find("notify.") == -1:
                 item = __NOTIFY__ + item
@@ -68,19 +71,19 @@ class Notification_Manager(hass.Hass):
                     messaggio = ("{} {}".format(messaggio,link))
                 if caption == "":
                     caption = ("{}\n{}".format(titolo,messaggio))
-                if url !="":
+                if image != ""  and image.find("http") != -1:
                     extra_data = { "photo": 
-                                    {"url": url,
+                                    {"url": image,
                                     "caption": caption,
                                     "timeout": 90}
                                 }
-                elif _file !="":
+                if image != ""  and image.find("http") == -1:
                     extra_data = { "photo": 
-                                    {"file": _file,
+                                    {"file": image,
                                     "caption": caption,
                                     "timeout": 90}
                                 }
-                if url != "" or _file != "":
+                if image != "":
                     self.call_service(item, message = "", data = extra_data)
                 else:
                     self.call_service(item, message = messaggio, title = titolo)
@@ -95,10 +98,10 @@ class Notification_Manager(hass.Hass):
             elif item.find("pushover") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
                 extra_data = ""
-                if url !="":
+                if image != "" and image.find("http") != -1:
                     extra_data = {"url": url}
-                if _file !="":
-                    extra_data["attachment"] = _file
+                if image != "" and image.find("http") == -1:
+                    extra_data["attachment"] = image
                 if extra_data:
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
@@ -109,9 +112,9 @@ class Notification_Manager(hass.Hass):
                 extra_data = ""
                 if link !="":
                     message = ("{} {}".format(messaggio,link))
-                if url !="":
+                if image != "" and image.find("http") != -1:
                     extra_data = {"url": url}
-                elif _file !="":
+                if image != "" and image.find("http") == -1:
                     extra_data = {"file": _file}
                 if extra_data:
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
@@ -131,15 +134,28 @@ class Notification_Manager(hass.Hass):
             elif item.find("mobile") != -1:
                 titolo = title
                 messaggio = message
-                extra_data = ""
-                if messaggio == "TTS":
+                # messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
+                tts_flag = False
+                extra_data = {}
+                if isinstance(mobile, dict):
+                    if "tts" in mobile:
+                        if str(mobile.get("tts")).lower() in ["true","on","yes","1"]:
+                            tts_flag = True
+                        else:
+                            tts_flag = False
+                        extra_data = self.removekey(mobile,"tts")
+                    if "image" in mobile:
+                        extra_data = mobile
+                if image != "":
+                    extra_data.update({"image":image})
+                if tts_flag:
                     if self.get_state(self.boolean_tts_clock) == 'on':
-                        titolo = ("{} {}".format(timestamp, titolo))
+                        titolo = ("{} {}".format(timestamp, titolo + " " + messaggio))
+                        messaggio = 'TTS'
                 else:
                     titolo = ("[{} - {}] {}".format(assistant_name, timestamp, titolo))
                 if link !="":
                     messaggio = ("{} {}".format(messaggio,link))
-                extra_data = mobile
                 if extra_data:
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
