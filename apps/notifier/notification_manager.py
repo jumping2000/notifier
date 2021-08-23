@@ -8,7 +8,7 @@ Class Notification_Manager handles sending text to notfyng service
 __NOTIFY__ = "notify/"
 SUB_NOTIFICHE_NOWRAP = [("\s+"," "),(" +"," ")]
 SUB_NOTIFICHE_WRAP = [(" +"," "),("\s\s+","\n")]
-SUB_NOTIFIER =  [(" ","_"),("\.","/")]
+SUB_NOTIFIER =  [("\s+","_"),("\.","/")]
 
 class Notification_Manager(hass.Hass):
 
