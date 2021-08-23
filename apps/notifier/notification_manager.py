@@ -58,12 +58,11 @@ class Notification_Manager(hass.Hass):
         ########## SAVE IN INPUT_TEXT ###########
         self.set_state(self.text_last_message, state = message[:245])
         #########################################
-
         for item in notify_vector:
             if item.find("notify.") == -1:
-                item = __NOTIFY__ + self.replace_regular(item,SUB_NOTIFIER)
+                item = __NOTIFY__ + str(self.replace_regular(item,SUB_NOTIFIER)).lower()
             else:
-                item = self.replace_regular(item,SUB_NOTIFIER)
+                item = str(self.replace_regular(item,SUB_NOTIFIER)).lower()
             #### TELEGRAM #######################
             if item.find("telegram") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
@@ -166,12 +165,11 @@ class Notification_Manager(hass.Hass):
                             tts_flag = True
                         else:
                             tts_flag = False
-                        extra_data = self.removekey(mobile,"tts")
-                    if "image" in mobile:
+                            extra_data = self.removekey(mobile,"tts")
+                    else:
                         extra_data = mobile
                 if image != "":
                     extra_data.update({"image":image})
-                self.log("[FLAG]: {}".format(tts_flag), ascii_encode = False)
                 if tts_flag:
                     if self.get_state(self.boolean_tts_clock) == 'on':
                         titolo = ("{} {}".format(timestamp, titolo + " " + messaggio))
@@ -183,8 +181,6 @@ class Notification_Manager(hass.Hass):
                     titolo = ("[{} - {}] {}".format(assistant_name, timestamp, titolo))
                 if link !="":
                     messaggio = ("{} {}".format(messaggio,link))
-                self.log("[MESSAGGIO]: {}".format(messaggio), ascii_encode = False)
-                self.log("[TITOLO]: {}".format(titolo), ascii_encode = False)
                 if extra_data:
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
