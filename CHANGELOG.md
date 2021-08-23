@@ -1,9 +1,9 @@
 # Changelog
 
-## [2.2.0] - 20-08-2021
+## [2.2.0] - 23-08-2021
 
 ### Breacking Changes
-- Nothing
+- New parameter "image"; old parameters "url" and "file" don't work anymore 
 
 ### Improvments
 - Improvments in menagement of companion app messages
