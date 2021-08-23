@@ -9,7 +9,8 @@
 - Improvments in menagement of companion app messages: it's possible to send images, TTS messages and more
 
 ### Added
-- Added management of mail, pushover and pushbullet messages
+- Added management of mail, Pushover and Pushbullet messages
+- Initial support of Discord messages
 - Messages to multiple notification services
 
 ## [2.1.0] - 17-11-2020
