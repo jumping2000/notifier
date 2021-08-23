@@ -52,10 +52,12 @@ class Notification_Manager(hass.Hass):
         link = data["link"]
         html = data["html"]
         mobile = data["mobile"]
+        discord = data["discord"]
         notify_vector = self.check_notifier(self.split_device_list(str(data["notify"])),notify_name)
         ########## SAVE IN INPUT_TEXT ###########
         self.set_state(self.text_last_message, state = message[:245])
         #########################################
+
         for item in notify_vector:
             if item.find("notify.") == -1:
                 item = __NOTIFY__ + item
@@ -100,9 +102,9 @@ class Notification_Manager(hass.Hass):
                 titolo = titolo.replace("*","")
                 extra_data = {}
                 if image != "" and image.find("http") != -1:
-                    extra_data = {"url": image}
+                    extra_data.update({"url": image})
                 if image != "" and image.find("http") == -1:
-                    extra_data = {"attachment": image}
+                    extra_data.update({"attachment": image})
                 if extra_data:
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
@@ -113,15 +115,35 @@ class Notification_Manager(hass.Hass):
                 titolo = titolo.replace("*","")
                 extra_data = {}
                 if link !="":
-                    message = ("{} {}".format(messaggio,link))
+                    messaggio = ("{} {}".format(messaggio,link))
                 if image != "" and image.find("http") != -1:
-                    extra_data = {"url": image}
+                    extra_data.update( {"url": image})
                 if image != "" and image.find("http") == -1:
-                    extra_data = {"file": image}
+                    extra_data.update({"file": image})
                 if extra_data:
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
                     self.call_service( item, message = messaggio, title = titolo)
+            #### DISCORD ########################
+            elif item.find("discord") != -1:
+                messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
+                extra_data = {}
+                if isinstance(discord, dict):
+                    if "embed" in discord:
+                        extra_data = discord
+                        extra_data.update({"title":titolo.replace("*","")})
+                        extra_data.update({"description":messaggio})
+                        if link !="":
+                            extra_data.update({"url":link})
+                    elif "images" in discord:
+                        extra_data = discord
+                        messaggio = titolo.replace("*","") + " " + messaggio
+                if image != "":
+                    extra_data.update({"images":image})
+                if extra_data:
+                    self.call_service( item, message = messaggio, data = extra_data)
+                else:
+                    self.call_service( item, message = messaggio)
             #### MAIL ###########################
             elif item.find("mail") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
