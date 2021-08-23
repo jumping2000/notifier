@@ -138,12 +138,14 @@ class Notification_Manager(hass.Hass):
                     elif "images" in discord:
                         extra_data = discord
                         messaggio = titolo.replace("*","") + " " + messaggio
-                if image != "":
-                    extra_data.update({"images":image})
-                if extra_data:
-                    self.call_service( item, message = messaggio, data = extra_data)
                 else:
-                    self.call_service( item, message = messaggio)
+                    messaggio = titolo.replace("*","") + " " + messaggio
+                # if image != "":
+                #     extra_data.update({"images":image})
+                # if extra_data:
+                #    self.call_service( item, message = messaggio, data = extra_data)
+                #else:
+                self.call_service( item, message = messaggio)
             #### MAIL ###########################
             elif item.find("mail") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
