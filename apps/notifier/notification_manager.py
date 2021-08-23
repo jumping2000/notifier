@@ -97,11 +97,11 @@ class Notification_Manager(hass.Hass):
             #### PUSHOVER #######################
             elif item.find("pushover") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
-                extra_data = ""
+                extra_data = {}
                 if image != "" and image.find("http") != -1:
-                    extra_data = {"url": url}
+                    extra_data = {"url": image}
                 if image != "" and image.find("http") == -1:
-                    extra_data["attachment"] = image
+                    extra_data = {"attachment": image}
                 if extra_data:
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
@@ -109,13 +109,13 @@ class Notification_Manager(hass.Hass):
             #### PUSHBULLET #####################
             elif item.find("pushbullet") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
-                extra_data = ""
+                extra_data = {}
                 if link !="":
                     message = ("{} {}".format(messaggio,link))
                 if image != "" and image.find("http") != -1:
-                    extra_data = {"url": url}
+                    extra_data = {"url": image}
                 if image != "" and image.find("http") == -1:
-                    extra_data = {"file": _file}
+                    extra_data = {"file": image}
                 if extra_data:
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
