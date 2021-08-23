@@ -156,9 +156,8 @@ class Notification_Manager(hass.Hass):
                 self.call_service( item, message = messaggio, title = titolo)
             #### MOBILE #########################
             elif item.find("mobile") != -1:
+                messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
                 titolo = title
-                messaggio = message
-                # messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
                 tts_flag = False
                 extra_data = {}
                 if isinstance(mobile, dict):
@@ -172,14 +171,20 @@ class Notification_Manager(hass.Hass):
                         extra_data = mobile
                 if image != "":
                     extra_data.update({"image":image})
+                self.log("[FLAG]: {}".format(tts_flag), ascii_encode = False)
                 if tts_flag:
                     if self.get_state(self.boolean_tts_clock) == 'on':
                         titolo = ("{} {}".format(timestamp, titolo + " " + messaggio))
+                        messaggio = 'TTS'
+                    else:
+                        titolo = ("{}".format(titolo + " " + messaggio))
                         messaggio = 'TTS'
                 else:
                     titolo = ("[{} - {}] {}".format(assistant_name, timestamp, titolo))
                 if link !="":
                     messaggio = ("{} {}".format(messaggio,link))
+                self.log("[MESSAGGIO]: {}".format(messaggio), ascii_encode = False)
+                self.log("[TITOLO]: {}".format(titolo), ascii_encode = False)
                 if extra_data:
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
