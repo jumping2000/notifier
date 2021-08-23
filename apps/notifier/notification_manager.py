@@ -97,6 +97,7 @@ class Notification_Manager(hass.Hass):
             #### PUSHOVER #######################
             elif item.find("pushover") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
+                titolo = titolo.replace("*","")
                 extra_data = {}
                 if image != "" and image.find("http") != -1:
                     extra_data = {"url": image}
@@ -109,6 +110,7 @@ class Notification_Manager(hass.Hass):
             #### PUSHBULLET #####################
             elif item.find("pushbullet") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
+                titolo = titolo.replace("*","")
                 extra_data = {}
                 if link !="":
                     message = ("{} {}".format(messaggio,link))
@@ -123,13 +125,10 @@ class Notification_Manager(hass.Hass):
             #### MAIL ###########################
             elif item.find("mail") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
-                extra_data = ""
+                titolo = titolo.replace("*","")
                 if link !="":
                     messaggio = ("{} {}".format(messaggio,link))
-                if extra_data:
-                    self.call_service( item, message = messaggio, title = titolo, data = extra_data)
-                else:
-                    self.call_service( item, message = messaggio, title = titolo)
+                self.call_service( item, message = messaggio, title = titolo)
             #### MOBILE #########################
             elif item.find("mobile") != -1:
                 titolo = title
