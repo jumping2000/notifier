@@ -8,6 +8,7 @@ Class Notification_Manager handles sending text to notfyng service
 __NOTIFY__ = "notify/"
 SUB_NOTIFICHE_NOWRAP = [("\s+"," "),(" +"," ")]
 SUB_NOTIFICHE_WRAP = [(" +"," "),("\s\s+","\n")]
+SUB_NOTIFIER =  [(" ","_"),("\.","/")]
 
 class Notification_Manager(hass.Hass):
 
@@ -60,9 +61,9 @@ class Notification_Manager(hass.Hass):
 
         for item in notify_vector:
             if item.find("notify.") == -1:
-                item = __NOTIFY__ + item
+                item = __NOTIFY__ + self.replace_regular(item,SUB_NOTIFIER)
             else:
-                item = self.replace_regular(item,[("\.","/")])
+                item = self.replace_regular(item,SUB_NOTIFIER)
             #### TELEGRAM #######################
             if item.find("telegram") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
