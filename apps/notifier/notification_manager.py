@@ -204,7 +204,7 @@ class Notification_Manager(hass.Hass):
                     title = "[{} - {}]".format(assistant_name, timestamp)
                 if link !="":
                     message = ("{} {}".format(message,link))
-                self.call_service(__NOTIFY__ + notify_name, message=message, title=title)
+                self.call_service(item, message=message, title=title)
                 
     def send_persistent(self, data, persistent_notification_info):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
