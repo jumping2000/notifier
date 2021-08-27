@@ -121,8 +121,8 @@ class Notifier_Dispatch(hass.Hass):
         guest_status = self.get_state(self.guest_mode)
         priority_status = (self.get_state(self.priority_message) == "on") or priority_flag
         ### FROM INPUT SELECT ###
-        notify_name = self.get_state(self.text_notify).lower().replace(" ", "_")
-        phone_notify_name = self.get_state(self.phone_notify).lower().replace(" ", "_")
+        notify_name = self.get_state(self.text_notify)
+        phone_notify_name = self.get_state(self.phone_notify)
         ### NOTIFICATION ###
         if priority_status:
             useNotification = True
