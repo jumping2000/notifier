@@ -131,7 +131,7 @@ class GH_Manager(hass.Hass):
                             (self.get_state(entity, attribute='media_duration') is None) or \
                             float(self.get_state(entity, attribute='media_duration')) > 60 or \
                             float(self.get_state(entity, attribute='media_duration')) == -1:
-                        duration = float(len(data["text"].split())) / 2 + data["wait_time"]
+                        duration = float(len(data["text"].split())) / 3 + data["wait_time"]
                     else:
                         duration = float(self.get_state(entity, attribute='media_duration')) + data["wait_time"]
                     #Sleep and wait for the tts to finish
