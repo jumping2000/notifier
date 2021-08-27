@@ -36,13 +36,23 @@ class Notification_Manager(hass.Hass):
         del r[key]
         return r
 
-    def check_notifier(self, notifier, notify_name: str):
-        nt = []
+    def check_notifier(self, notifier, notify_name):
+        notifier_list = []
+        notify_name_list = []
+        notifier_vector = []
         for item in [x.strip(" ") for x in notifier]:
-            nt.append(item)
-        if len(nt) == 1:
-            nt[0] = notify_name if str(nt[0]).lower() in ["true","on","yes"] or nt[0] == "1" or nt[0] == 1 or nt[0] == "" else nt[0]
-        return nt
+            notifier_vector.append(item.lower())
+            notifier_list.append(item.lower())
+        for item in [x.strip(" ") for x in notify_name]:
+            notifier_vector.append(item.lower())
+            notify_name_list.append(item.lower())
+        if any(i in notifier_vector for i in ["1","true","on",1,""]):
+            notifier_vector.clear()
+            notifier_vector = notify_name_list
+        else:
+            notifier_vector.clear()
+            notifier_vector = notifier_list
+        return notifier_vector
 
     def send_notify(self, data, notify_name, assistant_name: str):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
@@ -54,7 +64,7 @@ class Notification_Manager(hass.Hass):
         html = data["html"]
         mobile = data["mobile"]
         discord = data["discord"]
-        notify_vector = self.check_notifier(self.split_device_list(str(data["notify"])),notify_name)
+        notify_vector = self.check_notifier(self.split_device_list(str(data["notify"])),self.split_device_list(str(notify_name)))
         ########## SAVE IN INPUT_TEXT ###########
         self.set_state(self.text_last_message, state = message[:245])
         #########################################
@@ -163,13 +173,14 @@ class Notification_Manager(hass.Hass):
                     if "tts" in mobile:
                         if str(mobile.get("tts")).lower() in ["true","on","yes","1"]:
                             tts_flag = True
+                            extra_data = self.removekey(mobile,"tts")
                         else:
                             tts_flag = False
                             extra_data = self.removekey(mobile,"tts")
                     else:
                         extra_data = mobile
                 if image != "":
-                    extra_data.update({"image":image})
+                    extra_data.update({"image":image.replace("config/www","local")})
                 if tts_flag:
                     if self.get_state(self.boolean_tts_clock) == 'on':
                         titolo = ("{} {}".format(timestamp, titolo + " " + messaggio))
