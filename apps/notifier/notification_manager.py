@@ -196,7 +196,16 @@ class Notification_Manager(hass.Hass):
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
                     self.call_service( item, message = messaggio, title = titolo)
-
+            #### OTHER #########################
+            else:
+                if title != "":
+                    title = "[{} - {}] {}".format(assistant_name, timestamp, title)
+                else:
+                    title = "[{} - {}]".format(assistant_name, timestamp)
+                if link !="":
+                    message = ("{} {}".format(message,link))
+                self.call_service(__NOTIFY__ + notify_name, message=message, title=title)
+                
     def send_persistent(self, data, persistent_notification_info):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         messaggio=""
