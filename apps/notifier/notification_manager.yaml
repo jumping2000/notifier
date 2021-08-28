@@ -3,3 +3,5 @@ Notification_Manager:
   class: Notification_Manager
   
   text_last_message: input_text.last_message
+  boolean_wrap_text: input_boolean.wrap_text
+  boolean_tts_clock: input_boolean.tts_clock

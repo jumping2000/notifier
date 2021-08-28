@@ -32,6 +32,7 @@ class Phone_Manager(hass.Hass):
         called_number = data["called_number"]
 
         lang = self.dict_lingua.get(language)
+        phone_name = phone_name.lower().replace(" ", "_")
         if phone_name.find("voip_call") != -1:
             if called_number != "":
                 called_number = "sip:{}@{}".format(called_number, sip_server_name)

@@ -1,5 +1,30 @@
 # Changelog
 
+## [2.2.0] - 28-08-2021
+
+### Breacking Changes
+- New parameter "image"; old parameters "url" and "file" don't work anymore 
+
+### Improvments
+- Improvments in management of companion app messages: it's possible to send images, TTS messages and more
+
+### Added
+- Added management of Email, Pushover and Pushbullet messages
+- Initial support of Discord messages
+- Google Home: added resume stream function after TTS (experimental)
+- Messages to multiple notification services
+
+## [2.1.0] - 17-11-2020
+
+### Breacking Changes
+- Nothing
+
+### Improvments
+- Various fixes
+
+### Added
+- New TTS added: Reverso TTS e Goggle Cloud
+
 ## [2.0.0] - 30-10-2020
 
 ### Breacking Changes
