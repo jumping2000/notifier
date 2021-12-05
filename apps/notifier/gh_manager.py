@@ -173,7 +173,7 @@ class GH_Manager(hass.Hass):
                         if playing and (temp_auth_sig !=''):
                             self.call_service("media_player/play_media", entity_id = k, media_content_id = temp_media_id, media_content_type = temp_media_type, authSig = temp_auth_sig)
                         elif playing and temp_app_name =='Spotify':
-                            self.call_service("spotcast/start", entity_id = k)
+                            self.call_service("spotcast/start", entity_id = k, force_playback = True)
                         elif playing:
                             self.call_service("media_player/play_media", entity_id = k, media_content_id = temp_media_id, media_content_type = temp_media_type)
                 # It is empty, make callbacks
