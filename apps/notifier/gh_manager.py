@@ -26,7 +26,9 @@ class GH_Manager(hass.Hass):
         #self.gh_wait_time = globals.get_arg(self.args, "gh_wait_time")
         self.gh_wait_time = self.args["gh_wait_time"]
         self.gh_select_media_player = self.args["gh_select_media_player"]
-
+        self.ytube_player = self.args["gh_select_media_player"]
+        self.ytube_called = False
+        
         self.queue = Queue(maxsize=0)
         self._when_tts_done_callback_queue = Queue()
         t = Thread(target=self.worker)
@@ -126,6 +128,13 @@ class GH_Manager(hass.Hass):
                         entity = gh_player[0]
                     else:
                         entity = gh_player
+                    ##### YTUBE #####
+                    if self.get_state(self.ytube_player) == "playing" and self.get_state(entity) == "playing":
+                        self.call_service("ytube_music_player/call_method", entity_id = self.ytube_player, command = "interrupt_start")
+                        self.ytube_called = True
+                        time.sleep(1)
+                        #self.volume_set(entity,data["volume"])
+                    #################
                     self.call_service(__TTS__ + data["gh_notifier"], entity_id = entity, message = data["text"])#, language = data["language"])
                     if (type(entity) is list) or entity == "all" or \
                             (self.get_state(entity, attribute='media_duration') is None) or \
@@ -170,6 +179,8 @@ class GH_Manager(hass.Hass):
                             if k1 == 'authSig':
                                 temp_auth_sig = v1
                         self.log("Costruzione del servizio: {} - {} - {} - {} - {}".format(k, temp_media_id, temp_media_type, temp_app_name,temp_auth_sig ))
+                        if self.ytube_called:
+                            self.call_service("ytube_music_player/call_method", entity_id = self.ytube_player, command = "interrupt_resume")
                         if playing and (temp_auth_sig !=''):
                             self.call_service("media_player/play_media", entity_id = k, media_content_id = temp_media_id, media_content_type = temp_media_type, authSig = temp_auth_sig)
                         elif playing and temp_app_name =='Spotify':
