@@ -58,6 +58,7 @@ class Notification_Manager(hass.Hass):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         title = data["title"]
         message = data["message"]
+        inline = data["inline"]
         image = data["image"]
         caption = data["caption"]
         link = data["link"]
@@ -76,7 +77,7 @@ class Notification_Manager(hass.Hass):
             #### TELEGRAM #######################
             if item.find("telegram") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
-                extra_data = ""
+                extra_data = {}
                 if str(html).lower() not in ["true","on","yes","1"]:
                     messaggio = messaggio.replace("_","\_")
                 if link !="":
@@ -95,9 +96,13 @@ class Notification_Manager(hass.Hass):
                                     "caption": caption,
                                     "timeout": 90}
                                 }
+                if inline !="":
+                    extra_data.update({"inline_keyboard":inline})
                 if image != "":
                     self.call_service(item, message = "", data = extra_data)
-                else:
+                elif extra_data:
+                    self.call_service(item, message = messaggio, title = titolo, data = extra_data)
+                else: 
                     self.call_service(item, message = messaggio, title = titolo)
             #### WHATSAPP #######################
             elif item.find("whatsapp") != -1:
@@ -112,9 +117,9 @@ class Notification_Manager(hass.Hass):
                 titolo = titolo.replace("*","")
                 extra_data = {}
                 if image != "" and image.find("http") != -1:
-                    extra_data.update({"url": image})
+                    extra_data.update({"url":image})
                 if image != "" and image.find("http") == -1:
-                    extra_data.update({"attachment": image})
+                    extra_data.update({"attachment":image})
                 if extra_data:
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
@@ -127,7 +132,7 @@ class Notification_Manager(hass.Hass):
                 if link !="":
                     messaggio = ("{} {}".format(messaggio,link))
                 if image != "" and image.find("http") != -1:
-                    extra_data.update( {"url": image})
+                    extra_data.update({"url": image})
                 if image != "" and image.find("http") == -1:
                     extra_data.update({"file": image})
                 if extra_data:
@@ -196,7 +201,7 @@ class Notification_Manager(hass.Hass):
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
                     self.call_service( item, message = messaggio, title = titolo)
-            #### OTHER #########################
+            #### other #########################
             else:
                 if title != "":
                     title = "[{} - {}] {}".format(assistant_name, timestamp, title)
@@ -205,7 +210,7 @@ class Notification_Manager(hass.Hass):
                 if link !="":
                     message = ("{} {}".format(message,link))
                 self.call_service(item, message=message, title=title)
-                
+
     def send_persistent(self, data, persistent_notification_info):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         messaggio=""
