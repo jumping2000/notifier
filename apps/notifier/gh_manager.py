@@ -19,6 +19,15 @@ Following features are implemented:
 __NOTIFY__ = "notify/"
 __TTS__ = "tts/"
 SUB_TTS = [("[\*\-\[\]_\(\)\{\~\|\}\s]+"," ")]
+SUB_VOICE = [
+    # ("[.]{2,}", "."),
+    ("[\?\.\!,]+(?=[\?\.\!,])", ""),  # Exclude duplicate
+    ("(\s+\.|\s+\.\s+|[\.])(?! )(?![^{]*})(?![^\d.]*\d)", ". "),
+    ("&", " and "),  # escape
+    # ("(?<!\d),(?!\d)", ", "),
+    ("[\n\*]", " "),
+    (" +", " "),
+]
 
 class GH_Manager(hass.Hass):
 
@@ -48,7 +57,6 @@ class GH_Manager(hass.Hass):
         gh = []
         for entity, state in media_state.items(): 
             friendly_name = state["attributes"].get("friendly_name") 
-
             for item in gh_volume:
                 if "gruppo" not in str(item).lower() and item == friendly_name:
                     gh.append(entity)
@@ -86,14 +94,21 @@ class GH_Manager(hass.Hass):
     def replace_language(self, s: str):
         return (s[:2])
 
+    def remove_tags(self, text: str):
+        """Remove all tags from a string."""
+        regex = re.compile("<.*?>")
+        return re.sub(regex, "", str(text).strip())
+
+    def has_numbers(self, string):
+        numbers = re.compile("\d{4,}|\d{3,}\.\d")
+        return numbers.search(string)
+
     def speak(self, google, gh_mode: bool, gh_notifier: str):
         """Speak the provided text through the media player"""
         gh_player = self.check_mplayer(self.split_device_list(google["media_player"]))
         gh_volume = self.check_volume(self.get_state(self.gh_select_media_player, attribute="options"))
-        #self.log("gh_player {}:".format(gh_player))
         self.volume_get(gh_volume,float(self.get_state(self.args["gh_restore_volume"]))/100)
         self.mediastate_get(gh_volume,float(self.get_state(self.args["gh_restore_volume"]))/100)
-        #float(self.get_state(globals.get_arg(self.args, "gh_restore_volume")))/100
         wait_time = float(self.get_state(self.gh_wait_time))
         message = self.replace_regular(google["message_tts"], SUB_TTS)
         ### set volume
@@ -128,23 +143,38 @@ class GH_Manager(hass.Hass):
                         entity = gh_player[0]
                     else:
                         entity = gh_player
-                    ##### YTUBE #####
+                    ############# YTUBE ##############
                     if self.get_state(self.ytube_player) == "playing" and self.get_state(entity) == "playing":
                         self.call_service("ytube_music_player/call_method", entity_id = self.ytube_player, command = "interrupt_start")
                         self.ytube_called = True
                         time.sleep(1)
                         #self.volume_set(entity,data["volume"])
-                    #################
+                    ########### MSG DURATION #########
+                    message_clean = self.replace_regular(data["text"], SUB_VOICE)
+                    # Speech time calculator
+                    words = len(self.remove_tags(message_clean).split())
+                    chars = self.remove_tags(message_clean).count("")
+                    duration = (words * 0.007) * 60
+                    if self.has_numbers(message_clean):
+                        duration = 4  
+                    if (chars / words) > 7 and chars > 90:
+                        duration = 7 
+                    ##################################
                     self.call_service(__TTS__ + data["gh_notifier"], entity_id = entity, message = data["text"])#, language = data["language"])
                     if (type(entity) is list) or entity == "all" or \
                             (self.get_state(entity, attribute='media_duration') is None) or \
                             float(self.get_state(entity, attribute='media_duration')) > 60 or \
                             float(self.get_state(entity, attribute='media_duration')) == -1:
-                        duration = float(len(data["text"].split())) / 3 + data["wait_time"]
+                        #duration = float(len(data["text"].split())) / 3 + data["wait_time"]
+                        duration += data["wait_time"]
                     else:
                         duration = float(self.get_state(entity, attribute='media_duration')) + data["wait_time"]
                     #Sleep and wait for the tts to finish
                     time.sleep(duration)
+                    ##################################
+                    if self.ytube_called:
+                        self.call_service("media_player/volume_set", entity_id = entity, volume_level = 0)
+                    ##################################
             except Exception as ex:
                 self.log("An error occurred in GH Manager - Errore nel Worker: {}".format(ex),level="ERROR")
                 self.log(sys.exc_info())
