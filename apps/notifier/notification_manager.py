@@ -64,6 +64,7 @@ class Notification_Manager(hass.Hass):
         link = data["link"]
         html = data["html"]
         mobile = data["mobile"]
+        whatsapp_addon = data["whatsapp"]
         discord = data["discord"]
         notify_vector = self.check_notifier(self.split_device_list(str(data["notify"])),self.split_device_list(str(notify_name)))
         ########## SAVE IN INPUT_TEXT ###########
@@ -104,6 +105,26 @@ class Notification_Manager(hass.Hass):
                     self.call_service(item, message = messaggio, title = titolo, data = extra_data)
                 else: 
                     self.call_service(item, message = messaggio, title = titolo)
+            #### WHATSAPP ADDON #################
+            elif item.find("whatsapp_addon") != -1:
+                messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
+                messaggio = titolo + " " + messaggio
+                extra_data = {}
+                if isinstance(whatsapp_addon, dict):
+                    extra_data = whatsapp_addon
+                    if messaggio != "":
+                        extra_data.update({"body":
+                                           {"text": messaggio }
+                                          } )
+                        #dict[extra_data]["body"]["text"]= messaggio 
+                    if image != "":
+                        extra_data.update({"image":
+                                           {"url": image }
+                                          } )
+                    if caption!= "":
+                        extra_data.update({"caption": caption })
+                if extra_data:
+                    self.call_service( "whatsapp/send_message", data = extra_data)
             #### WHATSAPP #######################
             elif item.find("whatsapp") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
@@ -201,6 +222,14 @@ class Notification_Manager(hass.Hass):
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
                     self.call_service( item, message = messaggio, title = titolo)
+
+            #### GOTIFY ###########################
+            elif item.find("gotify") != -1:
+                messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
+                titolo = titolo.replace("*","")
+                if link !="":
+                    messaggio = ("{} {}".format(messaggio,link))
+                self.call_service( item, message = messaggio, title = titolo)
             #### other #########################
             else:
                 if title != "":
