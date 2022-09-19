@@ -63,6 +63,8 @@ class Notification_Manager(hass.Hass):
         caption = data["caption"]
         link = data["link"]
         html = data["html"]
+        priority = data["priority"]
+        pushover = data["pushover"]
         mobile = data["mobile"]
         whatsapp_addon = data["whatsapp"]
         discord = data["discord"]
@@ -137,10 +139,13 @@ class Notification_Manager(hass.Hass):
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
                 titolo = titolo.replace("*","")
                 extra_data = {}
-                if image != "" and image.find("http") != -1:
-                    extra_data.update({"url":image})
-                if image != "" and image.find("http") == -1:
-                    extra_data.update({"attachment":image})
+                if isinstance(pushover, dict):
+                    if image != "" and image.find("http") != -1:
+                        extra_data.update({"url":image})
+                    if image != "" and image.find("http") == -1:
+                        extra_data.update({"attachment":image})
+                    if priority != "":
+                        extra_data.update({"priority":priority})
                 if extra_data:
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
@@ -222,14 +227,19 @@ class Notification_Manager(hass.Hass):
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
                     self.call_service( item, message = messaggio, title = titolo)
-
             #### GOTIFY ###########################
             elif item.find("gotify") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
-                titolo = titolo.replace("*","")
                 if link !="":
                     messaggio = ("{} {}".format(messaggio,link))
-                self.call_service( item, message = messaggio, title = titolo)
+                if image !="" and caption !="":
+                    messaggio = ("{} ![{}]({})".format(messaggio,caption,image))
+                elif image !="" :
+                    messaggio = ("{} ![]({})".format(messaggio,image)) 
+                if priority !="":
+                    self.call_service( item, message = messaggio, title = titolo, target = priority)
+                else:
+                    self.call_service( item, message = messaggio, title = titolo)
             #### other #########################
             else:
                 if title != "":
