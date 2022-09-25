@@ -15,6 +15,7 @@ Alexa_Manager:
   alexa_sensor_media_player: sensor.media_player_alexa
   # alexa_language: input_select.alexa_language
   alexa_voice: input_select.alexa_voice
+  alexa_actionable: input_text.alexa_actionable_notification
   ssml_switch: input_boolean.alexa_ssml
   prosody:
     rate: input_number.alexa_prosody_rate
