@@ -272,6 +272,7 @@ class Alexa_Manager(hass.Hass):
         self.alexa_sensor_media_player = self.args.get("alexa_sensor_media_player")
         self.alexa_voice = self.args.get("alexa_voice")
         # self.alexa_language = self.args.get("alexa_language")
+        self.alexa_actionable = self.args.get("alexa_actionable") ## NEW
         self.prosody = self.args.get("prosody")
         self.wait_time = self.args.get("wait_time")
         self.cehck_alexa_service = self._check_alexa(self.alexa_service)
@@ -318,9 +319,11 @@ class Alexa_Manager(hass.Hass):
         # Media Content # TODO Restore volume??
         media_content_id = alexa.get("media_content_id")
         media_content_type = alexa.get("media_content_type")
+        event_id = alexa.get("event_id") #### NEW ###
         if media_content_id:
             self.volume_get(alexa_player, default_restore_volume)
             self.volume_set(alexa_player, volume)
+            self.set_actionable_input_text(self, "{'text': " + message + ", 'event': " + event_id + " }'" , self.alexa_actionable) #### NEW ###
             self.call_service(
                 "media_player/play_media",
                 entity_id=alexa_player,
@@ -336,6 +339,7 @@ class Alexa_Manager(hass.Hass):
                 {
                     "text": message,
                     "volume": volume,
+                    "event-id": event_id, #### NEW ###
                     "alexa_type": alexa_type,
                     "alexa_player": alexa_player,  # media_player
                     "default_restore_volume": default_restore_volume,
@@ -481,6 +485,9 @@ class Alexa_Manager(hass.Hass):
         attributes["Error"] = error
         self.set_state("sensor.centro_notifiche", state=state, attributes=attributes)
 
+    def set_actionable_input_text(self, state, sensor): ### NEW ###
+        self.set_state(sensor, state=state)
+        
     def when_tts_done_do(self, callback: callable) -> None:
         """Callback when the queue of tts messages are done."""
         self._when_tts_done_callback_queue.put(callback)
