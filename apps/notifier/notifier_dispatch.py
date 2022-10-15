@@ -201,15 +201,15 @@ class Notifier_Dispatch(hass.Hass):
                         google["media_content_id"] = ""
                     if "media_content_type" not in google:
                         google["media_content_type"] = ""
-                    if "message_tts" not in google:
-                        google["message_tts"] = data["message"]
+                    if "message" not in google:
+                        google["message"] = data["message"]
                     if "language" not in google:
                         google["language"] = self.get_state(self.tts_language).lower()
                 self.gh_manager.speak(google, self.get_state(self.gh_tts_google_mode), gh_notifica)
             if alexa_switch == "on" and alexa_flag:
                 if (data["alexa"]) != "":
-                    if "message_tts" not in alexa:
-                        alexa["message_tts"] = data["message"]
+                    if "message" not in alexa:
+                        alexa["message"] = data["message"]
                     if "title" not in alexa:
                         alexa["title"] = data["title"]
                     if "volume" not in alexa:
