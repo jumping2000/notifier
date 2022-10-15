@@ -33,11 +33,13 @@ class GH_Manager(hass.Hass):
 
     def initialize(self)->None:
         #self.gh_wait_time = globals.get_arg(self.args, "gh_wait_time")
+        self.gh_service = self.args.get("gh_service")
         self.gh_wait_time = self.args["gh_wait_time"]
         self.gh_select_media_player = self.args["gh_select_media_player"]
         self.ytube_player = self.args["gh_select_media_player"]
         self.ytube_called = False
-        
+        self.check_gh_service = self.check_gh(self.gh_service)
+        #
         self.queue = Queue(maxsize=0)
         self._when_tts_done_callback_queue = Queue()
         t = Thread(target=self.worker)
@@ -56,9 +58,9 @@ class GH_Manager(hass.Hass):
         media_state = self.get_state("media_player")
         gh = []
         for entity, state in media_state.items(): 
-            friendly_name = state["attributes"].get("friendly_name") 
+            friendly_name = state["attributes"].get("friendly_name") if state["attributes"].get("friendly_name") is not None else ""
             for item in gh_volume:
-                if "gruppo" not in str(item).lower() and item == friendly_name:
+                if "gruppo" not in str(item).lower() and str(friendly_name).lower() == str(item).lower():
                     gh.append(entity)
         return gh
 
@@ -78,7 +80,7 @@ class GH_Manager(hass.Hass):
         for i in media_player:
             self.dict_info_mplayer[i] = {}
         for i in media_player:
-            #self.dict_info_mplayer[i]['volume'] = self.get_state(i, attribute="volume_level", default=volume)
+            self.dict_info_mplayer[i]['volume'] = self.get_state(i, attribute="volume_level", default=volume)
             self.dict_info_mplayer[i]['state'] = self.get_state(i, default='idle')
             self.dict_info_mplayer[i]['media_id'] = self.get_state(i, attribute="media_content_id", default='')
             self.dict_info_mplayer[i]['media_type'] = self.get_state(i, attribute="media_content_type", default='')
@@ -103,14 +105,31 @@ class GH_Manager(hass.Hass):
         numbers = re.compile("\d{4,}|\d{3,}\.\d")
         return numbers.search(string)
 
+    def set_sensor(self, state, error):
+        attributes = {}
+        attributes["icon"] = "mdi:google"
+        attributes["Error"] = error
+        self.set_state("sensor.centro_notifiche", state=state, attributes=attributes)
+
+    def check_gh(self, service):
+        """ check if tts service exist in HA """
+        self.hass_config = self.get_plugin_config()
+        components = self.hass_config["components"]
+        return next((True for comp in components if service in comp), False)
+
     def speak(self, google, gh_mode: bool, gh_notifier: str):
-        """Speak the provided text through the media player"""
+        """Speak the provided text through the media player."""
+        if not self.check_gh_service:
+            self.set_sensor(
+                "I can't find the TTS Google component", "https://www.home-assistant.io/integrations/tts"
+            )
+            return
         gh_player = self.check_mplayer(self.split_device_list(google["media_player"]))
         gh_volume = self.check_volume(self.get_state(self.gh_select_media_player, attribute="options"))
         self.volume_get(gh_volume,float(self.get_state(self.args["gh_restore_volume"]))/100)
         self.mediastate_get(gh_volume,float(self.get_state(self.args["gh_restore_volume"]))/100)
         wait_time = float(self.get_state(self.gh_wait_time))
-        message = self.replace_regular(google["message_tts"], SUB_TTS)
+        message = self.replace_regular(google["message"], SUB_TTS)
         ### set volume
         self.volume_set(gh_player,google["volume"])
         # queues the message to be handled async, use when_tts_done_do method to supply callback when tts is done
@@ -120,6 +139,7 @@ class GH_Manager(hass.Hass):
                                 media_content_type = google["media_content_type"]) 
             except Exception as ex:
                 self.log("An error occurred in GH Manager - Errore in media_content: {}".format(ex),level="ERROR")
+                self.set_sensor("GH Manager - media_content Error ", ex)
                 self.log(sys.exc_info())
         else:
             self.queue.put({"type": "tts", "text": message, "volume": google["volume"], "language": self.replace_language(google["language"]), 
@@ -143,15 +163,14 @@ class GH_Manager(hass.Hass):
                         entity = gh_player[0]
                     else:
                         entity = gh_player
-                    ############# YTUBE ##############
+                    ############ YTUBE ###############
                     if self.get_state(self.ytube_player) == "playing" and self.get_state(entity) == "playing":
                         self.call_service("ytube_music_player/call_method", entity_id = self.ytube_player, command = "interrupt_start")
                         self.ytube_called = True
                         time.sleep(1)
                         #self.volume_set(entity,data["volume"])
-                    ########### MSG DURATION #########
+                    ##### Speech time calculator #####
                     message_clean = self.replace_regular(data["text"], SUB_VOICE)
-                    # Speech time calculator
                     words = len(self.remove_tags(message_clean).split())
                     chars = self.remove_tags(message_clean).count("")
                     duration = (words * 0.007) * 60
@@ -165,10 +184,11 @@ class GH_Manager(hass.Hass):
                             (self.get_state(entity, attribute='media_duration') is None) or \
                             float(self.get_state(entity, attribute='media_duration')) > 60 or \
                             float(self.get_state(entity, attribute='media_duration')) == -1:
-                        #duration = float(len(data["text"].split())) / 3 + data["wait_time"]
+                        #duration = float(len(data["text"].split())) / 2 + data["wait_time"]
                         duration += data["wait_time"]
                     else:
                         duration = float(self.get_state(entity, attribute='media_duration')) + data["wait_time"]
+                    self.log("DURATION {}: ".format(duration))
                     #Sleep and wait for the tts to finish
                     time.sleep(duration)
                     ##################################
@@ -178,6 +198,7 @@ class GH_Manager(hass.Hass):
             except Exception as ex:
                 self.log("An error occurred in GH Manager - Errore nel Worker: {}".format(ex),level="ERROR")
                 self.log(sys.exc_info())
+                self.set_sensor("GH Manager -Worker Error ", ex)
 
             self.queue.task_done()
 
@@ -188,7 +209,7 @@ class GH_Manager(hass.Hass):
                     for i,j in self.dict_volumes.items():
                         self.call_service("media_player/volume_set", entity_id = i, volume_level = j)
                         # Force Set state
-                        self.set_state(i, state="", attributes = {"volume_level": j})
+                        self.set_state(i, state="", attributes = {"volume_level": j}) 
                 ## RESTORE MUSIC
                 if self.dict_info_mplayer:
                     for k,v in self.dict_info_mplayer.items():
@@ -211,9 +232,10 @@ class GH_Manager(hass.Hass):
                         self.log("Costruzione del servizio: {} - {} - {} - {} - {}".format(k, temp_media_id, temp_media_type, temp_app_name,temp_auth_sig ))
                         if self.ytube_called:
                             self.call_service("ytube_music_player/call_method", entity_id = self.ytube_player, command = "interrupt_resume")
-                        if playing and (temp_auth_sig !=''):
+                            self.call_service("media_player/volume_set", entity_id = k, volume_level = 0.4)
+                        elif playing and (temp_auth_sig !=''):
                             self.call_service("media_player/play_media", entity_id = k, media_content_id = temp_media_id, media_content_type = temp_media_type, authSig = temp_auth_sig)
-                        elif playing and temp_app_name =='Spotify':
+                        elif playing and temp_app_name =="Spotify":
                             self.call_service("spotcast/start", entity_id = k, force_playback = True)
                         elif playing:
                             self.call_service("media_player/play_media", entity_id = k, media_content_id = temp_media_id, media_content_type = temp_media_type)
@@ -225,5 +247,6 @@ class GH_Manager(hass.Hass):
                         self._when_tts_done_callback_queue.task_done()
                 except:
                     self.log("An error occurred in GH Manager - Errore nel CallBack", level="ERROR")
-                    self.log(sys.exc_info()) 
+                    self.log(sys.exc_info())
+                    self.set_sensor("GH Manager -  CallBack Error ", ex)
                     pass # Nothing in queue
