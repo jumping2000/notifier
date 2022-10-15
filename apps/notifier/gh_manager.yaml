@@ -2,6 +2,7 @@ GH_Manager:
   module: gh_manager
   class: GH_Manager
 
+  gh_service: tts.google
   gh_restore_volume: input_number.default_restore_volume
   gh_wait_time: input_number.tts_wait_time
   gh_select_media_player: input_select.notification_media_player_google
