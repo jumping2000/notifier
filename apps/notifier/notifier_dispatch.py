@@ -217,7 +217,7 @@ class Notifier_Dispatch(hass.Hass):
                         alexa["volume"] = float(self.get_state(self.tts_period_of_day_volume)) / 100
                     if "language" not in alexa:
                         alexa["language"] = self.get_state(self.tts_language)
-                self.alexa_manager.speak(alexa)
+                self.alexa_manager.speak(alexa, self.alexa_skill_id)
         if usePhone:
             try:
                 language = self.get_state(self.tts_language)
