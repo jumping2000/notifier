@@ -172,21 +172,22 @@ class Notification_Manager(hass.Hass):
                 if isinstance(discord, dict):
                     if "embed" in discord:
                         extra_data = discord
-                        extra_data.update({"title":titolo.replace("*","")})
-                        extra_data.update({"description":messaggio})
+                        extra_data.update({"title": titolo.replace("*","")})
+                        extra_data.update({"description": messaggio})
                         if link !="":
                             extra_data.update({"url":link})
+                        if image != "":
+                            extra_data.update({"images":image.replace("config/www","local")})
                     elif "images" in discord:
                         extra_data = discord
                         messaggio = titolo.replace("*","") + " " + messaggio
+                if extra_data and "embed" in discord:
+                    self.call_service( item, message = "", data = extra_data)
+                elif extra_data and "images" in discord:
+                    self.call_service( item, message = messaggio, data = extra_data)
                 else:
-                    messaggio = titolo.replace("*","") + " " + messaggio
-                # if image != "":
-                #     extra_data.update({"images":image})
-                # if extra_data:
-                #    self.call_service( item, message = messaggio, data = extra_data)
-                #else:
-                self.call_service( item, message = messaggio)
+                    self.call_service( item, message = messaggio)
+            #self.call_service( item, message = messaggio)
             #### MAIL ###########################
             elif item.find("mail") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
@@ -227,20 +228,23 @@ class Notification_Manager(hass.Hass):
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
                 else:
                     self.call_service( item, message = messaggio, title = titolo)
-            #### GOTIFY ###########################
+            #### GOTIFY #########################
             elif item.find("gotify") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
-                if link !="":
-                    messaggio = ("{} {}".format(messaggio,link))
+                titolo = titolo.replace("*","")
+                if link !="" and caption !="":
+                    messaggio = ("{} [{}]({})".format(messaggio,caption,link))
+                elif link !="" :
+                    messaggio = ("{} [{}]({})".format(messaggio,link,link)) 
                 if image !="" and caption !="":
                     messaggio = ("{} ![{}]({})".format(messaggio,caption,image))
                 elif image !="" :
-                    messaggio = ("{} ![]({})".format(messaggio,image)) 
+                    messaggio = ("{} ![{}]({})".format(messaggio,image,image)) 
                 if priority !="":
                     self.call_service( item, message = messaggio, title = titolo, target = priority)
                 else:
                     self.call_service( item, message = messaggio, title = titolo)
-            #### other #########################
+            #### other ##########################
             else:
                 if title != "":
                     title = "[{} - {}] {}".format(assistant_name, timestamp, title)
