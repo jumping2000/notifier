@@ -7,7 +7,7 @@ import yaml
 #
 # Args:
 #
-# Version 2.0:
+# Version 2022.10:
 #   Initial Version
 
 
@@ -43,7 +43,7 @@ class Notifier_Dispatch(hass.Hass):
 
         self.sensor = self.args.get("sensor")
         self.set_state(self.sensor, state="on")
-#### FROM SECRET FILE ###
+        #### FROM SECRET FILE ###
         config = self.get_plugin_config()
         config_dir = config["config_dir"]
         self.log(f"configuration dir: {config_dir}")
@@ -55,6 +55,7 @@ class Notifier_Dispatch(hass.Hass):
         self.phone_sip_server = cfg.get("sip_server_name", "fritz.box:5060")
         self.gh_tts_cloud = cfg.get("tts_google_cloud", "google_cloud")
         self.reverso_tts = cfg.get("reverso_tts", "reversotts_say")
+        self.alexa_skill_id = cfg.get("hub_alexa_actionable_skil_id", "")
 
         ### APP MANAGER ###
         self.notification_manager = self.get_app("Notification_Manager")
