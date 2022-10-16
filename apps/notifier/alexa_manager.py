@@ -1,10 +1,10 @@
-import hassapi as hass
-
-import re
-import sys
-import time
+import json
 from queue import Queue
+import re
 from threading import Thread
+import time
+
+import hassapi as hass
 
 """
     Class Alexa Manager handles sending text to speech messages to Alexa media players
@@ -272,6 +272,7 @@ class Alexa_Manager(hass.Hass):
         self.alexa_sensor_media_player = self.args.get("alexa_sensor_media_player")
         self.alexa_voice = self.args.get("alexa_voice")
         # self.alexa_language = self.args.get("alexa_language")
+        self.alexa_actionable = self.args.get("alexa_actionable") ## NEW
         self.prosody = self.args.get("prosody")
         self.wait_time = self.args.get("wait_time")
         self.cehck_alexa_service = self._check_alexa(self.alexa_service)
@@ -283,7 +284,7 @@ class Alexa_Manager(hass.Hass):
         t.daemon = True
         t.start()
 
-    def speak(self, alexa):
+    def speak(self, alexa, skill_id): #### NEW ###
         """Speak the provided text through the media player."""
         if not self.cehck_alexa_service:
             self.set_sensor(
@@ -302,6 +303,8 @@ class Alexa_Manager(hass.Hass):
         alexa_type = (
             str(alexa.get("type", self.get_state(self.alexa_type))).lower().replace("dropin", "dropin_notification")
         )
+        if event_id := alexa.get("event_id"): #### NEW ###
+            self.set_textvalue(self.alexa_actionable, json.dumps({"text": "", "event": event_id}))
 
         # Push notification
         push = bool(self.check_bool(alexa.get("push")))
@@ -336,6 +339,8 @@ class Alexa_Manager(hass.Hass):
                 {
                     "text": message,
                     "volume": volume,
+                    "event_id": event_id, #### NEW ###
+                    "skill_id": skill_id, #### NEW ###
                     "alexa_type": alexa_type,
                     "alexa_player": alexa_player,  # media_player
                     "default_restore_volume": default_restore_volume,
@@ -480,7 +485,7 @@ class Alexa_Manager(hass.Hass):
         attributes["icon"] = "mdi:amazon-alexa"
         attributes["Error"] = error
         self.set_state("sensor.centro_notifiche", state=state, attributes=attributes)
-
+        
     def when_tts_done_do(self, callback: callable) -> None:
         """Callback when the queue of tts messages are done."""
         self._when_tts_done_callback_queue.put(callback)
@@ -556,6 +561,15 @@ class Alexa_Manager(hass.Hass):
                     target=alexa_player,
                     message=message_clean.strip(),
                 )
+
+                if data["event_id"]: #### NEW ###
+                    self.call_service(
+                        "media_player/play_media",
+                        entity_id=alexa_player,
+                        media_content_id=data["skill_id"],
+                        media_content_type="skill",
+                    )
+                    duration += 10
 
                 time.sleep(duration if duration > 0 else 0)
 
