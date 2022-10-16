@@ -287,7 +287,7 @@ class Alexa_Manager(hass.Hass):
     def speak(self, alexa, skill_id): #### NEW ###
         """Speak the provided text through the media player."""
         if not self.cehck_alexa_service:
-            self.set_sensor(
+            self.set_debug_sensor(
                 "I can't find the Alexa Media component", "https://github.com/custom-components/alexa_media_player"
             )
             return
@@ -480,10 +480,10 @@ class Alexa_Manager(hass.Hass):
         numbers = re.compile("\d{4,}|\d{3,}\.\d")
         return numbers.search(string)
 
-    def set_sensor(self, state, error):
+    def set_debug_sensor(self, state, error):
         attributes = {}
         attributes["icon"] = "mdi:amazon-alexa"
-        attributes["Error"] = error
+        attributes["alexa_error"] = error
         self.set_state("sensor.centro_notifiche", state=state, attributes=attributes)
         
     def when_tts_done_do(self, callback: callable) -> None:
@@ -578,7 +578,7 @@ class Alexa_Manager(hass.Hass):
             except Exception as ex:
                 self.log("An error occurred in Alexa Manager (worker): {}".format(ex), level="ERROR")
                 self.log(f"DATA: {data}", level="ERROR")
-                self.set_sensor("Alexa Manager - Worker Error ", ex)
+                self.set_debug_sensor("Alexa Manager - Worker Error ", ex)
             self.queue.task_done()
 
             if self.queue.qsize() == 0:
@@ -590,7 +590,7 @@ class Alexa_Manager(hass.Hass):
                         self._when_tts_done_callback_queue.task_done()
                 except:
                     self.log("Errore nel CallBack", level="ERROR")
-                    self.set_sensor("Alexa Manager - CallBack Error ", ex)
+                    self.set_debug_sensor("Alexa Manager - CallBack Error ", ex)
                     pass  # Nothing in queue
             self.lg("---------------------------------------------------------\n")
 
