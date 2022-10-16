@@ -231,7 +231,7 @@ class Notifier_Dispatch(hass.Hass):
                 self.phone_manager.send_voice_call(data, phone_notify_name, self.phone_sip_server, language)
             except Exception as ex:
                 self.log("An error occurred in phone notification: {}".format(ex), level="ERROR")
-                self.set_debug_sensor("Error in Phone Notification: ", ex))
+                self.set_debug_sensor("Error in Phone Notification: ", ex)
                 self.log(sys.exc_info())
         ### ripristino del priority a OFF
         if self.get_state(self.priority_message) == "on":
