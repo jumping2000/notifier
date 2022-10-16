@@ -79,6 +79,12 @@ class Notifier_Dispatch(hass.Hass):
     def convert(self, lst):
         return {lst[1]: lst[3]}
 
+    def set_debug_sensor(self, state, error):
+        attributes = {}
+        attributes["icon"] = "mdi:wrench"
+        attributes["dispatch_error"] = error
+        self.set_state(self.debug_sensor, state=state, attributes=attributes)
+    
     def createTTSdict(self, data) -> list:
         dizionario = ""
         if data == "" or (not self.check_notify(data)):
@@ -183,14 +189,14 @@ class Notifier_Dispatch(hass.Hass):
                 self.notification_manager.send_persistent(data, self.persistent_notification_info)
             except Exception as ex:
                 self.log("An error occurred in persistent notification: {}".format(ex), level="ERROR")
-                self.set_state(self.sensor, state="Error in Persistent Notification: {}".format(ex))
+                self.set_debug_sensor("Error in Persistent Notification: ", ex)
                 self.log(sys.exc_info())
         if useNotification:
             try:
                 self.notification_manager.send_notify(data, notify_name, self.get_state(self.personal_assistant_name))
             except Exception as ex:
                 self.log("An error occurred in text-telegram notification: {}".format(ex), level="ERROR")
-                self.set_state(self.sensor, state="Error in Text Notification: {}".format(ex))
+                self.set_debug_sensor("Error in Text Notification: ", ex)
                 self.log(sys.exc_info())
         if useTTS:
             if gh_switch == "on" and google_flag:
@@ -225,7 +231,7 @@ class Notifier_Dispatch(hass.Hass):
                 self.phone_manager.send_voice_call(data, phone_notify_name, self.phone_sip_server, language)
             except Exception as ex:
                 self.log("An error occurred in phone notification: {}".format(ex), level="ERROR")
-                self.set_state(self.sensor, state="Error in Phone Notification: {}".format(ex))
+                self.set_debug_sensor("Error in Phone Notification: ", ex))
                 self.log(sys.exc_info())
         ### ripristino del priority a OFF
         if self.get_state(self.priority_message) == "on":
