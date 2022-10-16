@@ -110,7 +110,7 @@ class GH_Manager(hass.Hass):
     def set_debug_sensor(self, state, error):
         attributes = {}
         attributes["icon"] = "mdi:google"
-        attributes["Error"] = error
+        attributes["google_error"] = error
         self.set_state(self.debug_sensor, state=state, attributes=attributes)
 
     def check_gh(self, service):
@@ -200,7 +200,7 @@ class GH_Manager(hass.Hass):
             except Exception as ex:
                 self.log("An error occurred in GH Manager - Errore nel Worker: {}".format(ex),level="ERROR")
                 self.log(sys.exc_info())
-                self.set_debug_sensor("GH Manager -Worker Error ", ex)
+                self.set_debug_sensor("GH Manager - Worker Error ", ex)
 
             self.queue.task_done()
 
@@ -250,6 +250,6 @@ class GH_Manager(hass.Hass):
                 except:
                     self.log("An error occurred in GH Manager - Errore nel CallBack", level="ERROR")
                     self.log(sys.exc_info())
-                    self.set_debug_sensor("GH Manager -  CallBack Error ", ex)
+                    self.set_debug_sensor("GH Manager - CallBack Error ", ex)
                     pass # Nothing in queue
 
