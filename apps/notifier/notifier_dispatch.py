@@ -56,7 +56,7 @@ class Notifier_Dispatch(hass.Hass):
         self.phone_sip_server = cfg.get("sip_server_name", "fritz.box:5060")
         self.gh_tts_cloud = cfg.get("tts_google_cloud", "google_cloud")
         self.reverso_tts = cfg.get("reverso_tts", "reversotts_say")
-        self.alexa_skill_id = cfg.get("hub_alexa_actionable_skill_id", "")
+        self.alexa_skill_id = cfg.get("notifyhub_alexa_actionable_skill_id", "")
 
         ### APP MANAGER ###
         self.notification_manager = self.get_app("Notification_Manager")
