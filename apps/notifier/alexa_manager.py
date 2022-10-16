@@ -276,6 +276,8 @@ class Alexa_Manager(hass.Hass):
         self.prosody = self.args.get("prosody")
         self.wait_time = self.args.get("wait_time")
         self.cehck_alexa_service = self._check_alexa(self.alexa_service)
+        self.debug_sensor = self.args.get("debug_sensor")
+        self.set_state(self.debug_sensor, state="on")
 
         self.queue = Queue(maxsize=0)
         self._when_tts_done_callback_queue = Queue()
@@ -484,7 +486,7 @@ class Alexa_Manager(hass.Hass):
         attributes = {}
         attributes["icon"] = "mdi:amazon-alexa"
         attributes["alexa_error"] = error
-        self.set_state("sensor.centro_notifiche", state=state, attributes=attributes)
+        self.set_state(self.debug_sensor, state=state, attributes=attributes)
         
     def when_tts_done_do(self, callback: callable) -> None:
         """Callback when the queue of tts messages are done."""
