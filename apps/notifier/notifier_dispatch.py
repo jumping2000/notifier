@@ -42,7 +42,7 @@ class Notifier_Dispatch(hass.Hass):
         self.personal_assistant_name = self.args.get("personal_assistant_name")
         self.phone_called_number = self.args.get("phone_called_number")
 
-        self.sensor = self.args.get("sensor")
+        self.sensor = self.args.get("debug_sensor")
         self.set_state(self.sensor, state="on")
         #### FROM SECRET FILE ###
         config = self.get_plugin_config()
