@@ -38,6 +38,8 @@ class GH_Manager(hass.Hass):
         self.gh_select_media_player = self.args["gh_select_media_player"]
         self.ytube_player = self.args["gh_select_media_player"]
         self.ytube_called = False
+        self.debug_sensor = self.args.get("debug_sensor")
+        self.set_state(self.debug_sensor, state="on")
         self.check_gh_service = self.check_gh(self.gh_service)
         #
         self.queue = Queue(maxsize=0)
@@ -105,11 +107,11 @@ class GH_Manager(hass.Hass):
         numbers = re.compile("\d{4,}|\d{3,}\.\d")
         return numbers.search(string)
 
-    def set_sensor(self, state, error):
+    def set_debug_sensor(self, state, error):
         attributes = {}
         attributes["icon"] = "mdi:google"
         attributes["Error"] = error
-        self.set_state("sensor.centro_notifiche", state=state, attributes=attributes)
+        self.set_state(self.debug_sensor, state=state, attributes=attributes)
 
     def check_gh(self, service):
         """ check if tts service exist in HA """
@@ -120,7 +122,7 @@ class GH_Manager(hass.Hass):
     def speak(self, google, gh_mode: bool, gh_notifier: str):
         """Speak the provided text through the media player."""
         if not self.check_gh_service:
-            self.set_sensor(
+            self.set_debug_sensor(
                 "I can't find the TTS Google component", "https://www.home-assistant.io/integrations/tts"
             )
             return
@@ -139,7 +141,7 @@ class GH_Manager(hass.Hass):
                                 media_content_type = google["media_content_type"]) 
             except Exception as ex:
                 self.log("An error occurred in GH Manager - Errore in media_content: {}".format(ex),level="ERROR")
-                self.set_sensor("GH Manager - media_content Error ", ex)
+                self.set_debug_sensor("GH Manager - media_content Error ", ex)
                 self.log(sys.exc_info())
         else:
             self.queue.put({"type": "tts", "text": message, "volume": google["volume"], "language": self.replace_language(google["language"]), 
@@ -198,7 +200,7 @@ class GH_Manager(hass.Hass):
             except Exception as ex:
                 self.log("An error occurred in GH Manager - Errore nel Worker: {}".format(ex),level="ERROR")
                 self.log(sys.exc_info())
-                self.set_sensor("GH Manager -Worker Error ", ex)
+                self.set_debug_sensor("GH Manager -Worker Error ", ex)
 
             self.queue.task_done()
 
@@ -248,5 +250,6 @@ class GH_Manager(hass.Hass):
                 except:
                     self.log("An error occurred in GH Manager - Errore nel CallBack", level="ERROR")
                     self.log(sys.exc_info())
-                    self.set_sensor("GH Manager -  CallBack Error ", ex)
+                    self.set_debug_sensor("GH Manager -  CallBack Error ", ex)
                     pass # Nothing in queue
+
