@@ -38,7 +38,7 @@ Notifier_Dispatch:
   notify_alexa: secret_notify_alexa
   sip_server: secret_sip_server
 
-  sensor: sensor.centro_notifiche
+  debug_sensor: sensor.centro_notifiche
 
   dependencies: 
     - Notification_Manager
