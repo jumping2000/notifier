@@ -24,7 +24,7 @@ Alexa_Manager:
 
   # Main hub
   default_restore_volume: input_number.default_restore_volume
-  wait_time: input_number.tts_wait_timec
+  wait_time: input_number.tts_wait_time
   
   # Debug Sensor
   debug_sensor: sensor.centro_notifiche
