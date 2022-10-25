@@ -31,13 +31,6 @@ Notifier_Dispatch:
   personal_assistant_name: input_text.personal_assistant_name
   phone_called_number: input_text.phone_called_number
   
-  tts_google: secret_tts_google
-  tts_google_cloud: secret_tts_google_cloud
-  reverso_tts: secret_reverso_tts
-  notify_google: secret_notify_google
-  notify_alexa: secret_notify_alexa
-  sip_server: secret_sip_server
-
   debug_sensor: sensor.centro_notifiche
 
   dependencies: 
