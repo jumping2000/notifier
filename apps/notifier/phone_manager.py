@@ -1,6 +1,7 @@
 import hassapi as hass
 import datetime
-import re
+#
+import helpermodule as h
 
 """
 Class Phone_Manager handles sending call to voice notfyng service
@@ -20,11 +21,6 @@ class Phone_Manager(hass.Hass):
             "de-DE": "de-DE-Standard-A",
             "es-ES": "es-ES-Standard-A",
         }
-
-    def replace_regular(self, text: str, substitutions: list):
-        for old, new in substitutions:
-            text = re.sub(old, new, text.strip())
-        return text
 
     def send_voice_call(self, data, phone_name: str, sip_server_name: str, language: str):
         message = self.replace_regular(data["message"], SUB_TTS)
