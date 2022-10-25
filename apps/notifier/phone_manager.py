@@ -10,7 +10,6 @@ Class Phone_Manager handles sending call to voice notfyng service
 __NOTIFY__ = "notify/"
 SUB_TTS = [("[\*\-\[\]_\(\)\{\~\|\}\s]+", " ")]
 
-
 class Phone_Manager(hass.Hass):
     def initialize(self):
         self.dict_lingua = {
@@ -26,7 +25,6 @@ class Phone_Manager(hass.Hass):
         message = self.replace_regular(data["message"], SUB_TTS)
         message_tts = message.replace(" ", "%20")
         called_number = data["called_number"]
-
         lang = self.dict_lingua.get(language)
         phone_name = phone_name.lower().replace(" ", "_")
         if phone_name.find("voip_call") != -1:
