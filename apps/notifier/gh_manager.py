@@ -1,12 +1,11 @@
 import hassapi as hass
 import time
 import datetime
-import re
 import sys
 from queue import Queue
 from threading import Thread
-
-#from threading import Event
+#
+import helpermodule as h
 
 """
 Class TTS Manager handles sending text to speech messages to media players
@@ -32,13 +31,13 @@ SUB_VOICE = [
 class GH_Manager(hass.Hass):
 
     def initialize(self)->None:
-        #self.gh_wait_time = globals.get_arg(self.args, "gh_wait_time")
-        self.gh_service = self.args.get("gh_service")
-        self.gh_wait_time = self.args["gh_wait_time"]
-        self.gh_select_media_player = self.args["gh_select_media_player"]
-        self.ytube_player = self.args["gh_select_media_player"]
+        self.gh_service = h.get_arg(self.args, "gh_service")
+        self.gh_wait_time = h.get_arg(self.args, "gh_wait_time")
+        self.gh_select_media_player = h.get_arg(self.args, "gh_select_media_player")
+        self.gh_sensor_media_player = h.get_arg(self.args, "gh_sensor_media_player")
+        self.ytube_player = h.get_arg(self.args, "ytube_player")
         self.ytube_called = False
-        self.debug_sensor = self.args.get("debug_sensor")
+        self.debug_sensor = h.get_arg(self.args, "debug_sensor")
         self.set_state(self.debug_sensor, state="on")
         self.check_gh_service = self.check_gh(self.gh_service)
         #
@@ -90,23 +89,6 @@ class GH_Manager(hass.Hass):
             self.dict_info_mplayer[i]['authSig'] = self.get_state(i, attribute="authSig", default='')
         return self.dict_info_mplayer
 
-    def replace_regular(self, text: str, substitutions: list):
-        for old,new in substitutions:
-            text = re.sub(old, new, str(text).strip())
-        return text
-
-    def replace_language(self, s: str):
-        return (s[:2])
-
-    def remove_tags(self, text: str):
-        """Remove all tags from a string."""
-        regex = re.compile("<.*?>")
-        return re.sub(regex, "", str(text).strip())
-
-    def has_numbers(self, string):
-        numbers = re.compile("\d{4,}|\d{3,}\.\d")
-        return numbers.search(string)
-
     def set_debug_sensor(self, state, error):
         attributes = {}
         attributes["icon"] = "mdi:google"
@@ -126,12 +108,15 @@ class GH_Manager(hass.Hass):
                 "I can't find the TTS Google component", "https://www.home-assistant.io/integrations/tts"
             )
             return
+        if "media_player" not in google:
+            google["media_player"] = self.get_state(self.gh_sensor_media_player)
+        ###
         gh_player = self.check_mplayer(self.split_device_list(google["media_player"]))
         gh_volume = self.check_volume(self.get_state(self.gh_select_media_player, attribute="options"))
         self.volume_get(gh_volume,float(self.get_state(self.args["gh_restore_volume"]))/100)
         self.mediastate_get(gh_volume,float(self.get_state(self.args["gh_restore_volume"]))/100)
         wait_time = float(self.get_state(self.gh_wait_time))
-        message = self.replace_regular(google["message"], SUB_TTS)
+        message = h.replace_regular(google["message"], SUB_TTS)
         ### set volume
         self.volume_set(gh_player,google["volume"])
         # queues the message to be handled async, use when_tts_done_do method to supply callback when tts is done
@@ -144,7 +129,7 @@ class GH_Manager(hass.Hass):
                 self.set_debug_sensor("GH Manager - media_content Error ", ex)
                 self.log(sys.exc_info())
         else:
-            self.queue.put({"type": "tts", "text": message, "volume": google["volume"], "language": self.replace_language(google["language"]), 
+            self.queue.put({"type": "tts", "text": message, "volume": google["volume"], "language": h.replace_language(google["language"]), 
                     "gh_player": google["media_player"], "wait_time": wait_time, "gh_mode": gh_mode, "gh_notifier": gh_notifier})
 
     def when_tts_done_do(self, callback:callable)->None:
@@ -172,11 +157,11 @@ class GH_Manager(hass.Hass):
                         time.sleep(1)
                         #self.volume_set(entity,data["volume"])
                     ##### Speech time calculator #####
-                    message_clean = self.replace_regular(data["text"], SUB_VOICE)
-                    words = len(self.remove_tags(message_clean).split())
-                    chars = self.remove_tags(message_clean).count("")
+                    message_clean = h.replace_regular(data["text"], SUB_VOICE)
+                    words = len(h.remove_tags(message_clean).split())
+                    chars = h.remove_tags(message_clean).count("")
                     duration = (words * 0.007) * 60
-                    if self.has_numbers(message_clean):
+                    if h.has_numbers(message_clean):
                         duration = 4  
                     if (chars / words) > 7 and chars > 90:
                         duration = 7 
@@ -252,4 +237,3 @@ class GH_Manager(hass.Hass):
                     self.log(sys.exc_info())
                     self.set_debug_sensor("GH Manager - CallBack Error ", ex)
                     pass # Nothing in queue
-
