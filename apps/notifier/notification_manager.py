@@ -1,6 +1,7 @@
 import hassapi as hass
 import datetime
-import re
+#
+import helpermodule as h
 
 """
 Class Notification_Manager handles sending text to notfyng service
@@ -14,27 +15,22 @@ class Notification_Manager(hass.Hass):
 
     def initialize(self):
         #self.text_last_message = globals.get_arg(self.args, "text_last_message")
-        self.text_last_message = self.args["text_last_message"]
-        self.boolean_wrap_text = self.args["boolean_wrap_text"]
-        self.boolean_tts_clock = self.args["boolean_tts_clock"]
+        self.text_last_message = h.get_arg(self.args, "text_last_message")
+        self.boolean_wrap_text = h.get_arg(self.args, "boolean_wrap_text")
+        self.boolean_tts_clock = h.get_arg(self.args, "boolean_tts_clock")
     
     def prepare_text(self, html, message, title, timestamp, assistant_name):
         if str(html).lower() in ["true","on","yes","1"]:
             title = ("<b>[{} - {}] {}</b>".format(assistant_name, timestamp, title))
-            title = self.replace_regular(title,[("\s<","<")])
+            title = h.replace_regular(title,[("\s<","<")])
         else:
             title = ("*[{} - {}] {}*".format(assistant_name, timestamp, title))
-            title = self.replace_regular(title,[("\s\*","*")])
+            title = h.replace_regular(title,[("\s\*","*")])
         if self.get_state(self.boolean_wrap_text) == 'on':
-            message = self.replace_regular(message, SUB_NOTIFICHE_WRAP)
+            message = h.replace_regular(message, SUB_NOTIFICHE_WRAP)
         else:
-            message = self.replace_regular(message, SUB_NOTIFICHE_NOWRAP)
+            message = h.replace_regular(message, SUB_NOTIFICHE_NOWRAP)
         return message, title
-
-    def removekey(self, d, key):
-        r = dict(d)
-        del r[key]
-        return r
 
     def check_notifier(self, notifier, notify_name):
         notifier_list = []
@@ -58,49 +54,53 @@ class Notification_Manager(hass.Hass):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         title = data["title"]
         message = data["message"]
-        inline = data["inline"]
+        target = data["target"]
         image = data["image"]
         caption = data["caption"]
         link = data["link"]
         html = data["html"]
         priority = data["priority"]
+        telegram = data["telegram"]
         pushover = data["pushover"]
         mobile = data["mobile"]
-        whatsapp_addon = data["whatsapp"]
         discord = data["discord"]
-        notify_vector = self.check_notifier(self.split_device_list(str(data["notify"])),self.split_device_list(str(notify_name)))
+        whatsapp_addon = data["whatsapp"]
+        notify_vector = self.check_notifier(h.check_array(data["notify"]),self.split_device_list(str(notify_name)))
+        ## target ##
+        if target !='':
+            target_vector = h.check_array(target)
         ########## SAVE IN INPUT_TEXT ###########
         self.set_state(self.text_last_message, state = message[:245])
         #########################################
         for item in notify_vector:
             if item.find("notify.") == -1:
-                item = __NOTIFY__ + str(self.replace_regular(item,SUB_NOTIFIER)).lower()
+                item = __NOTIFY__ + str(h.replace_regular(item,SUB_NOTIFIER)).lower()
             else:
-                item = str(self.replace_regular(item,SUB_NOTIFIER)).lower()
+                item = str(h.replace_regular(item,SUB_NOTIFIER)).lower()
             #### TELEGRAM #######################
             if item.find("telegram") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
                 extra_data = {}
+                if isinstance(telegram, dict):
+                    extra_data = telegram
+                    if caption == "":
+                        caption = ("{}\n{}".format(titolo,messaggio))
+                    if image != ""  and image.find("http") != -1:
+                        url_data = {"url": image,
+                                    "caption": caption,
+                                    "timeout": 90
+                                    }
+                        extra_data.update({"photo":url_data})
+                    if image != ""  and image.find("http") == -1:
+                        file_data = {"file": image,
+                                    "caption": caption,
+                                    "timeout": 90
+                                    }
+                        extra_data.update({"photo":file_data})
                 if str(html).lower() not in ["true","on","yes","1"]:
                     messaggio = messaggio.replace("_","\_")
                 if link !="":
                     messaggio = ("{} {}".format(messaggio,link))
-                if caption == "":
-                    caption = ("{}\n{}".format(titolo,messaggio))
-                if image != ""  and image.find("http") != -1:
-                    extra_data = { "photo": 
-                                    {"url": image,
-                                    "caption": caption,
-                                    "timeout": 90}
-                                }
-                if image != ""  and image.find("http") == -1:
-                    extra_data = { "photo": 
-                                    {"file": image,
-                                    "caption": caption,
-                                    "timeout": 90}
-                                }
-                if inline !="":
-                    extra_data.update({"inline_keyboard":inline})
                 if image != "":
                     self.call_service(item, message = "", data = extra_data)
                 elif extra_data:
@@ -140,14 +140,19 @@ class Notification_Manager(hass.Hass):
                 titolo = titolo.replace("*","")
                 extra_data = {}
                 if isinstance(pushover, dict):
+                    extra_data = pushover
                     if image != "" and image.find("http") != -1:
                         extra_data.update({"url":image})
                     if image != "" and image.find("http") == -1:
                         extra_data.update({"attachment":image})
                     if priority != "":
                         extra_data.update({"priority":priority})
-                if extra_data:
+                if extra_data and target_vector:
+                    self.call_service( item, message = messaggio, title = titolo, data = extra_data, target = target_vector)
+                elif extra_data:
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
+                elif target_vector:
+                    self.call_service( item, message = messaggio, title = titolo, target = target_vector)                
                 else:
                     self.call_service( item, message = messaggio, title = titolo)
             #### PUSHBULLET #####################
@@ -157,12 +162,18 @@ class Notification_Manager(hass.Hass):
                 extra_data = {}
                 if link !="":
                     messaggio = ("{} {}".format(messaggio,link))
+                if image != "" and image.find("http") != -1 and image.find(".") != -1:
+                    extra_data.update({"file_url": image})
                 if image != "" and image.find("http") != -1:
                     extra_data.update({"url": image})
                 if image != "" and image.find("http") == -1:
                     extra_data.update({"file": image})
-                if extra_data:
+                if extra_data and target_vector:
+                    self.call_service( item, message = messaggio, title = titolo, data = extra_data, target = target_vector)
+                elif extra_data:
                     self.call_service( item, message = messaggio, title = titolo, data = extra_data)
+                elif target_vector:
+                    self.call_service( item, message = messaggio, title = titolo, target = target_vector)                
                 else:
                     self.call_service( item, message = messaggio, title = titolo)
             #### DISCORD ########################
@@ -187,7 +198,6 @@ class Notification_Manager(hass.Hass):
                     self.call_service( item, message = messaggio, data = extra_data)
                 else:
                     self.call_service( item, message = messaggio)
-            #self.call_service( item, message = messaggio)
             #### MAIL ###########################
             elif item.find("mail") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
@@ -205,10 +215,10 @@ class Notification_Manager(hass.Hass):
                     if "tts" in mobile:
                         if str(mobile.get("tts")).lower() in ["true","on","yes","1"]:
                             tts_flag = True
-                            extra_data = self.removekey(mobile,"tts")
+                            extra_data = h.remove_key(mobile,"tts")
                         else:
                             tts_flag = False
-                            extra_data = self.removekey(mobile,"tts")
+                            extra_data = h.remove_key(mobile,"tts")
                     else:
                         extra_data = mobile
                 if image != "":
@@ -262,16 +272,11 @@ class Notification_Manager(hass.Hass):
         except:
             per_not_info = "null"
         if self.get_state(self.boolean_wrap_text) == 'on':
-            messaggio = self.replace_regular(data["message"], SUB_NOTIFICHE_WRAP)
+            messaggio = h.replace_regular(data["message"], SUB_NOTIFICHE_WRAP)
         else:
-            messaggio = self.replace_regular(data["message"], SUB_NOTIFICHE_NOWRAP)
+            messaggio = h.replace_regular(data["message"], SUB_NOTIFICHE_NOWRAP)
         messaggio = ("{} - {}".format(timestamp, messaggio))
         if per_not_info == "notifying":
             old_messaggio = self.get_state(persistent_notification_info, attribute="message")
             messaggio = (old_messaggio + "\n" + messaggio) if len(old_messaggio)<2500 else messaggio
         self.call_service("persistent_notification/create", notification_id = "info_messages", message = messaggio, title = "Centro Messaggi" )
-
-    def replace_regular(self, text: str, substitutions: list):
-        for old,new in substitutions:
-            text = re.sub(old, new, text.strip())
-        return text
