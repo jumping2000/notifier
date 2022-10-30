@@ -9,6 +9,7 @@ GH_Manager:
   gh_restore_volume: input_number.default_restore_volume
   gh_wait_time: input_number.tts_wait_time
   gh_select_media_player: input_select.notification_media_player_google
+  gh_sensor_media_player: sensor.media_player_google
   
   # Debug Sensor
   debug_sensor: sensor.centro_notifiche
