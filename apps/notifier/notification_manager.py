@@ -83,20 +83,20 @@ class Notification_Manager(hass.Hass):
                 extra_data = {}
                 if isinstance(telegram, dict):
                     extra_data = telegram
-                    if caption == "":
-                        caption = ("{}\n{}".format(titolo,messaggio))
-                    if image != ""  and image.find("http") != -1:
-                        url_data = {"url": image,
-                                    "caption": caption,
-                                    "timeout": 90
-                                    }
-                        extra_data.update({"photo":url_data})
-                    if image != ""  and image.find("http") == -1:
-                        file_data = {"file": image,
-                                    "caption": caption,
-                                    "timeout": 90
-                                    }
-                        extra_data.update({"photo":file_data})
+                if caption == "":
+                    caption = ("{}\n{}".format(titolo,messaggio))
+                if image != ""  and image.find("http") != -1:
+                    url_data = {"url": image,
+                                "caption": caption,
+                                "timeout": 90
+                                }
+                    extra_data.update({"photo":url_data})
+                if image != ""  and image.find("http") == -1:
+                    file_data = {"file": image,
+                                "caption": caption,
+                                "timeout": 90
+                                }
+                    extra_data.update({"photo":file_data})
                 if str(html).lower() not in ["true","on","yes","1"]:
                     messaggio = messaggio.replace("_","\_")
                 if link !="":
