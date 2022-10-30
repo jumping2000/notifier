@@ -14,11 +14,8 @@ class Notifier_Dispatch(hass.Hass):
     def initialize(self):
         self.gh_tts_google_mode = h.get_arg(self.args, "gh_tts_google_mode")
         self.gh_switch_entity = h.get_arg(self.args, "gh_switch")
-
         self.alexa_switch_entity = h.get_arg(self.args, "alexa_switch")
 
-        self.tts_language = h.get_arg(self.args, "tts_language")
-        self.tts_period_of_day_volume = h.get_arg(self.args, "tts_period_of_day_volume")
         self.tts_dnd = h.get_arg(self.args, "dnd")
 
         self.text_notifications = h.get_arg(self.args, "text_notifications")
@@ -177,12 +174,8 @@ class Notifier_Dispatch(hass.Hass):
         if useTTS:
             if gh_switch == "on" and google_flag:
                 if (data["google"]) != "":
-                    if  "message" not in google:
+                    if "message" not in google:
                         google["message"] = data["message"]
-                    if "volume" not in google:
-                        google["volume"] = float(self.get_state(self.tts_period_of_day_volume))/100  
-                    if  "language" not in google:
-                        google["language"] = self.get_state(self.tts_language).lower()
                     if "media_content_id" not in google:
                         google["media_content_id"] = ""
                     if "media_content_type" not in google:
@@ -194,10 +187,6 @@ class Notifier_Dispatch(hass.Hass):
                         alexa["message"] = data["message"]
                     if  "title" not in alexa:
                         alexa["title"] = data["title"]
-                    if "volume" not in alexa:
-                        alexa["volume"] = self.get_state(self.tts_period_of_day_volume)
-                    if  "language" not in alexa:
-                        alexa["language"] = self.get_state(self.tts_language) 
                 self.alexa_manager.speak(alexa) 
         if usePhone:
             try:
