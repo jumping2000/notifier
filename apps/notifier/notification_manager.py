@@ -2,7 +2,6 @@ import hassapi as hass
 import datetime
 #
 import helpermodule as h
-
 """
 Class Notification_Manager handles sending text to notfyng service
 """
@@ -67,6 +66,7 @@ class Notification_Manager(hass.Hass):
         whatsapp_addon = data["whatsapp"]
         notify_vector = self.check_notifier(h.check_array(data["notify"]),self.split_device_list(str(notify_name)))
         ## target ##
+        target_vector = []
         if target !='':
             target_vector = h.check_array(target)
         ########## SAVE IN INPUT_TEXT ###########
@@ -192,10 +192,16 @@ class Notification_Manager(hass.Hass):
                     elif "images" in discord:
                         extra_data = discord
                         messaggio = titolo.replace("*","") + " " + messaggio
-                if extra_data and "embed" in discord:
+                if extra_data and "embed" in discord and target_vector:
+                    self.call_service( item, message = "", data = extra_data, target = target_vector) 
+                elif extra_data and "images" in discord and target_vector:
+                    self.call_service( item, message = messaggio, data = extra_data, target = target_vector) 
+                elif extra_data and "embed" in discord:
                     self.call_service( item, message = "", data = extra_data)
                 elif extra_data and "images" in discord:
                     self.call_service( item, message = messaggio, data = extra_data)
+                elif target_vector:
+                    self.call_service( item, message = messaggio, target = target_vector)
                 else:
                     self.call_service( item, message = messaggio)
             #### MAIL ###########################
