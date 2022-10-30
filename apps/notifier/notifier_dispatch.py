@@ -1,5 +1,6 @@
 import hassapi as hass
 import sys
+import yaml
 import helpermodule as h
 #
 # Centralizes messaging.
