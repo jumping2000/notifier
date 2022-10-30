@@ -187,7 +187,7 @@ class Notifier_Dispatch(hass.Hass):
                         alexa["message"] = data["message"]
                     if  "title" not in alexa:
                         alexa["title"] = data["title"]
-                self.alexa_manager.speak(alexa) 
+                self.alexa_manager.speak(alexa, self.alexa_skill_id)
         if usePhone:
             try:
                 language = self.get_state(self.tts_language)
