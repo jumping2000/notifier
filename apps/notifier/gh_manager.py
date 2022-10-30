@@ -35,6 +35,8 @@ class GH_Manager(hass.Hass):
         self.gh_wait_time = h.get_arg(self.args, "gh_wait_time")
         self.gh_select_media_player = h.get_arg(self.args, "gh_select_media_player")
         self.gh_sensor_media_player = h.get_arg(self.args, "gh_sensor_media_player")
+        self.tts_language = h.get_arg(self.args, "tts_language")
+        self.tts_period_of_day_volume = h.get_arg(self.args, "tts_period_of_day_volume")
         self.ytube_player = h.get_arg(self.args, "ytube_player")
         self.ytube_called = False
         self.debug_sensor = h.get_arg(self.args, "debug_sensor")
@@ -110,15 +112,19 @@ class GH_Manager(hass.Hass):
             return
         if "media_player" not in google:
             google["media_player"] = self.get_state(self.gh_sensor_media_player)
+        if "volume" not in google:
+            google["volume"] = float(self.get_state(self.tts_period_of_day_volume))/100  
+        if  "language" not in google:
+            google["language"] = self.get_state(self.tts_language).lower()
+        ###
+        self.volume_set(gh_player,google["volume"])
         ###
         gh_player = self.check_mplayer(self.split_device_list(google["media_player"]))
         gh_volume = self.check_volume(self.get_state(self.gh_select_media_player, attribute="options"))
-        self.volume_get(gh_volume,float(self.get_state(self.args["gh_restore_volume"]))/100)
-        self.mediastate_get(gh_volume,float(self.get_state(self.args["gh_restore_volume"]))/100)
+        self.volume_get(gh_volume,float(self.get_state(self.args["tts_period_of_day_volume"]))/100)
+        self.mediastate_get(gh_volume,float(self.get_state(self.args["tts_period_of_day_volume"]))/100)
         wait_time = float(self.get_state(self.gh_wait_time))
         message = h.replace_regular(google["message"], SUB_TTS)
-        ### set volume
-        self.volume_set(gh_player,google["volume"])
         # queues the message to be handled async, use when_tts_done_do method to supply callback when tts is done
         if google["media_content_id"] != "":
             try:
