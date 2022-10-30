@@ -6,10 +6,11 @@ GH_Manager:
   ytube_player: media_player.ytube_music_player
   
   # Main hub
-  gh_restore_volume: input_number.default_restore_volume
   gh_wait_time: input_number.tts_wait_time
   gh_select_media_player: input_select.notification_media_player_google
   gh_sensor_media_player: sensor.media_player_google
+  tts_period_of_day_volume: sensor.period_of_day_volume
+  tts_language: input_select.language
   
   # Debug Sensor
   debug_sensor: sensor.centro_notifiche
