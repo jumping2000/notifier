@@ -9,6 +9,7 @@ __NOTIFY__ = "notify/"
 SUB_NOTIFICHE_NOWRAP = [("\s+"," "),(" +"," ")]
 SUB_NOTIFICHE_WRAP = [(" +"," "),("\s\s+","\n")]
 SUB_NOTIFIER =  [("\s+","_"),("\.","/")]
+SUB_REMOVE_SPACE = [("\s*,\s*", ",")]
 
 class Notification_Manager(hass.Hass):
 
@@ -63,12 +64,12 @@ class Notification_Manager(hass.Hass):
         pushover = data["pushover"]
         mobile = data["mobile"]
         discord = data["discord"]
-        whatsapp_addon = data["whatsapp"]
-        notify_vector = self.check_notifier(h.check_array(data["notify"]),self.split_device_list(str(notify_name)))
+        whatsapp_addon = data["whatsapp"]       
+        notify_vector = self.check_notifier(h.return_array(h.replace_regular(data["notify"], SUB_REMOVE_SPACE)),self.split_device_list(str(notify_name)))
         ## target ##
         target_vector = []
         if target !='':
-            target_vector = h.check_array(target)
+            target_vector = h.return_array(h.replace_regular(target, SUB_REMOVE_SPACE))
         ########## SAVE IN INPUT_TEXT ###########
         self.set_state(self.text_last_message, state = message[:245])
         #########################################
@@ -88,14 +89,12 @@ class Notification_Manager(hass.Hass):
                 if image != ""  and image.find("http") != -1:
                     url_data = {"url": image,
                                 "caption": caption,
-                                "timeout": 90
-                                }
+                                "timeout":90 }
                     extra_data.update({"photo":url_data})
                 if image != ""  and image.find("http") == -1:
                     file_data = {"file": image,
                                 "caption": caption,
-                                "timeout": 90
-                                }
+                                "timeout":90 }
                     extra_data.update({"photo":file_data})
                 if str(html).lower() not in ["true","on","yes","1"]:
                     messaggio = messaggio.replace("_","\_")
@@ -108,23 +107,24 @@ class Notification_Manager(hass.Hass):
                 else: 
                     self.call_service(item, message = messaggio, title = titolo)
             #### WHATSAPP ADDON #################
-            elif item.find("whatsapp_addon") != -1:
+            # elif item.find("whatsapp_addon") != -1:
+            #     messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
+            #     messaggio = titolo + " " + messaggio
+            #     extra_data = {}
+            elif isinstance(whatsapp_addon, dict):
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
                 messaggio = titolo + " " + messaggio
-                extra_data = {}
-                if isinstance(whatsapp_addon, dict):
-                    extra_data = whatsapp_addon
-                    if messaggio != "":
-                        extra_data.update({"body":
-                                           {"text": messaggio }
-                                          } )
-                        #dict[extra_data]["body"]["text"]= messaggio 
-                    if image != "":
-                        extra_data.update({"image":
-                                           {"url": image }
-                                          } )
-                    if caption!= "":
-                        extra_data.update({"caption": caption })
+                extra_data = whatsapp_addon
+                if messaggio != "":
+                    extra_data.update({"body":
+                                        {"text": messaggio }
+                                        } )
+                if image != "":
+                    extra_data.update({"image":
+                                        {"url": image }
+                                        } )
+                if caption!= "":
+                    extra_data.update({"caption": caption })
                 if extra_data:
                     self.call_service( "whatsapp/send_message", data = extra_data)
             #### WHATSAPP #######################
