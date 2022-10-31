@@ -117,14 +117,14 @@ class GH_Manager(hass.Hass):
         if  "language" not in google:
             google["language"] = self.get_state(self.tts_language).lower()
         ###
-        self.volume_set(gh_player,google["volume"])
-        ###
         gh_player = self.check_mplayer(self.split_device_list(google["media_player"]))
         gh_volume = self.check_volume(self.get_state(self.gh_select_media_player, attribute="options"))
         self.volume_get(gh_volume,float(self.get_state(self.args["tts_period_of_day_volume"]))/100)
         self.mediastate_get(gh_volume,float(self.get_state(self.args["tts_period_of_day_volume"]))/100)
         wait_time = float(self.get_state(self.gh_wait_time))
         message = h.replace_regular(google["message"], SUB_TTS)
+        ### SET VOLUME 
+        self.volume_set(gh_player,google["volume"])
         # queues the message to be handled async, use when_tts_done_do method to supply callback when tts is done
         if google["media_content_id"] != "":
             try:
