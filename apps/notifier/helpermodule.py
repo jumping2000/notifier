@@ -49,12 +49,12 @@ def remove_key(d, key)->dict:
     del r[key]
     return r
 
-# """check if is an array """
-def check_array(target):
+# """check if is an array and returns a list is Input is a text"""
+def return_array(target)->list:
     if isinstance(target, list):
         return target
     else:
-        return list(target.replace(" ","").split(","))
+        return list(target.split(","))
         
 def replace_regular(text: str, substitutions: list)->str:
     for old,new in substitutions:
