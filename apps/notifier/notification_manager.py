@@ -117,19 +117,25 @@ class Notification_Manager(hass.Hass):
                 if isinstance(whatsapp_addon, dict):
                     messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
                     messaggio = titolo + " " + messaggio
+                    if caption == "":
+                        caption = messaggio
                     extra_data = whatsapp_addon
-                    if messaggio != "":
+                    if image != "":
+                        extra_data.update({"body":
+                                            {"image": {"url": image},
+                                             "caption": caption
+                                            }
+                                        })
+                        self.call_service("whatsapp/send_message", **extra_data)
+                    elif "body" in extra_data:
+                        #self.log("[EXTRA-DATA]: {}".format(extra_data), ascii_encode = False)
+                        self.call_service("whatsapp/send_message", **extra_data) 
+                    else:
                         extra_data.update({"body":
                                             {"text": messaggio }
-                                            } )
-                    if image != "":
-                        extra_data.update({"image":
-                                            {"url": image }
-                                            } )
-                    if caption!= "":
-                        extra_data.update({"caption": caption })
-                if extra_data:
-                    self.call_service( "whatsapp/send_message", data = extra_data)
+                                        })
+                        #self.log("[EXTRA-DATA_ELSE]: {}".format(extra_data), ascii_encode = False)
+                        self.call_service("whatsapp/send_message", **extra_data)  
             #### WHATSAPP #######################
             elif item.find("whatsapp") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
