@@ -73,6 +73,9 @@ class Notification_Manager(hass.Hass):
         ########## SAVE IN INPUT_TEXT ###########
         self.set_state(self.text_last_message, state = message[:245])
         #########################################
+        if isinstance(whatsapp_addon, dict):
+            notify_vector.append("whatsapp_addon")
+        #########################################
         for item in notify_vector:
             if item.find("notify.") == -1:
                 item = __NOTIFY__ + str(h.replace_regular(item,SUB_NOTIFIER)).lower()
@@ -107,24 +110,24 @@ class Notification_Manager(hass.Hass):
                 else: 
                     self.call_service(item, message = messaggio, title = titolo)
             #### WHATSAPP ADDON #################
-            # elif item.find("whatsapp_addon") != -1:
-            #     messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
-            #     messaggio = titolo + " " + messaggio
-            #     extra_data = {}
-            elif isinstance(whatsapp_addon, dict):
+            elif item.find("whatsapp_addon") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
                 messaggio = titolo + " " + messaggio
-                extra_data = whatsapp_addon
-                if messaggio != "":
-                    extra_data.update({"body":
-                                        {"text": messaggio }
-                                        } )
-                if image != "":
-                    extra_data.update({"image":
-                                        {"url": image }
-                                        } )
-                if caption!= "":
-                    extra_data.update({"caption": caption })
+                extra_data = {}
+                if isinstance(whatsapp_addon, dict):
+                    messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
+                    messaggio = titolo + " " + messaggio
+                    extra_data = whatsapp_addon
+                    if messaggio != "":
+                        extra_data.update({"body":
+                                            {"text": messaggio }
+                                            } )
+                    if image != "":
+                        extra_data.update({"image":
+                                            {"url": image }
+                                            } )
+                    if caption!= "":
+                        extra_data.update({"caption": caption })
                 if extra_data:
                     self.call_service( "whatsapp/send_message", data = extra_data)
             #### WHATSAPP #######################
