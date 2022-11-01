@@ -100,9 +100,11 @@ class Notifier_Dispatch(hass.Hass):
         ### GOOGLE ####
         google_flag = self.createTTSdict(data["google"])[0] if len(str(data["google"])) != 0 else False
         google = self.createTTSdict(data["google"])[1] if len(str(data["google"])) != 0 else False
+        google_priority_flag = True if "priority" in data["google"] else False
         ### ALEXA ####
         alexa_flag = self.createTTSdict(data["alexa"])[0] if len(str(data["alexa"])) != 0 else False
         alexa = self.createTTSdict(data["alexa"])[1] if len(str(data["alexa"])) != 0 else False
+        alexa_priority_flag = True if "priority" in data["alexa"] else False
         ### FROM INPUT BOOLEAN ###
         dnd_status = self.get_state(self.tts_dnd)
         guest_status = self.get_state(self.guest_mode)
@@ -125,7 +127,7 @@ class Notifier_Dispatch(hass.Hass):
         else:
             usePersistentNotification = False
         ### TTS ###
-        if priority_status:
+        if priority_status or google_priority_flag or alexa_priority_flag:
             useTTS = True
         elif self.get_state(self.speech_notifications) == "on" and dnd_status == "off" and (location_status == "home" or guest_status == "on"):
             useTTS = True
