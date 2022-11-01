@@ -2,15 +2,17 @@ Alexa_Manager:
   module: alexa_manager
   class: Alexa_Manager
 
-  # log_level: DEBUG
+  log_level: DEBUG
 
   # Alexa hub
+  binary_speak: binary_sensor.notifyhub_alexa_speak
   bool_smart_volume_set: input_boolean.alexa_smart_volume_set
-  select_player: input_select.notification_media_player_alexa
   sensor_player: sensor.media_player_alexa
+  select_player: input_select.notification_media_player_alexa
   select_type: input_select.default_alexa_type
   select_method: input_select.default_alexa_method
   select_voice: input_select.alexa_voice
+  select_alexa_language: input_select.alexa_language
   bool_ssml: input_boolean.alexa_ssml
   prosody:
     rate: input_number.alexa_prosody_rate

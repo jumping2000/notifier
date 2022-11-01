@@ -25,13 +25,10 @@ SKILL_ID = "skill_id"
 DEFAULT_VOL = "default_vol"
 
 # Parameters
-# MODE = "mode"
 TITLE = "title"
 MESSAGE = "message"
-
 AUDIO = "audio"
 EVENT_ID = "event_id"
-TYPE = "type"
 LANGUAGE = "language"
 MEDIA_CONTENT_ID = "media_content_id"
 MEDIA_CONTENT_TYPE = "media_content_type"
@@ -43,10 +40,12 @@ PUSH = "push"
 RATE = "rate"
 SSML = "ssml"
 SSML_VOL = "ssml_volume"
+TYPE = "type"
 VOICE = "voice"
 VOLUME = "volume"
 WAIT_TIME = "wait_time"
 WHISPER = "whisper"
+# MODE = "mode"
 
 MOBILE_PUSH_TYPE = (PUSH, "dropin", "dropin_notification")
 SUB_VOICE = [
@@ -291,16 +290,16 @@ VOICE_NAMES = (
 class Alexa_Manager(hass.Hass):
     def initialize(self) -> None:
         self.debug_sensor = self.args.get("debug_sensor")
-
         self.component_installed = self.is_component_installed(ALEXA_SERVICE)
         self.notify_services = self.list_notify_services(ALEXA_SERVICE)
         self.service2player = self.alexa_services_to_players(self.notify_services)
         self.volumes_saved = {}  # dict media players volume saved
-
-        # Entity
+        # Entities
+        self.binary_speak = self.args.get("binary_speak")
         self.sensor_player = self.args.get("sensor_player")
         self.sensor_volume = self.args.get("sensor_day_volume")
         self.select_language = self.args.get("select_language")
+        self.select_alexa_language = self.args.get("select_alexa_language")
         self.select_player = self.args.get("select_player")
         self.select_type = self.args.get("select_type")
         self.select_method = self.args.get("select_method")
@@ -310,7 +309,7 @@ class Alexa_Manager(hass.Hass):
         self.prosody = self.args.get("prosody")
         self.number_wait_time = self.args.get("number_wait_time")
         self.text_actionable_notification = self.args.get("actionable_notification")
-        #
+
         self.queue = Queue(maxsize=0)
         self._when_tts_done_callback_queue = Queue()
         t = Thread(target=self.worker)
@@ -321,7 +320,7 @@ class Alexa_Manager(hass.Hass):
     def speak(self, alexa: dict, skill_id: str) -> None:
         """Speak the provided text through the media player."""
         if not self.service2player:
-            self.set_debug_sensor("I can't find the Alexa Media services", CUSTOM_COMPONENT_URL)
+            self.set_debug_sensor("Alexa Services not found", CUSTOM_COMPONENT_URL)
             return
         self.lg(f"------ ALEXA START DISPATCH ------")
         self.lg(f"FROM DISPATCH: {type(alexa)} value {alexa}")
@@ -335,6 +334,19 @@ class Alexa_Manager(hass.Hass):
         default_vol = float(self.get_state(self.sensor_volume, default=10)) / 100
         volume = float(alexa.get(VOLUME, default_vol))
 
+        alexa_lang = self.get_state(self.select_alexa_language, default="Master")
+        master_lang = self.get_state(self.select_language, default="it-IT")
+        final_language = alexa_lang if alexa_lang != "Master" else master_lang
+        language = str(alexa.get(LANGUAGE, final_language))
+
+        state_method = self.get_state(self.select_method, default="all")
+        state_voice = self.get_state(self.select_voice, default="Alexa")
+        state_wait_time = self.get_state(self.number_wait_time, default=3.0)
+        state_rate = self.get_state(self.prosody[RATE], default=100.0)
+        state_pitch = self.get_state(self.prosody[PITCH], default=0.0)
+        state_ssml_volume = self.get_state(self.prosody[VOLUME], default=0.0)
+        state_ssml = self.get_state(self.bool_ssml, default="off")
+
         # Actionable notification
         if event_id := alexa.get(EVENT_ID):
             self.set_textvalue(
@@ -343,7 +355,7 @@ class Alexa_Manager(hass.Hass):
             )
 
         # Push notification - Only one device is needed
-        push = self.check_bool(alexa.get(PUSH))
+        push = self.check_bool(alexa.get(PUSH, False))
         if (push or data_type in MOBILE_PUSH_TYPE) and message:
             message_push = self.remove_tags(self.replace_regular(message, SUB_TEXT))
             type_ = {TYPE: PUSH} if push else {TYPE: data_type}
@@ -357,7 +369,7 @@ class Alexa_Manager(hass.Hass):
 
         # Media Content # TODO Restore volume??
         if media_content_id := alexa.get(MEDIA_CONTENT_ID):
-            self.volume_get_and_save(media_player, volume, default_vol)
+            self.volume_get_save(media_player, volume, default_vol)
             self.volume_set(media_player, volume)
             self.call_service(
                 "media_player/play_media",
@@ -377,19 +389,19 @@ class Alexa_Manager(hass.Hass):
                     TYPE: data_type,
                     DEFAULT_VOL: default_vol,
                     VOLUME: volume,
+                    LANGUAGE: language,
                     EVENT_ID: event_id,
                     SKILL_ID: skill_id,
                     AUDIO: alexa.get(AUDIO, None),
                     NOTIFIER: str(alexa.get(NOTIFIER, ALEXA_SERVICE)),
-                    LANGUAGE: str(alexa.get(LANGUAGE, self.get_state(self.select_language, default="it-IT"))),
-                    METHOD: str(alexa.get(METHOD, self.get_state(self.select_method, default="all")).lower()),
-                    VOICE: str(alexa.get(VOICE, self.get_state(self.select_voice, default="Alexa"))).capitalize(),
-                    WAIT_TIME: float(alexa.get(WAIT_TIME, self.get_state(self.number_wait_time))),
-                    RATE: float(alexa.get(RATE, self.get_state(self.prosody[RATE], default=100.0))),
-                    PITCH: float(alexa.get(PITCH, self.get_state(self.prosody[PITCH], default=0.0))),
-                    SSML_VOL: float(alexa.get(SSML_VOL, self.get_state(self.prosody[VOLUME], default=0.0))),
+                    METHOD: str(alexa.get(METHOD, state_method).lower()),
+                    VOICE: str(alexa.get(VOICE, state_voice)).capitalize(),
+                    WAIT_TIME: float(alexa.get(WAIT_TIME, state_wait_time)),
+                    RATE: float(alexa.get(RATE, state_rate)),
+                    PITCH: float(alexa.get(PITCH, state_pitch)),
+                    SSML_VOL: float(alexa.get(SSML_VOL, state_ssml_volume)),
                     WHISPER: self.check_bool(alexa.get(WHISPER, False)),
-                    SSML: self.check_bool(alexa.get(SSML, self.get_state(self.bool_ssml, default="off"))),
+                    SSML: self.check_bool(alexa.get(SSML, state_ssml)),
                 }
             )
 
@@ -427,7 +439,7 @@ class Alexa_Manager(hass.Hass):
 
     def speak_tags(self, value: str) -> str:
         """This will add a <speak> tag when using tts method"""
-        return f"<speak>{value}</speak>" if not "<speak>" in value or "</" in value else value
+        return f"<speak>{value}</speak>"
 
     def effect_tags(self, value: str) -> str:
         """This will add a <amazon:effect> tag and applies a whispering effect."""
@@ -512,15 +524,15 @@ class Alexa_Manager(hass.Hass):
         return service2player
 
     def check_media_player(self, media_player: list) -> list:
-        mp_list = []
+        mplist = []
         if not isinstance(media_player, list):
             media_player = self.str2list(str(media_player.lower()))
         self.lg(f"USER PLAYER: {media_player} - TYPE: {type(media_player)}")
-        player_options = list(self.get_state(self.select_player, attribute="options", default=""))
-        name2entity = self.entity_from_name(player_options + media_player)
+        media_name = self.get_state(self.select_player, attribute="options", default="")
+        name2entity = self.entity_from_name(list(media_name) + media_player)
         for mp in media_player:
             if mp == "test":
-                mp_list = self.service2player
+                mplist = self.service2player
                 self.lg(f"TEST: {mp}")
                 break
             if not self.entity_exists(mp):
@@ -528,18 +540,18 @@ class Alexa_Manager(hass.Hass):
                 mp = name2entity.get(mp)
             if mp:
                 if "group." in mp:
-                    mp_list.extend(self.get_state(mp, attribute="entity_id", default=""))
+                    mplist.extend(self.get_state(mp, attribute="entity_id", default=""))
                 elif "sensor." in mp:
-                    mp_list.append(self.get_state(mp))
+                    mplist.append(self.get_state(mp))
                 elif "media_player." in mp:
-                    mp_list.append(mp)
+                    mplist.append(mp)
                 else:
                     self.log(f"Invalid entity ({mp})", level="WARNING")
-        if not mp_list:
-            mp_list = self.service2player
-            self.log(f"Not {media_player} found. Default {mp_list}", level="WARNING")
-        self.lg(f"GET PLAYER: {mp_list}")
-        return mp_list
+        if not mplist:
+            mplist = self.service2player
+            self.log(f"Not {media_player} found. Default {mplist}", level="WARNING")
+        self.lg(f"GET PLAYER: {mplist}")
+        return mplist
 
     def entity_from_name(self, name_list: list) -> dict:
         """Given a list of names, it takes the entity_id from the friendly_name.
@@ -557,13 +569,13 @@ class Alexa_Manager(hass.Hass):
         self.lg(f"NAME-ENTITY_ID DICT: {name2entity}")
         return name2entity
 
-    def volume_get_and_save(self, media_player: list, vol_set: float, def_vol: float) -> None:
-        """Get and save the volume of each media player."""
+    def volume_get_save(self, media_player: list, volume: float, defvol: float) -> None:
+        """Get and save the volume of each media player only if different."""
         self.volumes_saved = {}
         for i in media_player:
-            vol_get = self.get_state(i, attribute="volume_level", default=def_vol)
-            if vol_get != vol_set:
-                self.volumes_saved[i] = vol_get
+            volume_get = self.get_state(i, attribute="volume_level", default=defvol)
+            if volume_get != volume:
+                self.volumes_saved[i] = volume_get
         self.lg(f"GET VOLUME: {self.volumes_saved}")
 
     def volume_restore(self) -> None:
@@ -573,19 +585,25 @@ class Alexa_Manager(hass.Hass):
         for i, j in self.volumes_saved.items():
             self.call_service("media_player/volume_set", entity_id=i, volume_level=j)
             time.sleep(1)
-            # Force attribute volume_level in Home assistant and update last called device
+            # Force attribute volume_level in Home assistant
             self.set_state(i, attributes={"volume_level": j})
             self.call_service("alexa_media/update_last_called", return_result=True)
-            self.lg(f"RESTORE VOL: {i} {j} [State: {self.get_state(i, attribute='volume_level')}]")
+            self.lg(
+                f"RESTORE VOL: {i} {j} [State:"
+                f" {self.get_state(i, attribute='volume_level')}]"
+            )
 
     def volume_set(self, media_player: list, volume: float) -> None:
         """Set the volume of each media player."""
-        smart_volume = self.check_bool(self.get_state(self.bool_smart_volume_set, default="off"))
+        state_smart_volume = self.get_state(self.bool_smart_volume_set, default="off")
+        smart_volume = self.check_bool(state_smart_volume)
         if not self.volumes_saved and smart_volume:
             return
         media_player = list(self.volumes_saved.keys()) if smart_volume else media_player
-        self.call_service("media_player/volume_set", entity_id=media_player, volume_level=volume)
-        # Not strictly necessary (Home assistant does not update the status, but it works)
+        self.call_service(
+            "media_player/volume_set", entity_id=media_player, volume_level=volume
+        )
+        # Not strictly necessary
         for player in media_player:
             self.set_state(player, attributes={"volume_level": volume})
             self.lg(f"SET VOLUMES: {player} {volume}")
@@ -604,10 +622,11 @@ class Alexa_Manager(hass.Hass):
         while True:
             try:
                 data = self.queue.get()
+                self.set_state(self.binary_speak, state="on")
                 self.lg(f"------ ALEXA WORKER QUEUE  ------")
                 self.lg(f"WORKER: {type(data)} value {data}")
                 media_player = data[MEDIA_PLAYER]
-                self.volume_get_and_save(media_player, data[VOLUME], data[DEFAULT_VOL])
+                self.volume_get_save(media_player, data[VOLUME], data[DEFAULT_VOL])
                 self.volume_set(media_player, data[VOLUME])
 
                 # Replace and clean message
@@ -644,7 +663,9 @@ class Alexa_Manager(hass.Hass):
                     if voice != "Alexa":
                         msg = self.voice_tags(msg, voice)
                     msg = self.audio_tags(data[AUDIO]) + msg
-                    msg = self.prosody_tags(msg, data[RATE], data[PITCH], data[SSML_VOL])
+                    msg = self.prosody_tags(
+                        msg, data[RATE], data[PITCH], data[SSML_VOL]
+                    )
                     if self.inbetween(20, data[RATE], 200) != 100:
                         if data[RATE] < 100:
                             duration += (100 - data[RATE]) * (duration / 100)
@@ -652,13 +673,16 @@ class Alexa_Manager(hass.Hass):
                             duration /= 2
                     if data[WHISPER]:
                         msg = self.effect_tags(msg)
-                    if data[TYPE] == "tts":
+                    if data[TYPE] == "tts" and "</" in msg:
                         msg = self.speak_tags(msg)
                     self.lg(f"SSML TAGS: {msg}")
 
                 # Estimate reading time
                 duration += data[WAIT_TIME]
-                self.lg(f"DURATION-WAIT: {round(duration, 2)} - words: {words} - Chars: {chars}")
+                self.lg(
+                    f"DURATION-WAIT: {round(duration, 2)}"
+                    f" - words: {words} - Chars: {chars}"
+                )
 
                 # Speak >>>
                 self.call_service(
@@ -698,6 +722,8 @@ class Alexa_Manager(hass.Hass):
                     self.log("Alexa Manager - CallBack Error", level="ERROR")
                     self.set_debug_sensor("Alexa Manager - CallBack Error ", ex)
                     pass  # Nothing in queue
+
+            self.set_state(self.binary_speak, state="off")
             self.lg("------      ALEXA  END      ------\n")
 
     # def terminate(self):
