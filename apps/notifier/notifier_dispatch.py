@@ -100,11 +100,19 @@ class Notifier_Dispatch(hass.Hass):
         ### GOOGLE ####
         google_flag = self.createTTSdict(data["google"])[0] if len(str(data["google"])) != 0 else False
         google = self.createTTSdict(data["google"])[1] if len(str(data["google"])) != 0 else False
-        google_priority_flag = True if "priority" in data["google"] else False
+        google_priority_flag = False
+        if google_flag :
+          if "priority" in google:
+            if str(google.get("priority")).lower() in ["true","on","yes","1"]:
+                google_priority_flag = True
         ### ALEXA ####
         alexa_flag = self.createTTSdict(data["alexa"])[0] if len(str(data["alexa"])) != 0 else False
         alexa = self.createTTSdict(data["alexa"])[1] if len(str(data["alexa"])) != 0 else False
-        alexa_priority_flag = True if "priority" in data["alexa"] else False
+        alexa_priority_flag = False
+        if alexa_flag :
+          if "priority" in alexa:
+            if str(alexa.get("priority")).lower() in ["true","on","yes","1"]:
+                alexa_priority_flag = True
         ### FROM INPUT BOOLEAN ###
         dnd_status = self.get_state(self.tts_dnd)
         guest_status = self.get_state(self.guest_mode)
@@ -174,7 +182,7 @@ class Notifier_Dispatch(hass.Hass):
                 self.set_debug_sensor("Error in Text Notification: ", ex)
                 self.log(sys.exc_info())
         if useTTS:
-            if gh_switch == "on" and google_flag:
+            if  (gh_switch == "on" or google_priority_flag) and google_flag:
                 if (data["google"]) != "":
                     if "message" not in google:
                         google["message"] = data["message"]
@@ -183,7 +191,7 @@ class Notifier_Dispatch(hass.Hass):
                     if "media_content_type" not in google:
                         google["media_content_type"] = ""
                 self.gh_manager.speak(google, self.get_state(self.gh_tts_google_mode), gh_notifica)
-            if alexa_switch == "on" and alexa_flag:
+            if (alexa_switch == "on" or alexa_priority_flag) and alexa_flag:
                 if (data["alexa"]) != "":
                     if  "message" not in alexa:
                         alexa["message"] = data["message"]
