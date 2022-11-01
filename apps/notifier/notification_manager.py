@@ -227,26 +227,34 @@ class Notification_Manager(hass.Hass):
                 tts_flag = False
                 extra_data = {}
                 if isinstance(mobile, dict):
-                    if "tts" in mobile:
+                    if "tts" in mobile and "tts_text" not in mobile:
                         if str(mobile.get("tts")).lower() in ["true","on","yes","1"]:
                             tts_flag = True
                             extra_data = h.remove_key(mobile,"tts")
+                            if self.get_state(self.boolean_tts_clock) == 'on':
+                                temp = ("{} {}".format(timestamp, titolo + " " + messaggio))
+                            else:
+                                temp = ("{}".format(titolo + " " + messaggio))
+                            extra_data.update({"tts_text": temp})
                         else:
                             tts_flag = False
                             extra_data = h.remove_key(mobile,"tts")
+                    elif "tts_text" in mobile:
+                        tts_flag = True
+                        if self.get_state(self.boolean_tts_clock) == 'on':
+                            temp = ("{} {}".format(timestamp, str(mobile.get("tts_text"))))
+                        else:
+                            temp = ("{}".format(str(mobile.get("tts_text"))))
+                        extra_data = mobile
+                        extra_data.update({"tts_text": temp})
                     else:
                         extra_data = mobile
-                if image != "":
-                    extra_data.update({"image":image.replace("config/www","local")})
                 if tts_flag:
-                    if self.get_state(self.boolean_tts_clock) == 'on':
-                        titolo = ("{} {}".format(timestamp, titolo + " " + messaggio))
-                        messaggio = 'TTS'
-                    else:
-                        titolo = ("{}".format(titolo + " " + messaggio))
-                        messaggio = 'TTS'
+                    messaggio = 'TTS'
                 else:
                     titolo = ("[{} - {}] {}".format(assistant_name, timestamp, titolo))
+                if image != "":
+                    extra_data.update({"image":image.replace("config/www","local")})
                 if link !="":
                     messaggio = ("{} {}".format(messaggio,link))
                 if extra_data:
