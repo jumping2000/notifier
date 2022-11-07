@@ -1,7 +1,9 @@
-import hassapi as hass
 import sys
-import yaml
+
+import hassapi as hass
 import helpermodule as h
+import yaml
+
 #
 # Centralizes messaging.
 #
@@ -58,7 +60,7 @@ class Notifier_Dispatch(hass.Hass):
         self.alexa_manager = self.get_app("Alexa_Manager")
         self.phone_manager = self.get_app("Phone_Manager")
         ### LISTEN EVENT ###
-        self.listen_event(self.notify_hub, "hub")
+        self.listen_event(self.notifier, "notifier")
 
 #####################################################################
     def set_debug_sensor(self, state, error):
@@ -89,7 +91,7 @@ class Notifier_Dispatch(hass.Hass):
                     flag = True
         return [flag,dizionario]
 
-    def notify_hub(self, event_name, data, kwargs):
+    def notifier(self, event_name, data, kwargs):
         self.log("#### START NOTIFIER_DISPATCH ####")
         location_status = self.get_state(self.location_tracker)
         ### FLAG
@@ -101,7 +103,7 @@ class Notifier_Dispatch(hass.Hass):
         google_flag = self.createTTSdict(data["google"])[0] if len(str(data["google"])) != 0 else False
         google = self.createTTSdict(data["google"])[1] if len(str(data["google"])) != 0 else False
         google_priority_flag = False
-        if google_flag :
+        if google_flag:
           if "priority" in google:
             if str(google.get("priority")).lower() in ["true","on","yes","1"]:
                 google_priority_flag = True
@@ -109,7 +111,7 @@ class Notifier_Dispatch(hass.Hass):
         alexa_flag = self.createTTSdict(data["alexa"])[0] if len(str(data["alexa"])) != 0 else False
         alexa = self.createTTSdict(data["alexa"])[1] if len(str(data["alexa"])) != 0 else False
         alexa_priority_flag = False
-        if alexa_flag :
+        if alexa_flag:
           if "priority" in alexa:
             if str(alexa.get("priority")).lower() in ["true","on","yes","1"]:
                 alexa_priority_flag = True
