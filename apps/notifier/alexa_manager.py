@@ -326,7 +326,7 @@ class Alexa_Manager(hass.Hass):
         self.lg(f"FROM DISPATCH: {type(alexa)} value {alexa}")
 
         # Backwards compatible message_tts
-        message = str(alexa.get(MESSAGE, alexa.get("message_tts", "")))
+        message = str(alexa.get("message_tts", alexa.get(MESSAGE, "")))
         get_players = alexa.get(MEDIA_PLAYER, self.get_state(self.sensor_player))
         media_player = self.check_media_player(get_players)
         get_type = alexa.get(TYPE, self.get_state(self.select_type, default="tts"))
