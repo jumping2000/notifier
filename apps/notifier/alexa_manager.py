@@ -46,6 +46,7 @@ VOLUME = "volume"
 WAIT_TIME = "wait_time"
 WHISPER = "whisper"
 # MODE = "mode"
+# PRIORITY = "priority"
 
 MOBILE_PUSH_TYPE = (PUSH, "dropin", "dropin_notification")
 SUB_VOICE = [
@@ -319,11 +320,17 @@ class Alexa_Manager(hass.Hass):
 
     def speak(self, alexa: dict, skill_id: str) -> None:
         """Speak the provided text through the media player."""
+        self.lg(f"------ ALEXA START DISPATCH ------")
+        self.lg(f"FROM DISPATCH: {type(alexa)} value {alexa}")
+
         if not self.service2player:
             self.set_debug_sensor("Alexa Services not found", CUSTOM_COMPONENT_URL)
             return
-        self.lg(f"------ ALEXA START DISPATCH ------")
-        self.lg(f"FROM DISPATCH: {type(alexa)} value {alexa}")
+        default_vol = float(self.get_state(self.sensor_volume, default=10)) / 100
+        volume = float(alexa.get(VOLUME, default_vol))
+        if volume == 0.0:
+            self.log("ALEXA VOLUME MUTED.", level="WARNING")
+            return
 
         # Backwards compatible message_tts
         message = str(alexa.get("message_tts", alexa.get(MESSAGE, "")))
@@ -331,8 +338,6 @@ class Alexa_Manager(hass.Hass):
         media_player = self.check_media_player(get_players)
         get_type = alexa.get(TYPE, self.get_state(self.select_type, default="tts"))
         data_type = str(get_type).lower().replace("dropin", "dropin_notification")
-        default_vol = float(self.get_state(self.sensor_volume, default=10)) / 100
-        volume = float(alexa.get(VOLUME, default_vol))
 
         alexa_lang = self.get_state(self.select_alexa_language, default="Master")
         master_lang = self.get_state(self.select_language, default="it-IT")
