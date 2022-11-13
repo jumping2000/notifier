@@ -660,7 +660,7 @@ class Alexa_Manager(hass.Hass):
                     alexa_data = {TYPE: "tts"}
 
                 # TAGS SSML
-                if data[SSML] and not "<speak>" in msg:
+                if (data[SSML] or data[WHISPER]) and not "<speak>" in msg:
                     voice = "Alexa" if data[VOICE] not in VOICE_NAMES else data[VOICE]
                     if voice == "Alexa" and not data[WHISPER]:
                         msg = self.find_speechcon(msg)
