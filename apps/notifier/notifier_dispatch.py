@@ -44,7 +44,7 @@ class Notifier_Dispatch(hass.Hass):
         config = self.get_plugin_config()
         config_dir = config["config_dir"]
         self.log(f"configuration dir: {config_dir}")
-        secretsFile = config_dir + "/packages/secrets.yaml"
+        secretsFile = config_dir + "/secrets.yaml"
         with open(secretsFile, "r") as ymlfile:
             cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)  # yaml.safe_load
         self.gh_tts = cfg.get("tts_google", "google_translate_say")
