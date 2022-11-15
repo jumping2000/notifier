@@ -123,7 +123,7 @@ class GH_Manager(hass.Hass):
         self.mediastate_get(gh_volume,float(self.get_state(self.args["tts_period_of_day_volume"]))/100)
         wait_time = float(self.get_state(self.gh_wait_time))
         message = h.replace_regular(google["message"], SUB_TTS)
-        ### SET VOLUME 
+        ### set volume
         self.volume_set(gh_player,google["volume"])
         # queues the message to be handled async, use when_tts_done_do method to supply callback when tts is done
         if google["media_content_id"] != "":
@@ -222,10 +222,10 @@ class GH_Manager(hass.Hass):
                                 temp_app_name = v1
                             if k1 == 'authSig':
                                 temp_auth_sig = v1
-                        self.log("Costruzione del servizio: {} - {} - {} - {} - {}".format(k, temp_media_id, temp_media_type, temp_app_name,temp_auth_sig ))
+                        #self.log("Costruzione del servizio: {} - {} - {} - {} - {}".format(k, temp_media_id, temp_media_type, temp_app_name,temp_auth_sig ))
                         if self.ytube_called:
                             self.call_service("ytube_music_player/call_method", entity_id = self.ytube_player, command = "interrupt_resume")
-                            self.call_service("media_player/volume_set", entity_id = k, volume_level = 0.4)
+                            self.call_service("media_player/volume_set", entity_id = k, volume_level = float(self.get_state(self.tts_period_of_day_volume))/100 )
                         elif playing and (temp_auth_sig !=''):
                             self.call_service("media_player/play_media", entity_id = k, media_content_id = temp_media_id, media_content_type = temp_media_type, authSig = temp_auth_sig)
                         elif playing and temp_app_name =="Spotify":
