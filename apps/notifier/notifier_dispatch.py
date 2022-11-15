@@ -202,8 +202,7 @@ class Notifier_Dispatch(hass.Hass):
                 self.alexa_manager.speak(alexa, self.alexa_skill_id)
         if usePhone:
             try:
-                language = self.get_state(self.tts_language)
-                self.phone_manager.send_voice_call(data, phone_notify_name, self.phone_sip_server, language)
+                self.phone_manager.send_voice_call(data, phone_notify_name, self.phone_sip_server)
             except Exception as ex:
                 self.log("An error occurred in phone notification: {}".format(ex),level="ERROR")
                 self.set_debug_sensor("Error in Phone Notification: ", ex)
