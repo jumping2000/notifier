@@ -25,7 +25,7 @@ class Phone_Manager(hass.Hass):
         message = self.replace_regular(data["message"], SUB_TTS)
         message_tts = message.replace(" ", "%20")
         called_number = data["called_number"]
-        lang = self.dict_lingua.get(language)
+        language = self.get_state(self.tts_language)
         phone_name = phone_name.lower().replace(" ", "_")
         if phone_name.find("voip_call") != -1:
             if called_number != "":
