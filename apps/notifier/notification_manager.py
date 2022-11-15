@@ -9,7 +9,7 @@ __NOTIFY__ = "notify/"
 SUB_NOTIFICHE_NOWRAP = [("\s+"," "),(" +"," ")]
 SUB_NOTIFICHE_WRAP = [(" +"," "),("\s\s+","\n")]
 SUB_NOTIFIER =  [("\s+","_"),("\.","/")]
-SUB_REMOVE_SPACE = [("\s*,\s*", ",")]
+SUB_REMOVE_SPACE = [("\s*,\s*",",")]
 
 class Notification_Manager(hass.Hass):
 
@@ -54,21 +54,22 @@ class Notification_Manager(hass.Hass):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         title = data["title"]
         message = data["message"]
-        target = data["target"]
+        target = data["target"] if "target" in data else ""
         image = data["image"]
         caption = data["caption"]
         link = data["link"]
         html = data["html"]
         priority = data["priority"]
-        telegram = data["telegram"]
-        pushover = data["pushover"]
-        mobile = data["mobile"]
-        discord = data["discord"]
-        whatsapp_addon = data["whatsapp"]       
+        telegram = data["telegram"] if "telegram" in data else ""
+        pushover = data["pushover"] if "pushover" in data else ""
+        mobile = data["mobile"] if "mobile" in data else ""
+        discord = data["discord"] if "discord" in data else ""
+        whatsapp_addon = data["whatsapp"] if "whatsapp" in data else "" 
         notify_vector = self.check_notifier(h.return_array(h.replace_regular(data["notify"], SUB_REMOVE_SPACE)),self.split_device_list(str(notify_name)))
+        #self.log("[NOTIFY_VECTOR]: {}".format(notify_vector), ascii_encode = False)
         ## target ##
         target_vector = []
-        if target !='':
+        if target !="":
             target_vector = h.return_array(h.replace_regular(target, SUB_REMOVE_SPACE))
         ########## SAVE IN INPUT_TEXT ###########
         self.set_state(self.text_last_message, state = message[:245])
@@ -99,6 +100,7 @@ class Notification_Manager(hass.Hass):
                                 "caption": caption,
                                 "timeout":90 }
                     extra_data.update({"photo":file_data})
+                #self.log("[EXTRA-DATA]: {}".format(extra_data), ascii_encode = False)
                 if str(html).lower() not in ["true","on","yes","1"]:
                     messaggio = messaggio.replace("_","\_")
                 if link !="":
@@ -135,7 +137,7 @@ class Notification_Manager(hass.Hass):
                                             {"text": messaggio }
                                         })
                         #self.log("[EXTRA-DATA_ELSE]: {}".format(extra_data), ascii_encode = False)
-                        self.call_service("whatsapp/send_message", **extra_data)  
+                        self.call_service("whatsapp/send_message", **extra_data)                   
             #### WHATSAPP #######################
             elif item.find("whatsapp") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
@@ -250,7 +252,7 @@ class Notification_Manager(hass.Hass):
                     else:
                         extra_data = mobile
                 if tts_flag:
-                    messaggio = 'TTS'
+                    messaggio = "TTS"
                 else:
                     titolo = ("[{} - {}] {}".format(assistant_name, timestamp, titolo))
                 if image != "":
