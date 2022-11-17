@@ -64,7 +64,7 @@ class Notification_Manager(hass.Hass):
         pushover = data["pushover"] if "pushover" in data else ""
         mobile = data["mobile"] if "mobile" in data else ""
         discord = data["discord"] if "discord" in data else ""
-        whatsapp_addon = data["whatsapp"] if "whatsapp" in data else "" 
+        whatsapp_addon = data["whatsapp"] if "whatsapp" in data else ""
         notify_vector = self.check_notifier(h.return_array(h.replace_regular(data["notify"], SUB_REMOVE_SPACE)),self.split_device_list(str(notify_name)))
         #self.log("[NOTIFY_VECTOR]: {}".format(notify_vector), ascii_encode = False)
         ## target ##
@@ -137,7 +137,7 @@ class Notification_Manager(hass.Hass):
                                             {"text": messaggio }
                                         })
                         #self.log("[EXTRA-DATA_ELSE]: {}".format(extra_data), ascii_encode = False)
-                        self.call_service("whatsapp/send_message", **extra_data)                   
+                        self.call_service("whatsapp/send_message", **extra_data)  
             #### WHATSAPP #######################
             elif item.find("whatsapp") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
