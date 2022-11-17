@@ -15,7 +15,6 @@ SUB_TTS = [("[\*\-\[\]_\(\)\{\~\|\}\s]+", " ")]
 class Phone_Manager(hass.Hass):
     def initialize(self):
         self.tts_language = self.args.get("tts_language")
-        self.log(f"lang: {self.tts_language}")
         self.dict_lingua = {
             "it-IT": "it-IT-Standard-A",
             "en-GB": "en-GB-Standard-A",
@@ -45,4 +44,4 @@ class Phone_Manager(hass.Hass):
                     called_number, message_tts, lang
                 )
                 self.call_service("shell_command/telegram_call", url=url_tts)
-                self.log(f"telegtam call: {url_tts}")
+
