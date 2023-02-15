@@ -1,6 +1,5 @@
 import hassapi as hass
 import time
-import datetime
 import sys
 from queue import Queue
 from threading import Thread

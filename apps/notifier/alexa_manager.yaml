@@ -2,7 +2,7 @@ Alexa_Manager:
   module: alexa_manager
   class: Alexa_Manager
 
-  # log_level: DEBUG
+  log_level: DEBUG
 
   # Alexa hub
   binary_speak: binary_sensor.notifier_alexa_speak
