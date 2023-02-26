@@ -2,31 +2,31 @@ Notifier_Dispatch:
   module: notifier_dispatch
   class: Notifier_Dispatch
 
-  gh_tts_google_mode: input_select.tts_notify
-  gh_switch: input_boolean.google_switch
+  gh_tts_google_mode: input_select.notifier_tts_notify
+  gh_switch: input_boolean.notifier_google_switch
 
-  alexa_switch: input_boolean.alexa_switch
+  alexa_switch: input_boolean.notifier_alexa_switch
 
-  text_notifications: input_boolean.text_notifications
-  screen_notifications: input_boolean.screen_notifications
-  speech_notifications: input_boolean.speech_notifications
-  phone_notifications: input_boolean.phone_notifications
+  text_notifications: input_boolean.notifier_text_notifications
+  screen_notifications: input_boolean.notifier_screen_notifications
+  speech_notifications: input_boolean.notifier_speech_notifications
+  phone_notifications: input_boolean.notifier_phone_notifications
 
-  html_mode: input_boolean.html_mode
+  html_mode: input_boolean.notifier_html_mode
 
   persistent_notification_info: persistent_notification.info_messages
   
-  location_tracker: group.location_tracker
-  text_notify: input_select.text_notify
-  phone_notify: input_select.phone_notify
-  priority_message: input_boolean.priority_message
-  guest_mode: input_boolean.guest_mode
-  dnd: binary_sensor.dnd
+  location_tracker: group.notifier_location_tracker
+  text_notify: input_select.notifier_text_notify
+  phone_notify: input_select.notifier_phone_notify
+  priority_message: input_boolean.notifier_priority_message
+  guest_mode: input_boolean.notifier_guest_mode
+  dnd: binary_sensor.notifier_dnd
 
-  personal_assistant_name: input_text.personal_assistant_name
-  phone_called_number: input_text.phone_called_number
+  personal_assistant_name: input_text.notifier_personal_assistant
+  phone_called_number: input_text.notifier_called_number
   
-  debug_sensor: sensor.centro_notifiche
+  debug_sensor: sensor.notifier_debug_error
 
   dependencies: 
     - Notification_Manager

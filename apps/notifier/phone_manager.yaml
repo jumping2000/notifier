@@ -2,4 +2,4 @@ Phone_Manager:
   module: phone_manager
   class: Phone_Manager
 
-  tts_language: input_select.language
+  tts_language: input_select.notifier_language

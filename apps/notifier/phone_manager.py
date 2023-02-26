@@ -1,5 +1,7 @@
-import hassapi as hass
 import datetime
+
+import hassapi as hass
+
 #
 import helpermodule as h
 
@@ -12,6 +14,7 @@ SUB_TTS = [("[\*\-\[\]_\(\)\{\~\|\}\s]+", " ")]
 
 class Phone_Manager(hass.Hass):
     def initialize(self):
+        self.tts_language = self.args.get("tts_language")
         self.dict_lingua = {
             "it-IT": "it-IT-Standard-A",
             "en-GB": "en-GB-Standard-A",
@@ -21,11 +24,11 @@ class Phone_Manager(hass.Hass):
             "es-ES": "es-ES-Standard-A",
         }
 
-    def send_voice_call(self, data, phone_name: str, sip_server_name: str, language: str):
-        message = self.replace_regular(data["message"], SUB_TTS)
+    def send_voice_call(self, data, phone_name: str, sip_server_name: str):
+        message = h.replace_regular(data["message"], SUB_TTS)
         message_tts = message.replace(" ", "%20")
         called_number = data["called_number"]
-        language = self.get_state(self.tts_language)
+        lang = self.dict_lingua.get(self.get_state(self.tts_language))
         phone_name = phone_name.lower().replace(" ", "_")
         if phone_name.find("voip_call") != -1:
             if called_number != "":
@@ -41,3 +44,4 @@ class Phone_Manager(hass.Hass):
                     called_number, message_tts, lang
                 )
                 self.call_service("shell_command/telegram_call", url=url_tts)
+

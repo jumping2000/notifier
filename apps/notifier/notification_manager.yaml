@@ -2,6 +2,6 @@ Notification_Manager:
   module: notification_manager
   class: Notification_Manager
   
-  text_last_message: input_text.last_message
-  boolean_wrap_text: input_boolean.wrap_text
-  boolean_tts_clock: input_boolean.tts_clock
+  text_last_message: input_text.notifier_last_message
+  boolean_wrap_text: input_boolean.notifier_wrap_text
+  boolean_tts_clock: input_boolean.notifier_tts_clock
