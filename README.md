@@ -23,7 +23,7 @@ Package-Notification-HUB-AppDaemon<br>
 The app works with Appdaemon v4.x.
 
 ## Installation
-Use [HACS](https://github.com/custom-components/hacs) or [download](https://github.com/jumping2000/notifier) the `notifier` directory from inside the `apps` directory here to your local `apps` directory.
+Use [HACS](https://github.com/custom-components/hacs) or [download](https://github.com/jumping2000/notifier) the `notifier` directory from inside the `apps` directory here to your local `apps` directory. 
 Remember to enable [Appdaemon in HACS](https://hacs.xyz/docs/categories/appdaemon_apps#enable-appdaemon-apps-in-hacs).
 
 ## Remember it!
