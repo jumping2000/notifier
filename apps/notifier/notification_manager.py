@@ -88,6 +88,8 @@ class Notification_Manager(hass.Hass):
                 extra_data = {}
                 if isinstance(telegram, dict):
                     extra_data = telegram
+                if link !="":
+                    messaggio = ("{} {}".format(messaggio,link))
                 if caption == "":
                     caption = ("{}\n{}".format(titolo,messaggio))
                 if image != ""  and image.find("http") != -1:
@@ -103,8 +105,6 @@ class Notification_Manager(hass.Hass):
                 #self.log("[EXTRA-DATA]: {}".format(extra_data), ascii_encode = False)
                 if str(html).lower() not in ["true","on","yes","1"]:
                     messaggio = messaggio.replace("_","\_")
-                if link !="":
-                    messaggio = ("{} {}".format(messaggio,link))
                 if image != "":
                     self.call_service(item, message = "", data = extra_data)
                 elif extra_data:
