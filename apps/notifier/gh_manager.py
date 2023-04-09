@@ -122,7 +122,7 @@ class GH_Manager(hass.Hass):
         self.volume_get(gh_volume,float(self.get_state(self.args["tts_period_of_day_volume"]))/100)
         self.mediastate_get(gh_volume,float(self.get_state(self.args["tts_period_of_day_volume"]))/100)
         wait_time = float(self.get_state(self.gh_wait_time))
-        message = h.replace_regular(google["message"], SUB_TTS)
+        message = h.replace_regular(google["message"], SUB_VOICE)
         ### set volume
         self.volume_set(gh_player,google["volume"])
         # queues the message to be handled async, use when_tts_done_do method to supply callback when tts is done
@@ -163,7 +163,7 @@ class GH_Manager(hass.Hass):
                         time.sleep(1)
                         #self.volume_set(entity,data["volume"])
                     ##### Speech time calculator #####
-                    message_clean = h.replace_regular(data["text"], SUB_VOICE)
+                    message_clean = data["text"]
                     words = len(h.remove_tags(message_clean).split())
                     chars = h.remove_tags(message_clean).count("")
                     duration = (words * 0.007) * 60
