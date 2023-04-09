@@ -56,13 +56,19 @@ def return_array(target)->list:
     else:
         return list(target.split(","))
         
-def replace_regular(text, substitutions: list)->str:
-    if isinstance(text, str):
-        for old,new in substitutions:
-            text = re.sub(old, new, text.strip())
+# def replace_regular(text, substitutions: list)->str:
+#     if isinstance(text, str):
+#         for old,new in substitutions:
+#             text = re.sub(old, new, text.strip())
+#         return text
+#     else:
+#          return text
+
+def replace_regular(text: str, substitutions: list) -> str:
+        for old, new in substitutions:
+            regex = re.compile(old)
+            text = re.sub(regex, new, str(text).strip())
         return text
-    else:
-         return text
 
 def replace_language(s: str)->str:
     return (s[:2])
