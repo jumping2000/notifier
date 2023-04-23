@@ -39,7 +39,7 @@ class Notifier_Dispatch(hass.Hass):
         self.phone_called_number = h.get_arg(self.args, "phone_called_number")
 
         self.debug_sensor = h.get_arg(self.args, "debug_sensor")
-        self.set_state(self.debug_sensor, state="OK")
+        self.set_state(self.debug_sensor, state="on")
         #### FROM SECRET FILE ###
         config = self.get_plugin_config()
         config_dir = config["config_dir"]
@@ -169,10 +169,11 @@ class Notifier_Dispatch(hass.Hass):
         if data["html"] == "":
             data.update({"html": self.get_state(self.html_mode)})
         ###########################
+        self.set_state(self.debug_sensor, state="OK")
+        ###########################
         if usePersistentNotification:
             try:
                 self.notification_manager.send_persistent(data, self.persistent_notification_info)
-                self.set_state(self.debug_sensor, state="OK")
             except Exception as ex:
                 self.log("An error occurred in persistent notification: {}".format(ex),level="ERROR")
                 self.set_debug_sensor("Error in Persistent Notification: ", ex)
@@ -180,10 +181,16 @@ class Notifier_Dispatch(hass.Hass):
         if useNotification:
             try:
                 self.notification_manager.send_notify(data, notify_name, self.get_state(self.personal_assistant_name))
-                self.set_state(self.debug_sensor, state="OK")
             except Exception as ex:
                 self.log("An error occurred in text notification: {}".format(ex), level="ERROR")
                 self.set_debug_sensor("Error in Text Notification: ", ex)
+                self.log(sys.exc_info())
+        if usePhone:
+            try:
+                self.phone_manager.send_voice_call(data, phone_notify_name, self.phone_sip_server)
+            except Exception as ex:
+                self.log("An error occurred in phone notification: {}".format(ex),level="ERROR")
+                self.set_debug_sensor("Error in Phone Notification: ", ex)
                 self.log(sys.exc_info())
         if useTTS:
             if  (gh_switch == "on" or google_priority_flag) and google_flag:
@@ -202,15 +209,6 @@ class Notifier_Dispatch(hass.Hass):
                     if  "title" not in alexa:
                         alexa["title"] = data["title"]
                 self.alexa_manager.speak(alexa, self.alexa_skill_id)
-        if usePhone:
-            try:
-                self.phone_manager.send_voice_call(data, phone_notify_name, self.phone_sip_server)
-                self.set_state(self.debug_sensor, state="OK")
-            except Exception as ex:
-                self.log("An error occurred in phone notification: {}".format(ex),level="ERROR")
-                self.set_debug_sensor("Error in Phone Notification: ", ex)
-                self.log(sys.exc_info())
-
         ### ripristino del priority a OFF
         if (self.get_state(self.priority_message) == "on"):
             self.set_state(self.priority_message, state = "off")
