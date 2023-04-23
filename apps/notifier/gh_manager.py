@@ -188,6 +188,7 @@ class GH_Manager(hass.Hass):
                     if self.ytube_called:
                         self.call_service("media_player/volume_set", entity_id = entity, volume_level = 0)
                     ##################################
+                    self.set_debug_sensor("OK", "")
             except Exception as ex:
                 self.log("An error occurred in GH Manager - Errore nel Worker: {}".format(ex),level="ERROR")
                 self.log(sys.exc_info())
