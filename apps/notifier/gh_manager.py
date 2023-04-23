@@ -40,7 +40,7 @@ class GH_Manager(hass.Hass):
         self.ytube_player = h.get_arg(self.args, "ytube_player")
         self.ytube_called = False
         self.debug_sensor = h.get_arg(self.args, "debug_sensor")
-        self.set_state(self.debug_sensor, state="OK")
+        self.set_state(self.debug_sensor, state="on")
         self.check_gh_service = self.check_gh(self.gh_service)
         #
         self.queue = Queue(maxsize=0)
