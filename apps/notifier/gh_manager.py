@@ -40,7 +40,7 @@ class GH_Manager(hass.Hass):
         self.ytube_player = h.get_arg(self.args, "ytube_player")
         self.ytube_called = False
         self.debug_sensor = h.get_arg(self.args, "debug_sensor")
-        self.set_state(self.debug_sensor, state="on")
+        self.set_state(self.debug_sensor, state="OK")
         self.check_gh_service = self.check_gh(self.gh_service)
         #
         self.queue = Queue(maxsize=0)
@@ -188,7 +188,7 @@ class GH_Manager(hass.Hass):
                     if self.ytube_called:
                         self.call_service("media_player/volume_set", entity_id = entity, volume_level = 0)
                     ##################################
-                    self.set_debug_sensor("OK", "")
+                    self.set_state(self.debug_sensor, state="OK")
             except Exception as ex:
                 self.log("An error occurred in GH Manager - Errore nel Worker: {}".format(ex),level="ERROR")
                 self.log(sys.exc_info())
