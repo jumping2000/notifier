@@ -317,7 +317,7 @@ class Alexa_Manager(hass.Hass):
         t = Thread(target=self.worker)
         t.daemon = True
         t.start()
-        self.set_state(self.debug_sensor, state="on")
+        self.set_state(self.debug_sensor, state="OK")
 
     def speak(self, alexa: dict, skill_id: str) -> None:
         """Speak the provided text through the media player."""
@@ -739,7 +739,8 @@ class Alexa_Manager(hass.Hass):
 
                 time.sleep(duration)
                 self.volume_restore()
-
+            #### DEBUG OK ####
+                self.set_state(self.debug_sensor, state="OK")
             except UnboundLocalError as ex:
                 self.lg(f"VOLUMES AUTO SILENT: {ex}")
                 pass
