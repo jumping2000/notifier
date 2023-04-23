@@ -739,7 +739,8 @@ class Alexa_Manager(hass.Hass):
 
                 time.sleep(duration)
                 self.volume_restore()
-
+                ########
+                self.set_state(self.debug_sensor, state="OK")
             except UnboundLocalError as ex:
                 self.lg(f"VOLUMES AUTO SILENT: {ex}")
                 pass
