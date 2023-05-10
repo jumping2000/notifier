@@ -551,7 +551,9 @@ class Alexa_Manager(hass.Hass):
                 if "group." in mp:
                     mplist.extend(self.get_state(mp, attribute="entity_id", default=""))
                 elif "sensor." in mp:
-                    mplist.append(self.get_state(mp))
+                    state_string = self.get_state(mp)
+                    state_list = self.str2list(str(state_string.lower()))
+                    mplist.extend(state_list)
                 elif "media_player." in mp:
                     mplist.append(mp)
                 else:
@@ -559,8 +561,9 @@ class Alexa_Manager(hass.Hass):
         if not mplist:
             mplist = self.service2player
             self.log(f"Not {media_player} found. Default {mplist}", level="WARNING")
-        self.lg(f"GET PLAYER: {mplist}")
-        return mplist
+        unique_players = list(set(mplist))
+        self.lg(f"GET PLAYER: {unique_players}")
+        return unique_players
 
     def entity_from_name(self, name_list: list) -> dict:
         """Given a list of names, it takes the entity_id from the friendly_name.
@@ -595,6 +598,7 @@ class Alexa_Manager(hass.Hass):
             self.call_service(
                 "media_player/volume_set", entity_id=i, volume_level=defvol
             )
+            # Force attribute volume level in Home assistant
             self.set_state(i, attributes={"volume_level": defvol})
             self.call_service("alexa_media/update_last_called", return_result=True)
 
@@ -634,8 +638,8 @@ class Alexa_Manager(hass.Hass):
         )
         # Not strictly necessary
         for player in media_player:
+            # Force attribute volume level in Home assistant
             self.set_state(player, attributes={"volume_level": volume})
-            self.lg(f"SET VOLUMES: {player} {volume}")
 
     def set_debug_sensor(self, state: str, error: str) -> None:
         """Set, based on the error, the debug sensor of the app notifier."""
@@ -654,7 +658,7 @@ class Alexa_Manager(hass.Hass):
                 data = self.queue.get()
                 self.lg(f"------ ALEXA WORKER QUEUE  ------")
                 self.lg(f"WORKER: {type(data)} value {data}")
-                self.set_state(self.binary_speak, state="on", attributes = data)
+                self.set_state(self.binary_speak, state="on", attributes=data)
                 media_player = data[MEDIA_PLAYER]
                 if data[AUTO_VOLUMES]:
                     self.volume_auto_silent(media_player, data[DEFAULT_VOL])
@@ -726,16 +730,17 @@ class Alexa_Manager(hass.Hass):
                     message=msg.strip(),
                 )
 
-                # Actionable Notificstion >>>
+                # Actionable Notification >>>
                 if data[EVENT_ID]:
+                    last_player = media_player[-1]
                     self.call_service(
                         "media_player/play_media",
-                        entity_id=media_player,
+                        entity_id=last_player,
                         media_content_id=data[SKILL_ID],
                         media_content_type="skill",
                     )
                     duration += 10
-                    self.lg(f"ADDED EXTRA TIME: +10: {duration}")
+                    self.lg(f"ADDED EXTRA ANSWER TIME {duration} Last {last_player}")
 
                 time.sleep(duration)
                 self.volume_restore()
