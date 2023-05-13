@@ -41,7 +41,7 @@ def get_arg_list(args, key):
     return arg_list
 
 def lg(message):
-    self.log(message, level="DEBUG", ascii_encode=False)
+    log(message, level="DEBUG", ascii_encode=False)
 
 # """Remove a key from a dict."""
 def remove_key(d, key)->dict:
