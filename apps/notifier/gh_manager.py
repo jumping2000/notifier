@@ -185,9 +185,9 @@ class GH_Manager(hass.Hass):
                 self.log("An error occurred in GH Manager - Errore in media_content: {}".format(ex),level="ERROR")
                 self.set_debug_sensor("GH Manager - media_content Error ", ex)
                 self.log(sys.exc_info())
-        else:
-            self.queue.put({"type": "tts", "text": message, "volume": google["volume"], "language": h.replace_language(google["language"]), 
-                    "gh_player": google["media_player"], "wait_time": wait_time, "gh_mode": gh_mode, "gh_notifier": gh_notifier})
+        #else:
+        self.queue.put({"type": "tts", "text": message, "volume": google["volume"], "language": h.replace_language(google["language"]), 
+                "gh_player": google["media_player"], "wait_time": wait_time, "gh_mode": gh_mode, "gh_notifier": gh_notifier})
 
     def when_tts_done_do(self, callback:callable)->None:
         """ Callback when the queue of tts messages are done """
@@ -251,6 +251,7 @@ class GH_Manager(hass.Hass):
                     self.restore_mplayer_states(_gh_players,_dict_info_mplayers)
                     ##################################
                     self.set_state(self.debug_sensor, state="OK")
+
             except Exception as ex:
                 self.log("An error occurred in GH Manager - Errore nel Worker: {}".format(ex),level="ERROR")
                 self.log(sys.exc_info())
