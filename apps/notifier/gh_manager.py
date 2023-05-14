@@ -38,7 +38,7 @@ CONF_MEDIA_DURATION = "media_duration"
 CONF_MEDIA_POSITION = "media_position"
 CONF_APP_NAME = "app_name"
 CONF_AUTHSIG = "authSig"
-CONF_DEBUG = True
+CONF_DEBUG = False
 
 class GH_Manager(hass.Hass):
     def initialize(self)->None:
@@ -132,7 +132,6 @@ class GH_Manager(hass.Hass):
                         self.call_service("media_player/volume_set", entity_id = key, volume_level = value[CONF_VOLUME_LEVEL])
                         # Force Set state
                         #self.set_state(i, state="", attributes = {CONF_VOLUME_LEVEL: j})
-                        #
                         if value["state"] == "playing": playing = True 
                         else: playing = False
                         if self.ytube_called:
@@ -182,7 +181,6 @@ class GH_Manager(hass.Hass):
             try:
                 self.call_service("media_extractor/play_media", entity_id = self.check_mplayer(self._player, self.split_device_list(google["media_player"])), 
                                 media_content_id= google[CONF_MEDIA_CONTENT_ID], media_content_type = google[CONF_MEDIA_CONTENT_TYPE]) 
-                                #media_content_id= google["media_content_id"], media_content_type = google["media_content_type"]) 
             except Exception as ex:
                 self.log("An error occurred in GH Manager - Errore in media_content: {}".format(ex),level="ERROR")
                 self.set_debug_sensor("GH Manager - media_content Error ", ex)
@@ -258,9 +256,7 @@ class GH_Manager(hass.Hass):
                 self.log("An error occurred in GH Manager - Errore nel Worker: {}".format(ex),level="ERROR")
                 self.log(sys.exc_info())
                 self.set_debug_sensor("GH Manager - Worker Error ", ex)
-
             self.queue.task_done()
-
             if self.queue.qsize() == 0:
                 #self.log("QSIZE = 0 - Worker thread exiting")
                 # It is empty, make callbacks
