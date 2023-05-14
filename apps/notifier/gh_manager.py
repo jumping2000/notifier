@@ -179,8 +179,8 @@ class GH_Manager(hass.Hass):
         # queues the message to be handled async, use when_tts_done_do method to supply callback when tts is done
         if google[CONF_MEDIA_CONTENT_ID] != "":
             try:
-                self.call_service("media_extractor/play_media", entity_id = gh_player, media_content_id= google[CONF_MEDIA_CONTENT_ID], 
-                                media_content_type = google[CONF_MEDIA_CONTENT_TYPE]) 
+                self.call_service("media_extractor/play_media", entity_id = self.check_mplayer(self._player, self.split_device_list(google["media_player"])), 
+                                media_content_id= google[CONF_MEDIA_CONTENT_ID], media_content_type = google[CONF_MEDIA_CONTENT_TYPE]) 
             except Exception as ex:
                 self.log("An error occurred in GH Manager - Errore in media_content: {}".format(ex),level="ERROR")
                 self.set_debug_sensor("GH Manager - media_content Error ", ex)
