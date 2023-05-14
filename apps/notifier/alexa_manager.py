@@ -581,25 +581,25 @@ class Alexa_Manager(hass.Hass):
         self.lg(f"NAME-ENTITY_ID DICT: {name2entity}")
         return name2entity
 
-    def volume_auto_silent(self, media_player: list, defvol: float) -> None:
+    def volume_auto_silent(self, media_player: list, volume: float) -> None:
         """Based on the time of day it automatically sets the volumes, silently."""
         m = '<speak><break time="4s"/><prosody volume="silent">volume</prosody></speak>'
         for i in media_player:
             status = self.get_state(i, attribute="all", default={})
             volume_get = status.get("attributes", {}).get("volume_level", -1)
-            if volume_get == defvol:
+            if volume_get == volume:
                 continue
-            self.lg(f"DIFFERENT VOLUMES: {volume_get} - DEFAULT: {defvol}")
+            self.lg(f"DIFFERENT VOLUMES: {volume_get} - DEFAULT: {volume}")
             if status.get("state", "") != "playing":
                 self.call_service(
                     NOTIFY + ALEXA_SERVICE, data={TYPE: "tts"}, target=i, message=m
                 )
                 time.sleep(2)
             self.call_service(
-                "media_player/volume_set", entity_id=i, volume_level=defvol
+                "media_player/volume_set", entity_id=i, volume_level=volume
             )
             # Force attribute volume level in Home assistant
-            self.set_state(i, attributes={"volume_level": defvol})
+            self.set_state(i, attributes={"volume_level": volume})
             self.call_service("alexa_media/update_last_called", return_result=True)
 
     def volume_get_save(self, media_player: list, volume: float, defvol: float) -> None:
@@ -661,7 +661,7 @@ class Alexa_Manager(hass.Hass):
                 self.set_state(self.binary_speak, state="on", attributes=data)
                 media_player = data[MEDIA_PLAYER]
                 if data[AUTO_VOLUMES]:
-                    self.volume_auto_silent(media_player, data[DEFAULT_VOL])
+                    self.volume_auto_silent(media_player, data[VOLUME])
                     raise UnboundLocalError(data[AUTO_VOLUMES])
                 self.volume_get_save(media_player, data[VOLUME], data[DEFAULT_VOL])
                 self.volume_set(media_player, data[VOLUME])
@@ -746,8 +746,8 @@ class Alexa_Manager(hass.Hass):
                 self.volume_restore()
                 ########
                 self.set_state(self.debug_sensor, state="OK")
-            except UnboundLocalError as ex:
-                self.lg(f"VOLUMES AUTO SILENT: {ex}")
+            except UnboundLocalError as ule:
+                self.lg(f"VOLUMES AUTO SILENT: {ule}")
                 pass
 
             except Exception as ex:
