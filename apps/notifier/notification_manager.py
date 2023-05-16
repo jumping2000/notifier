@@ -82,7 +82,11 @@ class Notification_Manager(hass.Hass):
                 item = __NOTIFY__ + str(h.replace_regular(item,SUB_NOTIFIER)).lower()
             else:
                 item = str(h.replace_regular(item,SUB_NOTIFIER)).lower()
+            #### NOTHING #######################
+            if item in ["notify/false","notify/off","notify/no","notify/0"]:
+                pass
             #### TELEGRAM #######################
+            elif item.find("telegram") != -1:
             if item.find("telegram") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
                 extra_data = {}
