@@ -319,10 +319,13 @@ class Alexa_Manager(hass.Hass):
         t.start()
         self.set_state(self.debug_sensor, state="on")
 
-    def speak(self, alexa: dict, skill_id: str) -> None:
+    def speak(self, alexa: dict, skill_id: str, cfg: dict) -> None:
         """Speak the provided text through the media player."""
         self.lg(f"------ ALEXA START DISPATCH ------")
         self.lg(f"FROM DISPATCH: {type(alexa)} value {alexa}")
+        # remove keys with None value from a dict # TODO
+        # alexa = {k: v for k, v in alexa.items() if v not in [None, "None", ""]}
+        # self.lg(f"REMOVE [NONE] VALUE: {type(alexa)} value {alexa}")
 
         if not self.service2player:
             self.set_debug_sensor("Alexa Services not found", CUSTOM_COMPONENT_URL)
@@ -534,11 +537,14 @@ class Alexa_Manager(hass.Hass):
 
     def check_media_player(self, media_player: list) -> list:
         mplist = []
-        if not isinstance(media_player, list):
+        if media_player is None:
+            media_player = []
+        if not isinstance(media_player, list): #type(None),
             media_player = self.str2list(str(media_player.lower()))
         self.lg(f"USER PLAYER: {media_player} - TYPE: {type(media_player)}")
-        media_name = self.get_state(self.select_player, attribute="options", default="")
-        name2entity = self.entity_from_name(list(media_name) + media_player)
+        media_name = self.get_state(self.select_player, attribute="options", default=[])
+        self.lg(f"MEDIA NAME: {media_name} - TYPE: {type(media_name)}")
+        name2entity = self.entity_from_name(list(media_name) + media_player) #TypeError: can only concatenate list (not "NoneType") to list
         for mp in media_player:
             if mp == "test":
                 mplist = self.service2player

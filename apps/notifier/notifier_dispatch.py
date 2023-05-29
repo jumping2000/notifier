@@ -2,7 +2,7 @@ import sys
 
 import hassapi as hass
 import helpermodule as h
-import yaml
+import yaml # delete
 
 #
 # Centralizes messaging.
@@ -14,6 +14,8 @@ import yaml
 
 class Notifier_Dispatch(hass.Hass):
     def initialize(self):
+        self.debug_sensor = h.get_arg(self.args, "debug_sensor")
+        self.set_state(self.debug_sensor, state="off")
         self.gh_tts_google_mode = h.get_arg(self.args, "gh_tts_google_mode")
         self.gh_switch_entity = h.get_arg(self.args, "gh_switch")
         self.alexa_switch_entity = h.get_arg(self.args, "alexa_switch")
@@ -38,12 +40,13 @@ class Notifier_Dispatch(hass.Hass):
         self.personal_assistant_name = h.get_arg(self.args, "personal_assistant_name") 
         self.phone_called_number = h.get_arg(self.args, "phone_called_number")
 
-        self.debug_sensor = h.get_arg(self.args, "debug_sensor")
+        # self.debug_sensor = h.get_arg(self.args, "debug_sensor") # delete
         self.set_state(self.debug_sensor, state="on")
         #### FROM SECRET FILE ###
         config = self.get_plugin_config()
         config_dir = config["config_dir"]
         self.log(f"configuration dir: {config_dir}")
+        ### old method ->> delete
         secretsFile = config_dir + "/secrets.yaml"
         with open(secretsFile, "r") as ymlfile:
             cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)  # yaml.safe_load
@@ -53,7 +56,7 @@ class Notifier_Dispatch(hass.Hass):
         self.gh_tts_cloud = cfg.get("tts_google_cloud", "google_cloud")
         self.reverso_tts = cfg.get("reverso_tts", "reversotts_say")
         self.alexa_skill_id = cfg.get("notifier_alexa_actionable_skill_id", "")
-
+        ### <<<- delete
         ### APP MANAGER ###
         self.notification_manager = self.get_app("Notification_Manager")
         self.gh_manager = self.get_app("GH_Manager")
@@ -61,7 +64,24 @@ class Notifier_Dispatch(hass.Hass):
         self.phone_manager = self.get_app("Phone_Manager")
         ### LISTEN EVENT ###
         self.listen_event(self.notifier, "notifier")
+        self.listen_event(self.notifier_config, "notifier_config")
 
+#####################################################################
+    def notifier_config(self, event_name, cfg, kwargs):
+        self.log(f"---------- CONFIG UPTATED ----------")
+        self.cfg = cfg
+        self.gh_tts = cfg.get("tts_google", "google_translate_say")
+        self.gh_notify = cfg.get("notify_google", "google_assistant")
+        self.phone_sip_server = cfg.get("sip_server_name", "fritz.box:5060")
+        self.gh_tts_cloud = cfg.get("tts_google_cloud", "google_cloud")
+        self.reverso_tts = cfg.get("reverso_tts", "reversotts_say")
+        self.alexa_skill_id = cfg.get("alexa_skill_id", "")
+        self.cfg_personal_assistant = cfg.get("personal_assistant", "")
+        self.cfg_notify_select = cfg.get("notify_select", "notify")
+        self.cfg_dnd = cfg.get("dnd", "off")
+        self.cfg_location_tracker = cfg.get("location_tracker", "home")
+        self.log(cfg)
+        self.log(f"----------  END  UPTATED  ----------")
 #####################################################################
     def set_debug_sensor(self, state, error):
         attributes = {}
@@ -93,7 +113,7 @@ class Notifier_Dispatch(hass.Hass):
 
     def notifier(self, event_name, data, kwargs):
         self.log("#### START NOTIFIER_DISPATCH ####")
-        location_status = self.get_state(self.location_tracker)
+        location_status = self.get_state(self.location_tracker, default=self.cfg_location_tracker) #Terzo BUG reload group
         ### FLAG
         priority_flag = h.check_boolean(data["priority"])
         noshow_flag = h.check_boolean(data["no_show"])
@@ -115,12 +135,13 @@ class Notifier_Dispatch(hass.Hass):
           if "priority" in alexa:
             if str(alexa.get("priority")).lower() in ["true","on","yes","1"]:
                 alexa_priority_flag = True
+        ### FROM BINARY ###
+        dnd_status = self.get_state(self.tts_dnd, default=self.cfg_dnd) #Primo BUG reload template
         ### FROM INPUT BOOLEAN ###
-        dnd_status = self.get_state(self.tts_dnd)
         guest_status = self.get_state(self.guest_mode)
         priority_status = (self.get_state(self.priority_message) == "on") or priority_flag
         ### FROM INPUT SELECT ###
-        notify_name = self.get_state(self.text_notify)
+        notify_name = self.get_state(self.text_notify, default=self.cfg_notify_select) #Secondo BUG reload template
         phone_notify_name = self.get_state(self.phone_notify)
         ### NOTIFICATION ###
         if priority_status:
@@ -180,7 +201,8 @@ class Notifier_Dispatch(hass.Hass):
                 self.log(sys.exc_info()) 
         if useNotification:
             try:
-                self.notification_manager.send_notify(data, notify_name, self.get_state(self.personal_assistant_name))
+                self.notification_manager.send_notify(data, notify_name, self.get_state(self.personal_assistant_name, default=self.cfg_personal_assistant))
+                # self.notification_manager.send_notify(data, notify_name, self.cfg_personal_assistant) # future - no input_text entity
             except Exception as ex:
                 self.log("An error occurred in text notification: {}".format(ex), level="ERROR")
                 self.set_debug_sensor("Error in Text Notification: ", ex)
@@ -201,14 +223,14 @@ class Notifier_Dispatch(hass.Hass):
                         google["media_content_id"] = ""
                     if "media_content_type" not in google:
                         google["media_content_type"] = ""
-                self.gh_manager.speak(google, self.get_state(self.gh_tts_google_mode), gh_notifica)
+                self.gh_manager.speak(google, self.get_state(self.gh_tts_google_mode), gh_notifica, self.cfg)
             if (alexa_switch == "on" or alexa_priority_flag) and alexa_flag:
                 if (data["alexa"]) != "":
                     if  "message" not in alexa:
                         alexa["message"] = data["message"]
                     if  "title" not in alexa:
                         alexa["title"] = data["title"]
-                self.alexa_manager.speak(alexa, self.alexa_skill_id)
+                self.alexa_manager.speak(alexa, self.alexa_skill_id, self.cfg)
         ### ripristino del priority a OFF
         if (self.get_state(self.priority_message) == "on"):
             self.set_state(self.priority_message, state = "off")
