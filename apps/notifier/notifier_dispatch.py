@@ -46,7 +46,7 @@ class Notifier_Dispatch(hass.Hass):
         config = self.get_plugin_config()
         config_dir = config["config_dir"]
         self.log(f"configuration dir: {config_dir}")
-        ### old method ->> delete
+        ### old method - backward compatibility ->> delete
         secretsFile = config_dir + "/secrets.yaml"
         with open(secretsFile, "r") as ymlfile:
             cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)  # yaml.safe_load
@@ -113,6 +113,7 @@ class Notifier_Dispatch(hass.Hass):
 
     def notifier(self, event_name, data, kwargs):
         self.log("#### START NOTIFIER_DISPATCH ####")
+        assistant_name = self.get_state(self.personal_assistant_name, default=self.cfg_personal_assistant)
         location_status = self.get_state(self.location_tracker, default=self.cfg_location_tracker) #Terzo BUG reload group
         ### FLAG
         priority_flag = h.check_boolean(data["priority"])
@@ -194,14 +195,14 @@ class Notifier_Dispatch(hass.Hass):
         ###########################
         if usePersistentNotification:
             try:
-                self.notification_manager.send_persistent(data, self.persistent_notification_info)
+                self.notification_manager.send_persistent(data, self.persistent_notification_info, assistant_name)
             except Exception as ex:
                 self.log("An error occurred in persistent notification: {}".format(ex),level="ERROR")
                 self.set_debug_sensor("Error in Persistent Notification: ", ex)
                 self.log(sys.exc_info()) 
         if useNotification:
             try:
-                self.notification_manager.send_notify(data, notify_name, self.get_state(self.personal_assistant_name, default=self.cfg_personal_assistant))
+                self.notification_manager.send_notify(data, notify_name, assistant_name)
                 # self.notification_manager.send_notify(data, notify_name, self.cfg_personal_assistant) # future - no input_text entity
             except Exception as ex:
                 self.log("An error occurred in text notification: {}".format(ex), level="ERROR")

@@ -289,7 +289,8 @@ class Notification_Manager(hass.Hass):
                     message = ("{} {}".format(message,link))
                 self.call_service(item, message=message, title=title)
 
-    def send_persistent(self, data, persistent_notification_info):
+    def send_persistent(self, data, persistent_notification_info, assistant_name):
+        title = assistant_name if assistant_name else "Centro Messaggi"
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         messaggio=""
         try:
@@ -304,4 +305,4 @@ class Notification_Manager(hass.Hass):
         if per_not_info == "notifying":
             old_messaggio = self.get_state(persistent_notification_info, attribute="message")
             messaggio = (old_messaggio + "\n" + messaggio) if len(old_messaggio)<2500 else messaggio
-        self.call_service("persistent_notification/create", notification_id = "info_messages", message = messaggio, title = "Centro Messaggi" )
+        self.call_service("persistent_notification/create", notification_id = "info_messages", message = messaggio, title = title )
