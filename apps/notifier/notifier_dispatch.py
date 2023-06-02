@@ -3,6 +3,8 @@ import sys
 import hassapi as hass
 import helpermodule as h
 import yaml # delete
+import os
+import requests
 
 #
 # Centralizes messaging.
@@ -12,8 +14,26 @@ import yaml # delete
 # Version 1.0:
 #   Initial Version
 
+DEFAULT_TTS_GOOGLE = "google_translate_say"
+DEFAULT_TTS_GOOGLE_CLOUD = "google_cloud"
+DEFAULT_NOTIFY_GOOGLE = "google_assistant"
+DEFAULT_SIP_SERVER_NAME = "fritz.box:5060"
+DEFAULT_REVERSO_TTS = "reversotts_say"
+# DEFAULT_FOLDER_PACKAGES = "/packages/"
+# DEFAULT_FOLDER_CN = "centro_notifiche/"
+
+URL_BASE_PACK = "https://raw.githubusercontent.com/caiosweet/Package-Notification-HUB-AppDaemon/main/packages/centro_notifiche/"
+URL_BETA_PACK = "https://raw.githubusercontent.com/caiosweet/Package-Notification-HUB-AppDaemon/beta/packages/centro_notifiche/"
+URL_PACKAGE_LATEST = "https://api.github.com/repos/caiosweet/Package-Notification-HUB-AppDaemon/releases/latest"
+FILE_MAIN = "hub_main.yaml"
+FILE_ALEXA = "hub_alexa.yaml"
+FILE_GOOGLE = "hub_google.yaml"
+FILE_MESSAGE = "hub_build_message.yml"
+
+
 class Notifier_Dispatch(hass.Hass):
     def initialize(self):
+        self.cfg = {}
         self.debug_sensor = h.get_arg(self.args, "debug_sensor")
         self.set_state(self.debug_sensor, state="off")
         self.gh_tts_google_mode = h.get_arg(self.args, "gh_tts_google_mode")
@@ -43,18 +63,19 @@ class Notifier_Dispatch(hass.Hass):
         # self.debug_sensor = h.get_arg(self.args, "debug_sensor") # delete
         self.set_state(self.debug_sensor, state="on")
         #### FROM SECRET FILE ###
-        config = self.get_plugin_config()
-        config_dir = config["config_dir"]
-        self.log(f"configuration dir: {config_dir}")
+        self.config = self.get_plugin_config()
+        self.config_dir = self.config["config_dir"]
+        self.log(f"configuration dir: {self.config_dir}")
+        # self.log(f"configuration: {self.config}")
         ### old method - backward compatibility ->> delete
-        secretsFile = config_dir + "/secrets.yaml"
+        secretsFile = self.config_dir + "/secrets.yaml"
         with open(secretsFile, "r") as ymlfile:
             cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)  # yaml.safe_load
-        self.gh_tts = cfg.get("tts_google", "google_translate_say")
-        self.gh_notify = cfg.get("notify_google", "google_assistant")
-        self.phone_sip_server = cfg.get("sip_server_name", "fritz.box:5060")
-        self.gh_tts_cloud = cfg.get("tts_google_cloud", "google_cloud")
-        self.reverso_tts = cfg.get("reverso_tts", "reversotts_say")
+        self.gh_tts = cfg.get("tts_google", DEFAULT_TTS_GOOGLE)
+        self.gh_notify = cfg.get("notify_google", DEFAULT_NOTIFY_GOOGLE)
+        self.phone_sip_server = cfg.get("sip_server_name", DEFAULT_SIP_SERVER_NAME)
+        self.gh_tts_cloud = cfg.get("tts_google_cloud", DEFAULT_TTS_GOOGLE_CLOUD)
+        self.reverso_tts = cfg.get("reverso_tts", DEFAULT_REVERSO_TTS)
         self.alexa_skill_id = cfg.get("notifier_alexa_actionable_skill_id", "")
         ### <<<- delete
         ### APP MANAGER ###
@@ -65,23 +86,112 @@ class Notifier_Dispatch(hass.Hass):
         ### LISTEN EVENT ###
         self.listen_event(self.notifier, "notifier")
         self.listen_event(self.notifier_config, "notifier_config")
+        # self.package_download()
+        self.run_in(self.package_download, 1)
 
 #####################################################################
     def notifier_config(self, event_name, cfg, kwargs):
         self.log(f"---------- CONFIG UPTATED ----------")
         self.cfg = cfg
-        self.gh_tts = cfg.get("tts_google", "google_translate_say")
-        self.gh_notify = cfg.get("notify_google", "google_assistant")
-        self.phone_sip_server = cfg.get("sip_server_name", "fritz.box:5060")
-        self.gh_tts_cloud = cfg.get("tts_google_cloud", "google_cloud")
-        self.reverso_tts = cfg.get("reverso_tts", "reversotts_say")
+        self.gh_tts = cfg.get("tts_google", DEFAULT_TTS_GOOGLE)
+        self.gh_notify = cfg.get("notify_google", DEFAULT_NOTIFY_GOOGLE)
+        self.phone_sip_server = cfg.get("sip_server_name", DEFAULT_SIP_SERVER_NAME)
+        self.gh_tts_cloud = cfg.get("tts_google_cloud", DEFAULT_TTS_GOOGLE_CLOUD)
+        self.reverso_tts = cfg.get("reverso_tts", DEFAULT_REVERSO_TTS)
         self.alexa_skill_id = cfg.get("alexa_skill_id", "")
         self.cfg_personal_assistant = cfg.get("personal_assistant", "")
         self.cfg_notify_select = cfg.get("notify_select", "notify")
         self.cfg_dnd = cfg.get("dnd", "off")
         self.cfg_location_tracker = cfg.get("location_tracker", "home")
-        self.log(cfg)
+        self.log(f"USER INPUT CONFIG: {cfg}")
         self.log(f"----------  END  UPTATED  ----------")
+
+    def package_download(self, delay):
+        ha_config = self.config_dir + "/configuration.yaml"
+        cn_path = self.config_dir + "/packages/centro_notifiche/"
+
+        with open(ha_config, "r") as ymlfile:
+            config = yaml.load(ymlfile, Loader=yaml.BaseLoader)
+        if "homeassistant" in config and "packages" in config["homeassistant"]: 
+            pack_folder = config["homeassistant"]["packages"]
+            cn_path = f"{self.config_dir}/{pack_folder}/centro_notifiche/"
+            self.log(f"The package folder is: {pack_folder}")
+        else:
+            self.log(f"Package folder not foud.")
+
+            pack_folder = self.cfg.get('packages_folder')
+            cn_path = f"{pack_folder}/centro_notifiche/"
+            self.log(f"Package folder from user input: {pack_folder}")
+        if pack_folder is None:
+            return
+
+        self.log(f"CN complete path: {cn_path}")
+        local_file_main = cn_path + FILE_MAIN
+        version_latest = "0.0.1" # github
+        version_installed = "0.0.0" # local
+        self.log(f"configuration path: {local_file_main}")
+
+        ### READ tag name with api.
+        response = requests.get(URL_PACKAGE_LATEST)
+        version_latest = response.json()["tag_name"].replace("v", "")
+        self.log(f"package version latest: {version_latest}")
+        
+        if not os.path.isdir(cn_path):
+            try:
+                os.mkdir(cn_path)
+            except OSError:
+                self.log(f"Creation of the directory {cn_path} failed")
+
+        if os.path.isfile(local_file_main):
+            try:
+                with open(local_file_main, "r") as ymlfile:
+                    load_main = yaml.load(ymlfile, Loader=yaml.BaseLoader)
+                node = load_main["homeassistant"]["customize"]
+                if "package.cn" in node:
+                    version_installed = node["package.cn"]["customize"]["version"]
+                else:
+                    version_installed = node["package.node_anchors"]["customize"]["version"]
+                # version_installed = load_main["homeassistant"]["customize"]
+                # ["package.node_anchors"]["customize"]["version"]
+            except Exception as ex:
+                self.log(f"Error in configuration file: {ex}")
+
+            version_installed = version_installed.replace("Main ", "")
+            self.log(f"package version Installed: {version_installed}")
+
+        if version_installed < version_latest:
+            ## DOWNLOAD - TODO WGET? Multiple request Excessive time spent in utility loop
+            URL_BASE_PACK = URL_BETA_PACK
+            self.log(f"download latest package version: {version_latest}")
+            url_main = URL_BASE_PACK + FILE_MAIN
+            url_alexa = URL_BASE_PACK + FILE_ALEXA
+            url_google = URL_BASE_PACK + FILE_GOOGLE
+            url_message = URL_BASE_PACK+ FILE_MESSAGE
+
+            self.log("download Hub Main start!")
+            response = requests.get(url_main)
+            self.log("download Hub Main complete!")
+            open(cn_path + FILE_MAIN, "wb").write(response.content)
+
+            if not os.path.isfile(cn_path + FILE_MESSAGE):
+                response = requests.get(url_message)
+                self.log("download Hub BUILD MESSAGE complete!")
+                open(cn_path + FILE_MESSAGE, "wb").write(response.content)
+
+            if "alexa_media" in self.config["components"]:
+                self.log("download Hub Alxea start!")
+                response = requests.get(url_alexa)
+                self.log("download Hub Alexa complete!")
+                open(cn_path + FILE_ALEXA, "wb").write(response.content)
+
+            if "cast" in self.config["components"]:
+                self.log("download Hub Google start!")
+                response = requests.get(url_google)
+                self.log("download Hub Google complete!")
+                open(cn_path + FILE_GOOGLE, "wb").write(response.content)
+
+        self.log("#### PROCESS COMPLETED ####")
+
 #####################################################################
     def set_debug_sensor(self, state, error):
         attributes = {}
