@@ -669,7 +669,7 @@ class Alexa_Manager(hass.Hass):
                 data = self.queue.get()
                 self.lg(f"------ ALEXA WORKER QUEUE  ------")
                 self.lg(f"WORKER: {type(data)} value {data}")
-                self.set_state(self.binary_speak, state="on", attributes=data)
+                self.set_state(self.binary_speak, state="on", attributes = {**data})
                 media_player = data[MEDIA_PLAYER]
                 if data[AUTO_VOLUMES]:
                     self.volume_auto_silent(media_player, data[VOLUME])
@@ -753,6 +753,7 @@ class Alexa_Manager(hass.Hass):
                     duration += 10
                     self.lg(f"ADDED EXTRA ANSWER TIME {duration} Last {last_player}")
 
+                self.log(f"DURATION {duration}: ")
                 time.sleep(duration)
                 self.volume_restore()
                 ########
@@ -779,4 +780,5 @@ class Alexa_Manager(hass.Hass):
                     pass  # Nothing in queue
 
             self.set_state(self.binary_speak, state="off")
+            # attributes = {"icon": "mdi:speaker-message", **data}
             self.lg("------      ALEXA  END      ------\n")

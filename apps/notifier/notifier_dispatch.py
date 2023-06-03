@@ -19,8 +19,6 @@ DEFAULT_TTS_GOOGLE_CLOUD = "google_cloud"
 DEFAULT_NOTIFY_GOOGLE = "google_assistant"
 DEFAULT_SIP_SERVER_NAME = "fritz.box:5060"
 DEFAULT_REVERSO_TTS = "reversotts_say"
-# DEFAULT_FOLDER_PACKAGES = "/packages/"
-# DEFAULT_FOLDER_CN = "centro_notifiche/"
 
 URL_BASE_PACK = "https://raw.githubusercontent.com/caiosweet/Package-Notification-HUB-AppDaemon/main/packages/centro_notifiche/"
 URL_BETA_PACK = "https://raw.githubusercontent.com/caiosweet/Package-Notification-HUB-AppDaemon/beta/packages/centro_notifiche/"
@@ -33,7 +31,10 @@ FILE_MESSAGE = "hub_build_message.yml"
 
 class Notifier_Dispatch(hass.Hass):
     def initialize(self):
-        self.cfg = {}
+        notifier_config = self.get_state("sensor.notifier_config", attribute="all", default={})
+        self.cfg = notifier_config.get("attributes", {})
+        self.log(f"Assistant name: {notifier_config.get('state')}")
+        
         self.debug_sensor = h.get_arg(self.args, "debug_sensor")
         self.set_state(self.debug_sensor, state="off")
         self.gh_tts_google_mode = h.get_arg(self.args, "gh_tts_google_mode")
@@ -61,7 +62,7 @@ class Notifier_Dispatch(hass.Hass):
         self.phone_called_number = h.get_arg(self.args, "phone_called_number")
 
         # self.debug_sensor = h.get_arg(self.args, "debug_sensor") # delete
-        self.set_state(self.debug_sensor, state="on")
+        # self.set_state(self.debug_sensor, state="on")
         #### FROM SECRET FILE ###
         self.config = self.get_plugin_config()
         self.config_dir = self.config["config_dir"]
@@ -70,7 +71,7 @@ class Notifier_Dispatch(hass.Hass):
         ### old method - backward compatibility ->> delete
         secretsFile = self.config_dir + "/secrets.yaml"
         with open(secretsFile, "r") as ymlfile:
-            cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)  # yaml.safe_load
+            cfg = yaml.load(ymlfile, Loader=yaml.BaseLoader)  # yaml.safe_load #FullLoader
         self.gh_tts = cfg.get("tts_google", DEFAULT_TTS_GOOGLE)
         self.gh_notify = cfg.get("notify_google", DEFAULT_NOTIFY_GOOGLE)
         self.phone_sip_server = cfg.get("sip_server_name", DEFAULT_SIP_SERVER_NAME)
@@ -84,10 +85,11 @@ class Notifier_Dispatch(hass.Hass):
         self.alexa_manager = self.get_app("Alexa_Manager")
         self.phone_manager = self.get_app("Phone_Manager")
         ### LISTEN EVENT ###
-        self.listen_event(self.notifier, "notifier")
         self.listen_event(self.notifier_config, "notifier_config")
-        # self.package_download()
-        self.run_in(self.package_download, 1)
+        self.listen_event(self.notifier, "notifier")
+        self.set_state(self.debug_sensor, state="on")
+        ### DOWNLOAD MANAGER ###
+        self.run_in(self.package_download, 5)
 
 #####################################################################
     def notifier_config(self, event_name, cfg, kwargs):
@@ -99,11 +101,11 @@ class Notifier_Dispatch(hass.Hass):
         self.gh_tts_cloud = cfg.get("tts_google_cloud", DEFAULT_TTS_GOOGLE_CLOUD)
         self.reverso_tts = cfg.get("reverso_tts", DEFAULT_REVERSO_TTS)
         self.alexa_skill_id = cfg.get("alexa_skill_id", "")
-        self.cfg_personal_assistant = cfg.get("personal_assistant", "")
+        self.cfg_personal_assistant = cfg.get("personal_assistant", "Assistant")
         self.cfg_notify_select = cfg.get("notify_select", "notify")
         self.cfg_dnd = cfg.get("dnd", "off")
         self.cfg_location_tracker = cfg.get("location_tracker", "home")
-        self.log(f"USER INPUT CONFIG: {cfg}")
+        # self.log(f"USER INPUT CONFIG: {cfg}")
         self.log(f"----------  END  UPTATED  ----------")
 
     def package_download(self, delay):
@@ -118,7 +120,6 @@ class Notifier_Dispatch(hass.Hass):
             self.log(f"The package folder is: {pack_folder}")
         else:
             self.log(f"Package folder not foud.")
-
             pack_folder = self.cfg.get('packages_folder')
             cn_path = f"{pack_folder}/centro_notifiche/"
             self.log(f"Package folder from user input: {pack_folder}")
@@ -129,9 +130,9 @@ class Notifier_Dispatch(hass.Hass):
         local_file_main = cn_path + FILE_MAIN
         version_latest = "0.0.1" # github
         version_installed = "0.0.0" # local
-        self.log(f"configuration path: {local_file_main}")
+        self.log(f"Hub Main: {local_file_main}")
 
-        ### READ tag name with api.
+        ### Read tag name with api.
         response = requests.get(URL_PACKAGE_LATEST)
         version_latest = response.json()["tag_name"].replace("v", "")
         self.log(f"package version latest: {version_latest}")
@@ -148,19 +149,17 @@ class Notifier_Dispatch(hass.Hass):
                     load_main = yaml.load(ymlfile, Loader=yaml.BaseLoader)
                 node = load_main["homeassistant"]["customize"]
                 if "package.cn" in node:
-                    version_installed = node["package.cn"]["customize"]["version"]
+                    version_installed = node["package.cn"]["version"]
                 else:
                     version_installed = node["package.node_anchors"]["customize"]["version"]
-                # version_installed = load_main["homeassistant"]["customize"]
-                # ["package.node_anchors"]["customize"]["version"]
             except Exception as ex:
                 self.log(f"Error in configuration file: {ex}")
 
             version_installed = version_installed.replace("Main ", "")
             self.log(f"package version Installed: {version_installed}")
 
-        if version_installed < version_latest:
-            ## DOWNLOAD - TODO WGET? Multiple request Excessive time spent in utility loop
+        if (version_installed < version_latest) and self.cfg.get('download'):
+            ### DOWNLOAD ###
             URL_BASE_PACK = URL_BETA_PACK
             self.log(f"download latest package version: {version_latest}")
             url_main = URL_BASE_PACK + FILE_MAIN
@@ -189,15 +188,19 @@ class Notifier_Dispatch(hass.Hass):
                 response = requests.get(url_google)
                 self.log("download Hub Google complete!")
                 open(cn_path + FILE_GOOGLE, "wb").write(response.content)
-
+                
+                self.call_service("homeassistant/reload_all")
+                self.restart_app("Notifier_Dispatch")
+                # self.call_service("app/restart", app="Notifier_Dispatch", namespace="appdaemon")
         self.log("#### PROCESS COMPLETED ####")
-
+        self.log(f"{self.cfg.get('personal_assistant')} ready!")
+        
 #####################################################################
     def set_debug_sensor(self, state, error):
         attributes = {}
         attributes["icon"] = "mdi:wrench"
         attributes["dispatch_error"] = error
-        self.set_state(self.debug_sensor, state=state, attributes=attributes)
+        self.set_state(self.debug_sensor, state=state, attributes={**attributes})
     
     def createTTSdict(self,data) -> list:
         dizionario = ""
