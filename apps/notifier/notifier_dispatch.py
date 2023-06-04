@@ -2,7 +2,7 @@ import sys
 
 import hassapi as hass
 import helpermodule as h
-import yaml # delete
+import yaml
 import os
 import requests
 
@@ -20,13 +20,15 @@ DEFAULT_NOTIFY_GOOGLE = "google_assistant"
 DEFAULT_SIP_SERVER_NAME = "fritz.box:5060"
 DEFAULT_REVERSO_TTS = "reversotts_say"
 
-URL_BASE_PACK = "https://raw.githubusercontent.com/caiosweet/Package-Notification-HUB-AppDaemon/main/packages/centro_notifiche/"
-URL_BETA_PACK = "https://raw.githubusercontent.com/caiosweet/Package-Notification-HUB-AppDaemon/beta/packages/centro_notifiche/"
 URL_PACKAGE_LATEST = "https://api.github.com/repos/caiosweet/Package-Notification-HUB-AppDaemon/releases/latest"
+URL_BASE_REPO = "https://raw.githubusercontent.com/caiosweet/Package-Notification-HUB-AppDaemon/{}/{}/{}"
+PATH_PACKAGES = "packages/centro_notifiche"
+PATH_BLUEPRINTS = "blueprints/automation/caiosweet"
 FILE_MAIN = "hub_main.yaml"
 FILE_ALEXA = "hub_alexa.yaml"
 FILE_GOOGLE = "hub_google.yaml"
 FILE_MESSAGE = "hub_build_message.yml"
+FILE_STARTUP = "notifier_startup_configuration.yaml"
 
 
 class Notifier_Dispatch(hass.Hass):
@@ -92,6 +94,15 @@ class Notifier_Dispatch(hass.Hass):
         self.run_in(self.package_download, 5)
 
 #####################################################################
+    def ad_command(self, ad):
+        command = ad.get('command')
+        self.log(f"Run command: {command}")
+        match command: # type: ignore
+            case "restart":
+                self.restart_app("Notifier_Dispatch")
+            case _:
+                return
+
     def notifier_config(self, event_name, cfg, kwargs):
         self.log(f"---------- CONFIG UPTATED ----------")
         self.cfg = cfg
@@ -110,7 +121,8 @@ class Notifier_Dispatch(hass.Hass):
 
     def package_download(self, delay):
         ha_config = self.config_dir + "/configuration.yaml"
-        cn_path = self.config_dir + "/packages/centro_notifiche/"
+        cn_path = self.config_dir + f"/{PATH_PACKAGES}/"
+        blueprints_path = self.config_dir + f"/{PATH_BLUEPRINTS}/"
 
         with open(ha_config, "r") as ymlfile:
             config = yaml.load(ymlfile, Loader=yaml.BaseLoader)
@@ -143,6 +155,12 @@ class Notifier_Dispatch(hass.Hass):
             except OSError:
                 self.log(f"Creation of the directory {cn_path} failed")
 
+        if not os.path.isdir(blueprints_path):
+            try:
+                os.mkdir(blueprints_path)
+            except OSError:
+                self.log(f"Creation of the directory {blueprints_path} failed")
+
         if os.path.isfile(local_file_main):
             try:
                 with open(local_file_main, "r") as ymlfile:
@@ -159,39 +177,45 @@ class Notifier_Dispatch(hass.Hass):
             self.log(f"package version Installed: {version_installed}")
 
         if (version_installed < version_latest) and self.cfg.get('download'):
-            ### DOWNLOAD ###
-            URL_BASE_PACK = URL_BETA_PACK
-            self.log(f"download latest package version: {version_latest}")
-            url_main = URL_BASE_PACK + FILE_MAIN
-            url_alexa = URL_BASE_PACK + FILE_ALEXA
-            url_google = URL_BASE_PACK + FILE_GOOGLE
-            url_message = URL_BASE_PACK+ FILE_MESSAGE
+            ### DOWNLOAD ### TODO async? run_in_executor() request downloaded mltiple file
+            branches = 'beta' if self.cfg.get('beta_version') else 'main'
+            url_main = URL_BASE_REPO.format(branches, PATH_PACKAGES, FILE_MAIN)
+            url_alexa = URL_BASE_REPO.format(branches, PATH_PACKAGES, FILE_ALEXA)
+            url_google = URL_BASE_REPO.format(branches, PATH_PACKAGES, FILE_GOOGLE)
+            url_message = URL_BASE_REPO.format(branches, PATH_PACKAGES, FILE_MESSAGE)
+            url_startup = URL_BASE_REPO.format(branches, PATH_BLUEPRINTS, FILE_STARTUP)
 
-            self.log("download Hub Main start!")
+            self.log(f"download {FILE_MAIN} start!")
             response = requests.get(url_main)
-            self.log("download Hub Main complete!")
+            self.log(f"download {FILE_MAIN} complete!")
             open(cn_path + FILE_MAIN, "wb").write(response.content)
+
+            self.log(f"download {FILE_STARTUP} start!")
+            response = requests.get(url_startup)
+            self.log(f"download {FILE_STARTUP} complete!")
+            open(blueprints_path + FILE_STARTUP, "wb").write(response.content)
 
             if not os.path.isfile(cn_path + FILE_MESSAGE):
                 response = requests.get(url_message)
-                self.log("download Hub BUILD MESSAGE complete!")
+                self.log(f"download {FILE_MESSAGE} complete!")
                 open(cn_path + FILE_MESSAGE, "wb").write(response.content)
 
             if "alexa_media" in self.config["components"]:
-                self.log("download Hub Alxea start!")
+                self.log(f"download {FILE_ALEXA} start!")
                 response = requests.get(url_alexa)
-                self.log("download Hub Alexa complete!")
+                self.log(f"download {FILE_ALEXA} complete!")
                 open(cn_path + FILE_ALEXA, "wb").write(response.content)
 
             if "cast" in self.config["components"]:
-                self.log("download Hub Google start!")
+                self.log(f"download {FILE_GOOGLE} start!")
                 response = requests.get(url_google)
-                self.log("download Hub Google complete!")
+                self.log(f"download {FILE_GOOGLE} complete!")
                 open(cn_path + FILE_GOOGLE, "wb").write(response.content)
                 
                 self.call_service("homeassistant/reload_all")
                 self.restart_app("Notifier_Dispatch")
                 # self.call_service("app/restart", app="Notifier_Dispatch", namespace="appdaemon")
+
         self.log("#### PROCESS COMPLETED ####")
         self.log(f"{self.cfg.get('personal_assistant')} ready!")
         
@@ -226,8 +250,11 @@ class Notifier_Dispatch(hass.Hass):
 
     def notifier(self, event_name, data, kwargs):
         self.log("#### START NOTIFIER_DISPATCH ####")
-        assistant_name = self.get_state(self.personal_assistant_name, default=self.cfg_personal_assistant)
-        location_status = self.get_state(self.location_tracker, default=self.cfg_location_tracker) #Terzo BUG reload group
+        if isinstance(data.get("ad"), dict):
+            self.ad_command(data.get("ad"))
+
+        assistant_name = self.get_state(self.personal_assistant_name, default=self.cfg_personal_assistant) #Maybe BUG
+        location_status = self.get_state(self.location_tracker, default=self.cfg_location_tracker) #1st BUG reload group
         ### FLAG
         priority_flag = h.check_boolean(data["priority"])
         noshow_flag = h.check_boolean(data["no_show"])
@@ -250,12 +277,12 @@ class Notifier_Dispatch(hass.Hass):
             if str(alexa.get("priority")).lower() in ["true","on","yes","1"]:
                 alexa_priority_flag = True
         ### FROM BINARY ###
-        dnd_status = self.get_state(self.tts_dnd, default=self.cfg_dnd) #Primo BUG reload template
+        dnd_status = self.get_state(self.tts_dnd, default=self.cfg_dnd) #2nd BUG reload template
         ### FROM INPUT BOOLEAN ###
         guest_status = self.get_state(self.guest_mode)
         priority_status = (self.get_state(self.priority_message) == "on") or priority_flag
         ### FROM INPUT SELECT ###
-        notify_name = self.get_state(self.text_notify, default=self.cfg_notify_select) #Secondo BUG reload template
+        notify_name = self.get_state(self.text_notify, default=self.cfg_notify_select) #3nd BUG reload template
         phone_notify_name = self.get_state(self.phone_notify)
         ### NOTIFICATION ###
         if priority_status:
