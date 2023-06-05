@@ -101,7 +101,7 @@ class Notifier_Dispatch(hass.Hass):
             case "restart":
                 self.restart_app("Notifier_Dispatch")
             case _:
-                return
+                self.log(f"The command is invalid.")
 
     def notifier_config(self, event_name, cfg, kwargs):
         self.log(f"---------- CONFIG UPTATED ----------")
@@ -129,7 +129,7 @@ class Notifier_Dispatch(hass.Hass):
         if "homeassistant" in config and "packages" in config["homeassistant"]: 
             pack_folder = config["homeassistant"]["packages"]
             cn_path = f"{self.config_dir}/{pack_folder}/centro_notifiche/"
-            self.log(f"The package folder is: {pack_folder}")
+            self.log(f"Package folder: {pack_folder}")
         else:
             self.log(f"Package folder not foud.")
             pack_folder = self.cfg.get('packages_folder')
@@ -138,11 +138,11 @@ class Notifier_Dispatch(hass.Hass):
         if pack_folder is None:
             return
 
-        self.log(f"CN complete path: {cn_path}")
+        # self.log(f"CN complete path: {cn_path}")
         local_file_main = cn_path + FILE_MAIN
         version_latest = "0.0.1" # github
         version_installed = "0.0.0" # local
-        self.log(f"Hub Main: {local_file_main}")
+        # self.log(f"Hub Main: {local_file_main}")
 
         ### Read tag name with api.
         response = requests.get(URL_PACKAGE_LATEST)
@@ -252,6 +252,7 @@ class Notifier_Dispatch(hass.Hass):
         self.log("#### START NOTIFIER_DISPATCH ####")
         if isinstance(data.get("ad"), dict):
             self.ad_command(data.get("ad"))
+            return
 
         assistant_name = self.get_state(self.personal_assistant_name, default=self.cfg_personal_assistant) #Maybe BUG
         location_status = self.get_state(self.location_tracker, default=self.cfg_location_tracker) #1st BUG reload group
