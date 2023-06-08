@@ -14,10 +14,10 @@ Notifier_Dispatch:
 
   html_mode: input_boolean.notifier_html_mode
 
-  persistent_notification_info: persistent_notification.info_messages
+  # persistent_notification_info: persistent_notification.info_messages # delete
   
   location_tracker: group.notifier_location_tracker
-  text_notify: input_select.notifier_text_notify # change to select.
+  text_notify: input_select.notifier_text_notify # changed to select.
   # text_notify: select.notifier_text_notify
   phone_notify: input_select.notifier_phone_notify
   priority_message: input_boolean.notifier_priority_message

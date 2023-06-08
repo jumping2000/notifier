@@ -57,7 +57,7 @@ class Notifier_Dispatch(hass.Hass):
         self.priority_message = h.get_arg(self.args, "priority_message")
         self.guest_mode = h.get_arg(self.args, "guest_mode")
 
-        self.persistent_notification_info = h.get_arg(self.args, "persistent_notification_info")
+        # self.persistent_notification_info = h.get_arg(self.args, "persistent_notification_info") # Delete
 
         self.location_tracker = h.get_arg(self.args, "location_tracker") 
         self.personal_assistant_name = h.get_arg(self.args, "personal_assistant_name") 
@@ -73,7 +73,7 @@ class Notifier_Dispatch(hass.Hass):
         ### old method - backward compatibility ->> delete
         secretsFile = self.config_dir + "/secrets.yaml"
         with open(secretsFile, "r") as ymlfile:
-            cfg = yaml.load(ymlfile, Loader=yaml.BaseLoader)  # yaml.safe_load #FullLoader
+            cfg = yaml.load(ymlfile, Loader=yaml.BaseLoader)  # yaml.safe_load # FullLoader
         self.gh_tts = cfg.get("tts_google", DEFAULT_TTS_GOOGLE)
         self.gh_notify = cfg.get("notify_google", DEFAULT_NOTIFY_GOOGLE)
         self.phone_sip_server = cfg.get("sip_server_name", DEFAULT_SIP_SERVER_NAME)
@@ -282,7 +282,7 @@ class Notifier_Dispatch(hass.Hass):
         ### FROM INPUT BOOLEAN ###
         guest_status = self.get_state(self.guest_mode)
         priority_status = (self.get_state(self.priority_message) == "on") or priority_flag
-        ### FROM INPUT SELECT ###
+        ### FROM INPUT SELECT ### #TODO remember to chenge in notification_manager.yaml 
         notify_name = self.get_state(self.text_notify, default=self.cfg_notify_select) #3nd BUG reload template
         phone_notify_name = self.get_state(self.phone_notify)
         ### NOTIFICATION ###
@@ -336,7 +336,7 @@ class Notifier_Dispatch(hass.Hass):
         ###########################
         if usePersistentNotification:
             try:
-                self.notification_manager.send_persistent(data, self.persistent_notification_info, assistant_name)
+                self.notification_manager.send_persistent(data, assistant_name) # delete  self.persistent_notification_info,
             except Exception as ex:
                 self.log("An error occurred in persistent notification: {}".format(ex),level="ERROR")
                 self.set_debug_sensor("Error in Persistent Notification: ", ex)
