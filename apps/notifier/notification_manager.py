@@ -305,6 +305,7 @@ class Notification_Manager(hass.Hass):
         if len(old_messaggio) < 2500:
             messaggio = f"{old_messaggio}\n{messaggio}"
         else:
-            self.buffer = StringIO()
+            self.buffer.close()
+        self.buffer = StringIO()
         self.buffer.write(messaggio)
         self.call_service("persistent_notification/create", notification_id = "info_messages", message = messaggio, title = title )
