@@ -282,7 +282,7 @@ class Notifier_Dispatch(hass.Hass):
         ### FROM INPUT BOOLEAN ###
         guest_status = self.get_state(self.guest_mode)
         priority_status = (self.get_state(self.priority_message) == "on") or priority_flag
-        ### FROM INPUT SELECT ### #TODO remember to chenge in notification_manager.yaml 
+        ### FROM INPUT SELECT ### #TODO remember to chenge in notifier_dispatch.yaml 
         notify_name = self.get_state(self.text_notify, default=self.cfg_notify_select) #3nd BUG reload template
         phone_notify_name = self.get_state(self.phone_notify)
         ### NOTIFICATION ###
