@@ -20,7 +20,7 @@ DEFAULT_NOTIFY_GOOGLE = "google_assistant"
 DEFAULT_SIP_SERVER_NAME = "fritz.box:5060"
 DEFAULT_REVERSO_TTS = "reversotts_say"
 
-URL_PACKAGE_LATEST = "https://api.github.com/repos/caiosweet/Package-Notification-HUB-AppDaemon/releases/latest"
+URL_PACKAGE_RELEASES = "https://api.github.com/repos/caiosweet/Package-Notification-HUB-AppDaemon/releases"
 URL_BASE_REPO = "https://raw.githubusercontent.com/caiosweet/Package-Notification-HUB-AppDaemon/{}/{}/{}"
 PATH_PACKAGES = "packages/centro_notifiche"
 PATH_BLUEPRINTS = "blueprints/automation/caiosweet"
@@ -57,30 +57,16 @@ class Notifier_Dispatch(hass.Hass):
         self.priority_message = h.get_arg(self.args, "priority_message")
         self.guest_mode = h.get_arg(self.args, "guest_mode")
 
-        # self.persistent_notification_info = h.get_arg(self.args, "persistent_notification_info") # Delete
-
         self.location_tracker = h.get_arg(self.args, "location_tracker") 
-        self.personal_assistant_name = h.get_arg(self.args, "personal_assistant_name") 
         self.phone_called_number = h.get_arg(self.args, "phone_called_number")
 
-        # self.debug_sensor = h.get_arg(self.args, "debug_sensor") # delete
-        # self.set_state(self.debug_sensor, state="on")
-        #### FROM SECRET FILE ###
+        #### FROM CONFIGURATION BLUEPRINT ###
         self.config = self.get_plugin_config()
         self.config_dir = self.config["config_dir"]
         self.log(f"configuration dir: {self.config_dir}")
+        self.notifier_config("notifier_config", self.cfg, None) # init
         # self.log(f"configuration: {self.config}")
-        ### old method - backward compatibility ->> delete
-        secretsFile = self.config_dir + "/secrets.yaml"
-        with open(secretsFile, "r") as ymlfile:
-            cfg = yaml.load(ymlfile, Loader=yaml.BaseLoader)  # yaml.safe_load # FullLoader
-        self.gh_tts = cfg.get("tts_google", DEFAULT_TTS_GOOGLE)
-        self.gh_notify = cfg.get("notify_google", DEFAULT_NOTIFY_GOOGLE)
-        self.phone_sip_server = cfg.get("sip_server_name", DEFAULT_SIP_SERVER_NAME)
-        self.gh_tts_cloud = cfg.get("tts_google_cloud", DEFAULT_TTS_GOOGLE_CLOUD)
-        self.reverso_tts = cfg.get("reverso_tts", DEFAULT_REVERSO_TTS)
-        self.alexa_skill_id = cfg.get("notifier_alexa_actionable_skill_id", "")
-        ### <<<- delete
+
         ### APP MANAGER ###
         self.notification_manager = self.get_app("Notification_Manager")
         self.gh_manager = self.get_app("GH_Manager")
@@ -112,6 +98,7 @@ class Notifier_Dispatch(hass.Hass):
         self.gh_tts_cloud = cfg.get("tts_google_cloud", DEFAULT_TTS_GOOGLE_CLOUD)
         self.reverso_tts = cfg.get("reverso_tts", DEFAULT_REVERSO_TTS)
         self.alexa_skill_id = cfg.get("alexa_skill_id", "")
+
         self.cfg_personal_assistant = cfg.get("personal_assistant", "Assistant")
         self.cfg_notify_select = cfg.get("notify_select", "notify")
         self.cfg_dnd = cfg.get("dnd", "off")
@@ -123,7 +110,13 @@ class Notifier_Dispatch(hass.Hass):
         ha_config = self.config_dir + "/configuration.yaml"
         cn_path = self.config_dir + f"/{PATH_PACKAGES}/"
         blueprints_path = self.config_dir + f"/{PATH_BLUEPRINTS}/"
+        local_file_main = cn_path + FILE_MAIN
+        version_latest = "0.0.0" # github
+        version_installed = "0.0.0" # local
+        is_download = self.cfg.get('download')
+        is_beta = self.cfg.get('beta_version')
 
+        # Find the path packages 
         with open(ha_config, "r") as ymlfile:
             config = yaml.load(ymlfile, Loader=yaml.BaseLoader)
         if "homeassistant" in config and "packages" in config["homeassistant"]: 
@@ -131,36 +124,19 @@ class Notifier_Dispatch(hass.Hass):
             cn_path = f"{self.config_dir}/{pack_folder}/centro_notifiche/"
             self.log(f"Package folder: {pack_folder}")
         else:
-            self.log(f"Package folder not foud.")
             pack_folder = self.cfg.get('packages_folder')
             cn_path = f"{pack_folder}/centro_notifiche/"
             self.log(f"Package folder from user input: {pack_folder}")
         if pack_folder is None:
+            self.log(f"Package folder not foud.")
             return
 
-        # self.log(f"CN complete path: {cn_path}")
-        local_file_main = cn_path + FILE_MAIN
-        version_latest = "0.0.1" # github
-        version_installed = "0.0.0" # local
-        # self.log(f"Hub Main: {local_file_main}")
-
-        ### Read tag name with api.
-        response = requests.get(URL_PACKAGE_LATEST)
-        version_latest = response.json()["tag_name"].replace("v", "")
+        ### Takes the latest published version
+        response = requests.get(URL_PACKAGE_RELEASES)
+        version_latest = response.json()[0]["tag_name"].replace("v", "")
         self.log(f"package version latest: {version_latest}")
-        
-        if not os.path.isdir(cn_path):
-            try:
-                os.mkdir(cn_path)
-            except OSError:
-                self.log(f"Creation of the directory {cn_path} failed")
 
-        if not os.path.isdir(blueprints_path):
-            try:
-                os.mkdir(blueprints_path)
-            except OSError:
-                self.log(f"Creation of the directory {blueprints_path} failed")
-
+        ### Compare versions
         if os.path.isfile(local_file_main):
             try:
                 with open(local_file_main, "r") as ymlfile:
@@ -174,51 +150,61 @@ class Notifier_Dispatch(hass.Hass):
                 self.log(f"Error in configuration file: {ex}")
 
             version_installed = version_installed.replace("Main ", "")
-            self.log(f"package version Installed: {version_installed}")
+        self.log(f"package version Installed: {version_installed}")
 
-        if (version_installed < version_latest) and self.cfg.get('download'):
-            ### DOWNLOAD ### TODO async? run_in_executor() request downloaded mltiple file
-            branches = 'beta' if self.cfg.get('beta_version') else 'main'
-            url_main = URL_BASE_REPO.format(branches, PATH_PACKAGES, FILE_MAIN)
-            url_alexa = URL_BASE_REPO.format(branches, PATH_PACKAGES, FILE_ALEXA)
-            url_google = URL_BASE_REPO.format(branches, PATH_PACKAGES, FILE_GOOGLE)
-            url_message = URL_BASE_REPO.format(branches, PATH_PACKAGES, FILE_MESSAGE)
-            url_startup = URL_BASE_REPO.format(branches, PATH_BLUEPRINTS, FILE_STARTUP)
+        ### Download
+        if ((version_installed < version_latest) and is_download): #or version_installed < "4.0.2":
+            branche = 'beta' if (is_beta or version_installed < "4.0.2") else 'main'
+            url_main = URL_BASE_REPO.format(branche, PATH_PACKAGES, FILE_MAIN)
+            url_alexa = URL_BASE_REPO.format(branche, PATH_PACKAGES, FILE_ALEXA)
+            url_google = URL_BASE_REPO.format(branche, PATH_PACKAGES, FILE_GOOGLE)
+            url_message = URL_BASE_REPO.format(branche, PATH_PACKAGES, FILE_MESSAGE)
+            url_startup = URL_BASE_REPO.format(branche, PATH_BLUEPRINTS, FILE_STARTUP)
 
-            self.log(f"download {FILE_MAIN} start!")
-            response = requests.get(url_main)
-            self.log(f"download {FILE_MAIN} complete!")
-            open(cn_path + FILE_MAIN, "wb").write(response.content)
+            if not os.path.isdir(cn_path):
+                try:
+                    os.mkdir(cn_path)
+                except OSError:
+                    self.log(f"Creation of the directory {cn_path} failed")
+            self.request_and_save(url_main, cn_path, FILE_MAIN)
 
-            self.log(f"download {FILE_STARTUP} start!")
-            response = requests.get(url_startup)
-            self.log(f"download {FILE_STARTUP} complete!")
-            open(blueprints_path + FILE_STARTUP, "wb").write(response.content)
+            # if not os.path.isdir(blueprints_path):
+            #     try:
+            #         os.mkdir(blueprints_path)
+            #     except OSError:
+            #         self.log(f"Creation of the directory {blueprints_path} failed")
+            # self.request_and_save(url_startup, blueprints_path, FILE_STARTUP)
+
 
             if not os.path.isfile(cn_path + FILE_MESSAGE):
-                response = requests.get(url_message)
-                self.log(f"download {FILE_MESSAGE} complete!")
-                open(cn_path + FILE_MESSAGE, "wb").write(response.content)
-
+                self.request_and_save(url_message, cn_path, FILE_MESSAGE)
             if "alexa_media" in self.config["components"]:
-                self.log(f"download {FILE_ALEXA} start!")
-                response = requests.get(url_alexa)
-                self.log(f"download {FILE_ALEXA} complete!")
-                open(cn_path + FILE_ALEXA, "wb").write(response.content)
-
+                self.request_and_save(url_alexa, cn_path, FILE_ALEXA)
             if "cast" in self.config["components"]:
-                self.log(f"download {FILE_GOOGLE} start!")
-                response = requests.get(url_google)
-                self.log(f"download {FILE_GOOGLE} complete!")
-                open(cn_path + FILE_GOOGLE, "wb").write(response.content)
+                self.request_and_save(url_google, cn_path, FILE_GOOGLE)
                 
-                self.call_service("homeassistant/reload_all")
-                self.restart_app("Notifier_Dispatch")
-                # self.call_service("app/restart", app="Notifier_Dispatch", namespace="appdaemon")
+            self.call_service("homeassistant/reload_all")
+            self.restart_app("Notifier_Dispatch")
+            # self.call_service("app/restart", app="Notifier_Dispatch", namespace="appdaemon")
 
-        self.log("#### PROCESS COMPLETED ####")
-        self.log(f"{self.cfg.get('personal_assistant')} ready!")
-        
+        self.log("####    PROCESS COMPLETED    ####")
+        if version_installed != "0.0.0":
+            self.log(f"{self.cfg.get('personal_assistant')} ready!")
+        else:
+            self.log(f"Please, download blueprint and configure it")
+
+    def request_and_save(self, url, path, file):
+        ### TODO async? run_in_executor() request downloaded mltiple file
+        if os.path.isfile(path + file):
+            old = path + file
+            new = old.replace('.yaml', '.OLD')
+            os.rename(old, new)
+
+        self.log(f"download {file} start!")
+        response = requests.get(url)
+        open(path + file, "wb").write(response.content)
+        self.log(f"download {file} complete!")
+
 #####################################################################
     def set_debug_sensor(self, state, error):
         attributes = {}
@@ -254,7 +240,7 @@ class Notifier_Dispatch(hass.Hass):
             self.ad_command(data.get("ad"))
             return
 
-        assistant_name = self.get_state(self.personal_assistant_name, default=self.cfg_personal_assistant) #Maybe BUG
+        assistant_name = self.cfg_personal_assistant #Maybe BUG
         location_status = self.get_state(self.location_tracker, default=self.cfg_location_tracker) #1st BUG reload group
         ### FLAG
         priority_flag = h.check_boolean(data["priority"])
@@ -282,8 +268,9 @@ class Notifier_Dispatch(hass.Hass):
         ### FROM INPUT BOOLEAN ###
         guest_status = self.get_state(self.guest_mode)
         priority_status = (self.get_state(self.priority_message) == "on") or priority_flag
-        ### FROM INPUT SELECT ### #TODO remember to chenge in notifier_dispatch.yaml 
+        ### FROM SELECT ###
         notify_name = self.get_state(self.text_notify, default=self.cfg_notify_select) #3nd BUG reload template
+        ### FROM INPUT SELECT ###
         phone_notify_name = self.get_state(self.phone_notify)
         ### NOTIFICATION ###
         if priority_status:
@@ -336,7 +323,7 @@ class Notifier_Dispatch(hass.Hass):
         ###########################
         if usePersistentNotification:
             try:
-                self.notification_manager.send_persistent(data, assistant_name) # delete  self.persistent_notification_info,
+                self.notification_manager.send_persistent(data, assistant_name)
             except Exception as ex:
                 self.log("An error occurred in persistent notification: {}".format(ex),level="ERROR")
                 self.set_debug_sensor("Error in Persistent Notification: ", ex)
@@ -344,7 +331,6 @@ class Notifier_Dispatch(hass.Hass):
         if useNotification:
             try:
                 self.notification_manager.send_notify(data, notify_name, assistant_name)
-                # self.notification_manager.send_notify(data, notify_name, self.cfg_personal_assistant) # future - no input_text entity
             except Exception as ex:
                 self.log("An error occurred in text notification: {}".format(ex), level="ERROR")
                 self.set_debug_sensor("Error in Text Notification: ", ex)
