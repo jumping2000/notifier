@@ -153,8 +153,8 @@ class Notifier_Dispatch(hass.Hass):
         self.log(f"package version Installed: {version_installed}")
 
         ### Download
-        if ((version_installed < version_latest) and is_download): #or version_installed < "4.0.2":
-            branche = 'beta' if (is_beta or version_installed < "4.0.2") else 'main'
+        if (version_installed < version_latest) and is_download:
+            branche = 'beta' if is_beta else 'main'
             url_main = URL_BASE_REPO.format(branche, PATH_PACKAGES, FILE_MAIN)
             url_alexa = URL_BASE_REPO.format(branche, PATH_PACKAGES, FILE_ALEXA)
             url_google = URL_BASE_REPO.format(branche, PATH_PACKAGES, FILE_GOOGLE)
