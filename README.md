@@ -34,11 +34,7 @@ The app doesn't work standalone but togheter with [Centro Notifiche](https://git
 
 **Ti piace questo package? Lascia una stella su Github e supportami per realizzarne altri!** <a href="https://www.buymeacoffee.com/jumping"><img src="https://cdn.buymeacoffee.com/buttons/default-yellow.png" height="20"></a>
 
-<table align="center">
-  <tr>
-      <td><div align=center><img width = "450" src="img/star.png"/></div></td>
-  </tr>
-</table>
+<div align=center><img width = "450" src="img/star.png"/></div>
 
 <br>
 
