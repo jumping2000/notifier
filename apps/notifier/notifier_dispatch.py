@@ -3,6 +3,8 @@ import sys
 import hassapi as hass
 import helpermodule as h
 import yaml
+import os
+import requests
 
 #
 # Centralizes messaging.
@@ -12,8 +14,31 @@ import yaml
 # Version 1.0:
 #   Initial Version
 
+DEFAULT_TTS_GOOGLE = "google_translate_say"
+DEFAULT_TTS_GOOGLE_CLOUD = "google_cloud"
+DEFAULT_NOTIFY_GOOGLE = "google_assistant"
+DEFAULT_SIP_SERVER_NAME = "fritz.box:5060"
+DEFAULT_REVERSO_TTS = "reversotts_say"
+
+URL_PACKAGE_LATEST = "https://api.github.com/repos/caiosweet/Package-Notification-HUB-AppDaemon/releases/latest"
+URL_BASE_REPO = "https://raw.githubusercontent.com/caiosweet/Package-Notification-HUB-AppDaemon/{}/{}/{}"
+PATH_PACKAGES = "packages/centro_notifiche"
+PATH_BLUEPRINTS = "blueprints/automation/caiosweet"
+FILE_MAIN = "hub_main.yaml"
+FILE_ALEXA = "hub_alexa.yaml"
+FILE_GOOGLE = "hub_google.yaml"
+FILE_MESSAGE = "hub_build_message.yml"
+FILE_STARTUP = "notifier_startup_configuration.yaml"
+
+
 class Notifier_Dispatch(hass.Hass):
     def initialize(self):
+        notifier_config = self.get_state("sensor.notifier_config", attribute="all", default={})
+        self.cfg = notifier_config.get("attributes", {})
+        self.log(f"Assistant name: {notifier_config.get('state')}")
+        
+        self.debug_sensor = h.get_arg(self.args, "debug_sensor")
+        self.set_state(self.debug_sensor, state="off")
         self.gh_tts_google_mode = h.get_arg(self.args, "gh_tts_google_mode")
         self.gh_switch_entity = h.get_arg(self.args, "gh_switch")
         self.alexa_switch_entity = h.get_arg(self.args, "alexa_switch")
@@ -32,42 +57,174 @@ class Notifier_Dispatch(hass.Hass):
         self.priority_message = h.get_arg(self.args, "priority_message")
         self.guest_mode = h.get_arg(self.args, "guest_mode")
 
-        self.persistent_notification_info = h.get_arg(self.args, "persistent_notification_info")
+        # self.persistent_notification_info = h.get_arg(self.args, "persistent_notification_info") # Delete
 
         self.location_tracker = h.get_arg(self.args, "location_tracker") 
         self.personal_assistant_name = h.get_arg(self.args, "personal_assistant_name") 
         self.phone_called_number = h.get_arg(self.args, "phone_called_number")
 
-        self.debug_sensor = h.get_arg(self.args, "debug_sensor")
-        self.set_state(self.debug_sensor, state="on")
+        # self.debug_sensor = h.get_arg(self.args, "debug_sensor") # delete
+        # self.set_state(self.debug_sensor, state="on")
         #### FROM SECRET FILE ###
-        config = self.get_plugin_config()
-        config_dir = config["config_dir"]
-        self.log(f"configuration dir: {config_dir}")
-        secretsFile = config_dir + "/secrets.yaml"
+        self.config = self.get_plugin_config()
+        self.config_dir = self.config["config_dir"]
+        self.log(f"configuration dir: {self.config_dir}")
+        # self.log(f"configuration: {self.config}")
+        ### old method - backward compatibility ->> delete
+        secretsFile = self.config_dir + "/secrets.yaml"
         with open(secretsFile, "r") as ymlfile:
-            cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)  # yaml.safe_load
-        self.gh_tts = cfg.get("tts_google", "google_translate_say")
-        self.gh_notify = cfg.get("notify_google", "google_assistant")
-        self.phone_sip_server = cfg.get("sip_server_name", "fritz.box:5060")
-        self.gh_tts_cloud = cfg.get("tts_google_cloud", "google_cloud")
-        self.reverso_tts = cfg.get("reverso_tts", "reversotts_say")
+            cfg = yaml.load(ymlfile, Loader=yaml.BaseLoader)  # yaml.safe_load # FullLoader
+        self.gh_tts = cfg.get("tts_google", DEFAULT_TTS_GOOGLE)
+        self.gh_notify = cfg.get("notify_google", DEFAULT_NOTIFY_GOOGLE)
+        self.phone_sip_server = cfg.get("sip_server_name", DEFAULT_SIP_SERVER_NAME)
+        self.gh_tts_cloud = cfg.get("tts_google_cloud", DEFAULT_TTS_GOOGLE_CLOUD)
+        self.reverso_tts = cfg.get("reverso_tts", DEFAULT_REVERSO_TTS)
         self.alexa_skill_id = cfg.get("notifier_alexa_actionable_skill_id", "")
-
+        ### <<<- delete
         ### APP MANAGER ###
         self.notification_manager = self.get_app("Notification_Manager")
         self.gh_manager = self.get_app("GH_Manager")
         self.alexa_manager = self.get_app("Alexa_Manager")
         self.phone_manager = self.get_app("Phone_Manager")
         ### LISTEN EVENT ###
+        self.listen_event(self.notifier_config, "notifier_config")
         self.listen_event(self.notifier, "notifier")
+        self.set_state(self.debug_sensor, state="on")
+        ### DOWNLOAD MANAGER ###
+        self.run_in(self.package_download, 5)
 
+#####################################################################
+    def ad_command(self, ad):
+        command = ad.get('command')
+        self.log(f"Run command: {command}")
+        match command: # type: ignore
+            case "restart":
+                self.restart_app("Notifier_Dispatch")
+            case _:
+                self.log(f"The command is invalid.")
+
+    def notifier_config(self, event_name, cfg, kwargs):
+        self.log(f"---------- CONFIG UPTATED ----------")
+        self.cfg = cfg
+        self.gh_tts = cfg.get("tts_google", DEFAULT_TTS_GOOGLE)
+        self.gh_notify = cfg.get("notify_google", DEFAULT_NOTIFY_GOOGLE)
+        self.phone_sip_server = cfg.get("sip_server_name", DEFAULT_SIP_SERVER_NAME)
+        self.gh_tts_cloud = cfg.get("tts_google_cloud", DEFAULT_TTS_GOOGLE_CLOUD)
+        self.reverso_tts = cfg.get("reverso_tts", DEFAULT_REVERSO_TTS)
+        self.alexa_skill_id = cfg.get("alexa_skill_id", "")
+        self.cfg_personal_assistant = cfg.get("personal_assistant", "Assistant")
+        self.cfg_notify_select = cfg.get("notify_select", "notify")
+        self.cfg_dnd = cfg.get("dnd", "off")
+        self.cfg_location_tracker = cfg.get("location_tracker", "home")
+        # self.log(f"USER INPUT CONFIG: {cfg}")
+        self.log(f"----------  END  UPTATED  ----------")
+
+    def package_download(self, delay):
+        ha_config = self.config_dir + "/configuration.yaml"
+        cn_path = self.config_dir + f"/{PATH_PACKAGES}/"
+        blueprints_path = self.config_dir + f"/{PATH_BLUEPRINTS}/"
+
+        with open(ha_config, "r") as ymlfile:
+            config = yaml.load(ymlfile, Loader=yaml.BaseLoader)
+        if "homeassistant" in config and "packages" in config["homeassistant"]: 
+            pack_folder = config["homeassistant"]["packages"]
+            cn_path = f"{self.config_dir}/{pack_folder}/centro_notifiche/"
+            self.log(f"Package folder: {pack_folder}")
+        else:
+            self.log(f"Package folder not foud.")
+            pack_folder = self.cfg.get('packages_folder')
+            cn_path = f"{pack_folder}/centro_notifiche/"
+            self.log(f"Package folder from user input: {pack_folder}")
+        if pack_folder is None:
+            return
+
+        # self.log(f"CN complete path: {cn_path}")
+        local_file_main = cn_path + FILE_MAIN
+        version_latest = "0.0.1" # github
+        version_installed = "0.0.0" # local
+        # self.log(f"Hub Main: {local_file_main}")
+
+        ### Read tag name with api.
+        response = requests.get(URL_PACKAGE_LATEST)
+        version_latest = response.json()["tag_name"].replace("v", "")
+        self.log(f"package version latest: {version_latest}")
+        
+        if not os.path.isdir(cn_path):
+            try:
+                os.mkdir(cn_path)
+            except OSError:
+                self.log(f"Creation of the directory {cn_path} failed")
+
+        if not os.path.isdir(blueprints_path):
+            try:
+                os.mkdir(blueprints_path)
+            except OSError:
+                self.log(f"Creation of the directory {blueprints_path} failed")
+
+        if os.path.isfile(local_file_main):
+            try:
+                with open(local_file_main, "r") as ymlfile:
+                    load_main = yaml.load(ymlfile, Loader=yaml.BaseLoader)
+                node = load_main["homeassistant"]["customize"]
+                if "package.cn" in node:
+                    version_installed = node["package.cn"]["version"]
+                else:
+                    version_installed = node["package.node_anchors"]["customize"]["version"]
+            except Exception as ex:
+                self.log(f"Error in configuration file: {ex}")
+
+            version_installed = version_installed.replace("Main ", "")
+            self.log(f"package version Installed: {version_installed}")
+
+        if (version_installed < version_latest) and self.cfg.get('download'):
+            ### DOWNLOAD ### TODO async? run_in_executor() request downloaded mltiple file
+            branches = 'beta' if self.cfg.get('beta_version') else 'main'
+            url_main = URL_BASE_REPO.format(branches, PATH_PACKAGES, FILE_MAIN)
+            url_alexa = URL_BASE_REPO.format(branches, PATH_PACKAGES, FILE_ALEXA)
+            url_google = URL_BASE_REPO.format(branches, PATH_PACKAGES, FILE_GOOGLE)
+            url_message = URL_BASE_REPO.format(branches, PATH_PACKAGES, FILE_MESSAGE)
+            url_startup = URL_BASE_REPO.format(branches, PATH_BLUEPRINTS, FILE_STARTUP)
+
+            self.log(f"download {FILE_MAIN} start!")
+            response = requests.get(url_main)
+            self.log(f"download {FILE_MAIN} complete!")
+            open(cn_path + FILE_MAIN, "wb").write(response.content)
+
+            self.log(f"download {FILE_STARTUP} start!")
+            response = requests.get(url_startup)
+            self.log(f"download {FILE_STARTUP} complete!")
+            open(blueprints_path + FILE_STARTUP, "wb").write(response.content)
+
+            if not os.path.isfile(cn_path + FILE_MESSAGE):
+                response = requests.get(url_message)
+                self.log(f"download {FILE_MESSAGE} complete!")
+                open(cn_path + FILE_MESSAGE, "wb").write(response.content)
+
+            if "alexa_media" in self.config["components"]:
+                self.log(f"download {FILE_ALEXA} start!")
+                response = requests.get(url_alexa)
+                self.log(f"download {FILE_ALEXA} complete!")
+                open(cn_path + FILE_ALEXA, "wb").write(response.content)
+
+            if "cast" in self.config["components"]:
+                self.log(f"download {FILE_GOOGLE} start!")
+                response = requests.get(url_google)
+                self.log(f"download {FILE_GOOGLE} complete!")
+                open(cn_path + FILE_GOOGLE, "wb").write(response.content)
+                
+                self.call_service("homeassistant/reload_all")
+                self.restart_app("Notifier_Dispatch")
+                # self.call_service("app/restart", app="Notifier_Dispatch", namespace="appdaemon")
+
+        self.log("#### PROCESS COMPLETED ####")
+        self.log(f"{self.cfg.get('personal_assistant')} ready!")
+        
 #####################################################################
     def set_debug_sensor(self, state, error):
         attributes = {}
         attributes["icon"] = "mdi:wrench"
         attributes["dispatch_error"] = error
-        self.set_state(self.debug_sensor, state=state, attributes=attributes)
+        self.set_state(self.debug_sensor, state=state, attributes={**attributes})
     
     def createTTSdict(self,data) -> list:
         dizionario = ""
@@ -93,7 +250,12 @@ class Notifier_Dispatch(hass.Hass):
 
     def notifier(self, event_name, data, kwargs):
         self.log("#### START NOTIFIER_DISPATCH ####")
-        location_status = self.get_state(self.location_tracker)
+        if isinstance(data.get("ad"), dict):
+            self.ad_command(data.get("ad"))
+            return
+
+        assistant_name = self.get_state(self.personal_assistant_name, default=self.cfg_personal_assistant) #Maybe BUG
+        location_status = self.get_state(self.location_tracker, default=self.cfg_location_tracker) #1st BUG reload group
         ### FLAG
         priority_flag = h.check_boolean(data["priority"])
         noshow_flag = h.check_boolean(data["no_show"])
@@ -115,12 +277,13 @@ class Notifier_Dispatch(hass.Hass):
           if "priority" in alexa:
             if str(alexa.get("priority")).lower() in ["true","on","yes","1"]:
                 alexa_priority_flag = True
+        ### FROM BINARY ###
+        dnd_status = self.get_state(self.tts_dnd, default=self.cfg_dnd) #2nd BUG reload template
         ### FROM INPUT BOOLEAN ###
-        dnd_status = self.get_state(self.tts_dnd)
         guest_status = self.get_state(self.guest_mode)
         priority_status = (self.get_state(self.priority_message) == "on") or priority_flag
-        ### FROM INPUT SELECT ###
-        notify_name = self.get_state(self.text_notify)
+        ### FROM INPUT SELECT ### #TODO remember to chenge in notifier_dispatch.yaml 
+        notify_name = self.get_state(self.text_notify, default=self.cfg_notify_select) #3nd BUG reload template
         phone_notify_name = self.get_state(self.phone_notify)
         ### NOTIFICATION ###
         if priority_status:
@@ -173,14 +336,15 @@ class Notifier_Dispatch(hass.Hass):
         ###########################
         if usePersistentNotification:
             try:
-                self.notification_manager.send_persistent(data, self.persistent_notification_info)
+                self.notification_manager.send_persistent(data, assistant_name) # delete  self.persistent_notification_info,
             except Exception as ex:
                 self.log("An error occurred in persistent notification: {}".format(ex),level="ERROR")
                 self.set_debug_sensor("Error in Persistent Notification: ", ex)
                 self.log(sys.exc_info()) 
         if useNotification:
             try:
-                self.notification_manager.send_notify(data, notify_name, self.get_state(self.personal_assistant_name))
+                self.notification_manager.send_notify(data, notify_name, assistant_name)
+                # self.notification_manager.send_notify(data, notify_name, self.cfg_personal_assistant) # future - no input_text entity
             except Exception as ex:
                 self.log("An error occurred in text notification: {}".format(ex), level="ERROR")
                 self.set_debug_sensor("Error in Text Notification: ", ex)
@@ -201,14 +365,14 @@ class Notifier_Dispatch(hass.Hass):
                         google["media_content_id"] = ""
                     if "media_content_type" not in google:
                         google["media_content_type"] = ""
-                self.gh_manager.speak(google, self.get_state(self.gh_tts_google_mode), gh_notifica)
+                self.gh_manager.speak(google, self.get_state(self.gh_tts_google_mode), gh_notifica, self.cfg)
             if (alexa_switch == "on" or alexa_priority_flag) and alexa_flag:
                 if (data["alexa"]) != "":
                     if  "message" not in alexa:
                         alexa["message"] = data["message"]
                     if  "title" not in alexa:
                         alexa["title"] = data["title"]
-                self.alexa_manager.speak(alexa, self.alexa_skill_id)
+                self.alexa_manager.speak(alexa, self.alexa_skill_id, self.cfg)
         ### ripristino del priority a OFF
         if (self.get_state(self.priority_message) == "on"):
             self.set_state(self.priority_message, state = "off")

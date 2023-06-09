@@ -2,6 +2,7 @@ import hassapi as hass
 import datetime
 #
 import helpermodule as h
+from io import StringIO
 """
 Class Notification_Manager handles sending text to notfyng service
 """
@@ -18,6 +19,7 @@ class Notification_Manager(hass.Hass):
         self.text_last_message = h.get_arg(self.args, "text_last_message")
         self.boolean_wrap_text = h.get_arg(self.args, "boolean_wrap_text")
         self.boolean_tts_clock = h.get_arg(self.args, "boolean_tts_clock")
+        self.buffer = StringIO()
     
     def prepare_text(self, html, message, title, timestamp, assistant_name):
         if str(html).lower() in ["true","on","yes","1"]:
@@ -293,19 +295,21 @@ class Notification_Manager(hass.Hass):
                     message = ("{} {}".format(message,link))
                 self.call_service(item, message=message, title=title)
 
-    def send_persistent(self, data, persistent_notification_info):
+    def send_persistent(self, data, assistant_name): # persistent_notification_info,  delete
+        title = assistant_name if assistant_name else "Centro Messaggi"
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         messaggio=""
-        try:
-            per_not_info = self.get_state(persistent_notification_info)
-        except:
-            per_not_info = "null"
         if self.get_state(self.boolean_wrap_text) == 'on':
             messaggio = h.replace_regular(data["message"], SUB_NOTIFICHE_WRAP)
         else:
             messaggio = h.replace_regular(data["message"], SUB_NOTIFICHE_NOWRAP)
         messaggio = ("{} - {}".format(timestamp, messaggio))
-        if per_not_info == "notifying":
-            old_messaggio = self.get_state(persistent_notification_info, attribute="message")
-            messaggio = (old_messaggio + "\n" + messaggio) if len(old_messaggio)<2500 else messaggio
-        self.call_service("persistent_notification/create", notification_id = "info_messages", message = messaggio, title = "Centro Messaggi" )
+
+        old_messaggio = self.buffer.getvalue()
+        if len(old_messaggio) < 2500:
+            messaggio = f"{old_messaggio}\n{messaggio}"
+        else:
+            self.buffer.close()
+        self.buffer = StringIO()
+        self.buffer.write(messaggio)
+        self.call_service("persistent_notification/create", notification_id = "info_messages", message = messaggio, title = title )

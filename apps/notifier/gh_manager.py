@@ -152,7 +152,7 @@ class GH_Manager(hass.Hass):
                         ### DEBUG #############################################################
 
 
-    def speak(self, google, gh_mode: bool, gh_notifier: str):
+    def speak(self, google, gh_mode: bool, gh_notifier: str, cfg: dict):
         """ Speak the provided text through the media player. """
         if not self.check_gh_service:
             self.set_debug_sensor(
@@ -160,9 +160,9 @@ class GH_Manager(hass.Hass):
             )
             return
         if "media_player" not in google:
-            google["media_player"] = self.get_state(self.gh_sensor_media_player)
+            google["media_player"] = self.get_state(self.gh_sensor_media_player, default=cfg.get("google_sensor"))
         if "volume" not in google:
-            google["volume"] = float(self.get_state(self.tts_period_of_day_volume))/100
+            google["volume"] = float(self.get_state(self.tts_period_of_day_volume, default=cfg.get("day_period_volume")))/100
         if  "language" not in google:
             google["language"] = self.get_state(self.tts_language).lower()
         wait_time = float(self.get_state(self.gh_wait_time))
@@ -187,7 +187,8 @@ class GH_Manager(hass.Hass):
                 self.log(sys.exc_info())
         #else:
         self.queue.put({"type": "tts", "text": message, "volume": google["volume"], "language": h.replace_language(google["language"]), 
-                "gh_player": google["media_player"], "wait_time": wait_time, "gh_mode": gh_mode, "gh_notifier": gh_notifier})
+                "gh_player": google["media_player"], "wait_time": wait_time, "gh_mode": gh_mode, "gh_notifier": gh_notifier,
+                "select": cfg.get("google_select"), "day_vol": cfg.get("day_period_volume")})
 
     def when_tts_done_do(self, callback:callable)->None:
         """ Callback when the queue of tts messages are done """
@@ -200,8 +201,8 @@ class GH_Manager(hass.Hass):
                 duration = 0
                 ### SAVE DATA
                 _gh_players = self.check_mplayer(self._player, self.split_device_list(data["gh_player"]))
-                _gh_volumes = self.check_volume(self.get_state(self.gh_select_media_player, attribute="options"))
-                _dict_info_mplayers = self.mediastate_get(_gh_volumes,float(self.get_state(self.args["tts_period_of_day_volume"]))/100)
+                _gh_volumes = self.check_volume(self.get_state(self.gh_select_media_player, default=data["select"], attribute="options"))
+                _dict_info_mplayers = self.mediastate_get(_gh_volumes,float(self.get_state(self.args["tts_period_of_day_volume"], default=data["day_vol"]))/100)
                 ### set volume
                 self.volume_set(_gh_players,data["volume"])
                 ### DEBUG #############################################################
