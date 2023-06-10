@@ -33,9 +33,9 @@ FILE_STARTUP = "notifier_startup_configuration.yaml"
 
 class Notifier_Dispatch(hass.Hass):
     def initialize(self):
-        notifier_config = self.get_state("sensor.notifier_config", attribute="all", default={})
-        self.cfg = notifier_config.get("attributes", {})
-        self.log(f"Assistant name: {notifier_config.get('state')}")
+        # notifier_config = self.get_state("sensor.notifier_config", attribute="all", default={})
+        # self.cfg = notifier_config.get("attributes", {})
+        # self.log(f"Assistant name: {notifier_config.get('state')}")
         
         self.debug_sensor = h.get_arg(self.args, "debug_sensor")
         self.set_state(self.debug_sensor, state="off")
@@ -64,7 +64,7 @@ class Notifier_Dispatch(hass.Hass):
         self.config = self.get_plugin_config()
         self.config_dir = self.config["config_dir"]
         self.log(f"configuration dir: {self.config_dir}")
-        self.notifier_config("notifier_config", self.cfg, None) # init
+        self.notifier_config("init", {}, {}) # init
         # self.log(f"configuration: {self.config}")
 
         ### APP MANAGER ###
@@ -104,6 +104,7 @@ class Notifier_Dispatch(hass.Hass):
         self.cfg_dnd = cfg.get("dnd", "off")
         self.cfg_location_tracker = cfg.get("location_tracker", "home")
         # self.log(f"USER INPUT CONFIG: {cfg}")
+
         self.log(f"----------  END  UPTATED  ----------")
 
     def package_download(self, delay):
@@ -168,12 +169,13 @@ class Notifier_Dispatch(hass.Hass):
                     self.log(f"Creation of the directory {cn_path} failed")
             self.request_and_save(url_main, cn_path, FILE_MAIN)
 
-            # if not os.path.isdir(blueprints_path):
-            #     try:
-            #         os.mkdir(blueprints_path)
-            #     except OSError:
-            #         self.log(f"Creation of the directory {blueprints_path} failed")
-            # self.request_and_save(url_startup, blueprints_path, FILE_STARTUP)
+            ### Utadete blueprint
+            if not os.path.isdir(blueprints_path):
+                try:
+                    os.mkdir(blueprints_path)
+                except OSError:
+                    self.log(f"Creation of the directory {blueprints_path} failed")
+            self.request_and_save(url_startup, blueprints_path, FILE_STARTUP)
 
 
             if not os.path.isfile(cn_path + FILE_MESSAGE):
@@ -188,10 +190,10 @@ class Notifier_Dispatch(hass.Hass):
             # self.call_service("app/restart", app="Notifier_Dispatch", namespace="appdaemon")
 
         self.log("####    PROCESS COMPLETED    ####")
-        if version_installed != "0.0.0":
+        if version_installed > "4.0.1":
             self.log(f"{self.cfg.get('personal_assistant')} ready!")
         else:
-            self.log(f"Please, download blueprint and configure it")
+            self.log(f"Please, download blueprint and configure it. When done, restart AppDaemon.")
 
     def request_and_save(self, url, path, file):
         ### TODO async? run_in_executor() request downloaded mltiple file
