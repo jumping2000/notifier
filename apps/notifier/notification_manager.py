@@ -88,7 +88,6 @@ class Notification_Manager(hass.Hass):
                 pass
             #### TELEGRAM #######################
             elif item.find("telegram") != -1:
-            if item.find("telegram") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
                 extra_data = {}
                 if isinstance(telegram, dict):
