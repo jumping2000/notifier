@@ -15,7 +15,6 @@ SUB_REMOVE_SPACE = [("\s*,\s*",",")]
 class Notification_Manager(hass.Hass):
 
     def initialize(self):
-        #self.text_last_message = globals.get_arg(self.args, "text_last_message")
         self.text_last_message = h.get_arg(self.args, "text_last_message")
         self.boolean_wrap_text = h.get_arg(self.args, "boolean_wrap_text")
         self.boolean_tts_clock = h.get_arg(self.args, "boolean_tts_clock")
@@ -89,7 +88,6 @@ class Notification_Manager(hass.Hass):
                 pass
             #### TELEGRAM #######################
             elif item.find("telegram") != -1:
-            if item.find("telegram") != -1:
                 messaggio, titolo = self.prepare_text(html, message, title, timestamp, assistant_name)
                 extra_data = {}
                 if isinstance(telegram, dict):
@@ -295,7 +293,7 @@ class Notification_Manager(hass.Hass):
                     message = ("{} {}".format(message,link))
                 self.call_service(item, message=message, title=title)
 
-    def send_persistent(self, data, assistant_name): # persistent_notification_info,  delete
+    def send_persistent(self, data, assistant_name):
         title = assistant_name if assistant_name else "Centro Messaggi"
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         messaggio=""

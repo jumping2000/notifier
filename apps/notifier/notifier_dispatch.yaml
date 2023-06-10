@@ -13,18 +13,15 @@ Notifier_Dispatch:
   phone_notifications: input_boolean.notifier_phone_notifications
 
   html_mode: input_boolean.notifier_html_mode
-
-  # persistent_notification_info: persistent_notification.info_messages # delete
   
-  location_tracker: group.notifier_location_tracker
-  text_notify: input_select.notifier_text_notify # changed to select.
-  # text_notify: select.notifier_text_notify
+  location_tracker: group.notifier_location_tracker ## To fix
+
+  text_notify: select.notifier_text_notify
   phone_notify: input_select.notifier_phone_notify
   priority_message: input_boolean.notifier_priority_message
   guest_mode: input_boolean.notifier_guest_mode
   dnd: binary_sensor.notifier_dnd
 
-  personal_assistant_name: input_text.notifier_personal_assistant # delete
   phone_called_number: input_text.notifier_called_number
   
   debug_sensor: sensor.notifier_debug_error
