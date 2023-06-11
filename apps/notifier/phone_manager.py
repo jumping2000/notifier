@@ -1,8 +1,4 @@
-import datetime
-
 import hassapi as hass
-
-#
 import helpermodule as h
 
 """
@@ -11,6 +7,7 @@ Class Phone_Manager handles sending call to voice notfyng service
 
 __NOTIFY__ = "notify/"
 SUB_TTS = [("[\*\-\[\]_\(\)\{\~\|\}\s]+", " ")]
+
 
 class Phone_Manager(hass.Hass):
     def initialize(self):
@@ -44,4 +41,3 @@ class Phone_Manager(hass.Hass):
                     called_number, message_tts, lang
                 )
                 self.call_service("shell_command/telegram_call", url=url_tts)
-
