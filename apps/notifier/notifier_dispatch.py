@@ -27,6 +27,7 @@ URL_ZIP = "https://github.com/caiosweet/Package-Notification-HUB-AppDaemon/archi
 PATH_PACKAGES = "packages/centro_notifiche"
 PATH_BLUEPRINTS = "blueprints/automation/caiosweet"
 FILE_MAIN = "hub_main.yaml"
+FILE_MESSAGE = "hub_build_message.yml"
 FILE_STARTUP = "notifier_startup_configuration.yaml"
 FILE_NAMES = ["hub_main.yaml", "hub_alexa.yaml", "hub_google.yaml", "notifier_startup_configuration.yaml"]
 
@@ -205,7 +206,24 @@ class Notifier_Dispatch(hass.Hass):
                 self.log(f"Error in configuration file: {ex}")
             return version_installed.replace("Main ", "")
 
-    def get_path_packges(self, ha_config_file, cn_path):
+    def _create_folder(self, folder)-> None:
+        if not os.path.isdir(folder):
+            try:
+                os.mkdir(folder)
+            except OSError:
+                self.log(f"Creation of the directory {folder} failed")
+    def _move_file(self, source_folder, destination_folder, file_name) -> None:
+        try:
+            os.rename(source_folder+file_name, destination_folder+file_name)
+        except OSError:
+            self.log(f"Move of file {file_name} failed")
+    def _rename_file(self, folder, source_file, destination_file) -> None:
+        try:
+            os.rename(folder+source_file, folder+destination_file)
+        except OSError:
+            self.log(f"Rename of the file {source_file} failed")
+
+    def get_path_packges(self,ha_config_file,cn_path):
         ### Find the path to the Packages folder
         config = None
         if os.path.isfile(ha_config_file):
@@ -243,30 +261,20 @@ class Notifier_Dispatch(hass.Hass):
         ###################################################
         branche = "beta" if is_beta else "main"
         url_main = URL_ZIP.format(branche)
-        cn_path = self.get_path_packges(ha_config_file, cn_path)  ##<-- cn_path
-        self.client = FileDownloader(url_main, URL_PACKAGE_RELEASES, cn_path)  # <-- START THE CLIENT
-        version_latest = self.get_remote_version()  # <-- recupero versione da github
+        cn_path =  self.get_path_packges(ha_config_file,cn_path) ##<-- cn_path
+        self.client = FileDownloader(url_main, URL_PACKAGE_RELEASES, cn_path) #<-- START THE CLIENT
+        version_latest = self.get_remote_version() #<-- recupero versione da github
+        version_installed = self.get_local_version(cn_path,FILE_MAIN) #<-- recupero versione locale
         self.log(f"package version latest: {version_latest}")
-        version_installed = self.get_local_version(cn_path, FILE_MAIN)  # <-- recupero versione locale
         self.log(f"package version Installed: {version_installed}")
         ### Download if the version is older ##############
         if version_installed < version_latest:
-            if not os.path.isdir(cn_path):
-                try:
-                    os.mkdir(cn_path)
-                except OSError:
-                    self.log(f"Creation of the directory {cn_path} failed")
-            self.get_zip_file(FILE_NAMES)  # <-- scarico ZIP
-            ### Update blueprint file ###########
-            if not os.path.isdir(blueprints_path):
-                try:
-                    os.mkdir(blueprints_path)
-                except OSError:
-                    self.log(f"Creation of the directory {blueprints_path} failed")
-            ### Move blueprint from CN folder to blueprint folder
-            os.rename(cn_path + FILE_STARTUP, blueprints_path + FILE_STARTUP)
-            ###################################################
-            self.log("Download Completed... run homeassistant reload all and restart the App")
+            self._create_folder(cn_path) 
+            self._rename_file(cn_path,FILE_MESSAGE,"hub_build_message.old") #<-- salvo hub_build_message
+            self.get_zip_file(FILE_NAMES) #<-- scarico ZIP
+            self._create_folder(blueprints_path) 
+            self._move_file(cn_path, blueprints_path, FILE_STARTUP)
+        ###################################################
             self.call_service("homeassistant/reload_all")
             self.restart_app("Notifier_Dispatch")
         self.log("####    PROCESS COMPLETED    ####")
