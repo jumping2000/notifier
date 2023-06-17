@@ -3,63 +3,53 @@ import hassapi as hass
 import helpermodule as h
 import yaml
 import os
-
-#####################
 from dataclasses import dataclass
 from typing import Any, Optional
 from requests import get, HTTPError, RequestException
 from zipfile import ZipFile, BadZipFile
 from io import BytesIO
 
-#
-# Centralizes messaging.
-#
-# Args:
-#
-# Version 1.0:
-#   Initial Version
+"""
+Centro Notifiche - Dispatch Module
+Args:
+  Version 1.0:
+  Initial Version
+"""
 
 DEFAULT_TTS_GOOGLE = "google_translate_say"
 DEFAULT_TTS_GOOGLE_CLOUD = "google_cloud"
 DEFAULT_NOTIFY_GOOGLE = "google_assistant"
 DEFAULT_SIP_SERVER_NAME = "fritz.box:5060"
 DEFAULT_REVERSO_TTS = "reversotts_say"
-
+#
 URL_PACKAGE_RELEASES = "https://api.github.com/repos/caiosweet/Package-Notification-HUB-AppDaemon/releases"
 URL_ZIP = "https://github.com/caiosweet/Package-Notification-HUB-AppDaemon/archive/refs/heads/{}.zip"
-#
 PATH_PACKAGES = "packages/centro_notifiche"
 PATH_BLUEPRINTS = "blueprints/automation/caiosweet"
 FILE_MAIN = "hub_main.yaml"
 FILE_STARTUP = "notifier_startup_configuration.yaml"
 FILE_NAMES = ["hub_main.yaml", "hub_alexa.yaml", "hub_google.yaml", "notifier_startup_configuration.yaml"]
 
-
 class ApiException(Exception):
     def __init__(self, message: str, url: str):
         message = f"{message} ({url})"
         super(ApiException, self).__init__(message)
-
 
 @dataclass
 class StatusResponse:
     """
     Represents the response received from the  method _do_request
     """
-
     version: str
-
 
 class FileDownloader:
     """
     A client to check API and download zip file
     """
-
     def __init__(self, zip_url: str, check_url: str, destination: str):
         self.zip_url = zip_url
         self.check_url = check_url
         self.destination = destination
-
     def _do_request(self, url: str) -> Any:
         """
         Do the HTTP request and return the response.
@@ -68,7 +58,6 @@ class FileDownloader:
         response = get(url)
         response.raise_for_status()
         return response
-
     def get_status(self):
         """
         Retrieves the version from the github API
@@ -80,7 +69,6 @@ class FileDownloader:
             return StatusResponse(version=version)
         except HTTPError as e:
             raise ApiException(f"error occurred while asking Github release: {e}", url) from None
-
     def download_extract_files(self, file_names):
         """
         Download the files from Github
@@ -109,7 +97,7 @@ class FileDownloader:
         except Exception as e:
             raise ApiException(f"Error generic occurred while downloading file: {e}", url) from None
 
-
+    #####################################################################
 class Notifier_Dispatch(hass.Hass):
     client: Optional[FileDownloader] = None
 
