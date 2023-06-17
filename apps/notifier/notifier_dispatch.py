@@ -3,6 +3,7 @@ import hassapi as hass
 import helpermodule as h
 import yaml
 import os
+from packaging import version
 from dataclasses import dataclass
 from typing import Any, Optional
 from requests import get, HTTPError, RequestException
@@ -274,11 +275,11 @@ class Notifier_Dispatch(hass.Hass):
         self.log(f"package version latest: {version_latest}")
         self.log(f"package version Installed: {version_installed}")
         ### Download if the version is older ##############
-        if version_installed < version_latest:
-            self._create_folder(cn_path)
-            self._rename_file(cn_path, FILE_MESSAGE, "hub_build_message.old")  # <-- salvo hub_build_message
-            self.get_zip_file(FILE_NAMES)  # <-- scarico ZIP
-            self._create_folder(blueprints_path)
+        if version.parse(version_installed) < version.parse(version_latest):
+            self._create_folder(cn_path) 
+            self._rename_file(cn_path,FILE_MESSAGE,"hub_build_message.old") #<-- salvo hub_build_message
+            self.get_zip_file(FILE_NAMES) #<-- scarico ZIP
+            self._create_folder(blueprints_path) 
             self._move_file(cn_path, blueprints_path, FILE_STARTUP)
             ###################################################
             self.call_service("homeassistant/reload_all")
