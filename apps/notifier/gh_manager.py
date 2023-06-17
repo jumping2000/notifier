@@ -2,7 +2,6 @@ import sys
 import time
 from queue import Queue
 from threading import Thread
-
 import hassapi as hass
 import helpermodule as h
 
@@ -21,6 +20,7 @@ SUB_VOICE = [
     ("[\U00010000-\U0010ffff]", ""),  # strip emoji
     ("[\?\.\!,]+(?=[\?\.\!,])", ""),  # Exclude duplicate
     ("(\s+\.|\s+\.\s+|[\.])(?! )(?![^{]*})(?![^\d.]*\d)", ". "),
+    ("<.*?>",""), # HTML TAG
     ("&", " and "),  # escape
     # ("(?<!\d),(?!\d)", ", "),
     ("[\n\*]", " "),
