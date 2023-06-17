@@ -1,10 +1,16 @@
 import sys
-
 import hassapi as hass
 import helpermodule as h
 import yaml
 import os
-import requests
+#####################
+from dataclasses import dataclass
+from datetime import datetime
+from functools import partial
+from typing import Any, List, Optional
+from requests import get, HTTPError, RequestException
+from zipfile import ZipFile, BadZipFile
+from io import BytesIO
 
 #
 # Centralizes messaging.
@@ -21,17 +27,89 @@ DEFAULT_SIP_SERVER_NAME = "fritz.box:5060"
 DEFAULT_REVERSO_TTS = "reversotts_say"
 
 URL_PACKAGE_RELEASES = "https://api.github.com/repos/caiosweet/Package-Notification-HUB-AppDaemon/releases"
-URL_BASE_REPO = "https://raw.githubusercontent.com/caiosweet/Package-Notification-HUB-AppDaemon/{}/{}/{}"
+URL_ZIP = "https://github.com/caiosweet/Package-Notification-HUB-AppDaemon/archive/refs/heads/{}.zip"
+#
 PATH_PACKAGES = "packages/centro_notifiche"
 PATH_BLUEPRINTS = "blueprints/automation/caiosweet"
 FILE_MAIN = "hub_main.yaml"
-FILE_ALEXA = "hub_alexa.yaml"
-FILE_GOOGLE = "hub_google.yaml"
-FILE_MESSAGE = "hub_build_message.yml"
 FILE_STARTUP = "notifier_startup_configuration.yaml"
+FILE_NAMES = ["hub_main.yaml","hub_alexa.yaml","hub_google.yaml","notifier_startup_configuration.yaml"]
+
+
+class ApiException(Exception):
+    def __init__(self, message: str, url: str):
+        message = f"{message} ({url})"
+        super(ApiException, self).__init__(message)
+
+@dataclass
+class StatusResponse:
+    """
+    Represents the response received from the  method _do_request
+    """
+    version: str
+
+class FileDownloader:
+    """
+    A client to check API and download zip file
+    """
+    def __init__(self, zip_url: str, check_url: str, destination: str):
+        self.zip_url = zip_url
+        self.check_url = check_url
+        self.destination = destination
+
+    def _do_request(self, url: str) -> Any:
+        """
+        Do the HTTP request and return the response.
+        This will raise an HTTP error if response status is not OK
+        """
+        response = get(url)
+        response.raise_for_status()
+        return response
+            
+    def get_status(self):
+        """
+        Retrieves the version from the github API
+        """
+        url = self.check_url
+        try:
+            response = self._do_request(url)
+            version = response.json()[0]["tag_name"].replace("v", "")
+            return StatusResponse(version=version)
+        except HTTPError as e:
+            raise ApiException(f"error occurred while asking Github release: {e}", url) from None
+
+    def download_extract_files(self, file_names):
+        """
+        Download the files from Github
+        """
+        url = self.zip_url
+        destination = self.destination
+        try:
+            if isinstance(file_names, str):
+                file_names = file_names.split()
+            response = self._do_request(url)
+            if response.status_code != 200:
+                raise ApiException(f"Failed to download file. Status code: {response.status_code}", url) from None
+            with ZipFile(BytesIO(response.content)) as zip_file:
+                for names in file_names:
+                    for zip_info in zip_file.infolist():
+                        if zip_info.is_dir():
+                            continue
+                        index = str(zip_info.filename).find(names)
+                        if index != -1:
+                            zip_info.filename = str(zip_info.filename)[index:]
+                            zip_file.extract(zip_info,destination)
+        except RequestException as e:
+            raise ApiException(f"Error occurred during file download: {e}", url) from None
+        except BadZipFile as e:
+            raise ApiException(f"Error occurred while extracting zip file: {e}", url) from None
+        except Exception as e:
+            raise ApiException(f"Error generic occurred while downloading file: {e}", url) from None
 
 
 class Notifier_Dispatch(hass.Hass):
+    client: Optional[FileDownloader] = None
+    
     def initialize(self):
         notifier_config = self.get_state("sensor.notifier_config", attribute="all", default={})
         self.cfg = notifier_config.get("attributes", {})
@@ -67,7 +145,6 @@ class Notifier_Dispatch(hass.Hass):
         self.log(f"configuration dir: {self.config_dir}")
         self.notifier_config("initialize", {}, {})  # init default value
         # self.log(f"configuration: {self.config}")
-
         ### APP MANAGER ###
         self.notification_manager = self.get_app("Notification_Manager")
         self.gh_manager = self.get_app("GH_Manager")
@@ -107,6 +184,61 @@ class Notifier_Dispatch(hass.Hass):
         # self.log(f"USER INPUT CONFIG: {cfg}")
         self.log(f"-->>> END {event_name} UPTATED")
 
+    def get_remote_version(self): # kwargs
+        try:
+            status = self.client.get_status()
+            return status.version
+        except ValueError as ex:
+            self.log(f"Invalid status response: {ex}")
+
+    def get_zip_file(self, file_names):
+        try:
+            self.client.download_extract_files(file_names)
+            self.log("Download started")
+        except ValueError as ex:
+            self.log(f"Download failed: {ex}")
+
+    def get_local_version(self, cn_path, file_names):
+        ### Get the local version ###########
+        version_installed = ""
+        if os.path.isfile(cn_path + file_main):
+            try:
+                with open(cn_path + file_main, "r") as ymlfile:
+                    load_main = yaml.load(ymlfile, Loader=yaml.BaseLoader)
+                node = load_main["homeassistant"]["customize"]
+                if "package.cn" in node:
+                    version_installed = node["package.cn"]["version"]
+                else:
+                    version_installed = node["package.node_anchors"]["customize"]["version"]
+            except Exception as ex:
+                self.log(f"Error in configuration file: {ex}")
+            return version_installed.replace("Main ", "")
+
+    def get_path_packges(self,ha_config_file,cn_path):
+        ### Find the path to the Packages folder
+        config = None
+        if os.path.isfile(ha_config_file):
+            try:
+                with open(ha_config_file, "r") as ymlfile:
+                    config = yaml.load(ymlfile, Loader=yaml.BaseLoader)
+                if "homeassistant" in config and "packages" in config["homeassistant"]:
+                    packages_folder = config["homeassistant"]["packages"]
+                    cn_path = f"{self.config_dir}/{packages_folder}/centro_notifiche/"
+
+                    self.log(f"Package folder: {packages_folder}")
+                else:
+                    packages_folder = self.cfg.get("packages_folder")
+                    cn_path = f"{packages_folder}/centro_notifiche/"
+                    self.log(f"Package folder from user input: {packages_folder}")
+                if packages_folder is None:
+                    self.log(f"Package folder not foud.")
+                    return
+                return cn_path
+            except Exception as ex:
+                self.log("An error occurred in loading packages path, download abort {}".format(ex), level="ERROR")
+                self.set_debug_sensor("An error occurred in loading packages path, download abort", ex)
+                self.log(sys.exc_info())
+
     def package_download(self, delay):
         is_download = self.cfg.get("download")
         is_beta = self.cfg.get("beta_version")
@@ -117,78 +249,32 @@ class Notifier_Dispatch(hass.Hass):
         blueprints_path = self.config_dir + f"/{PATH_BLUEPRINTS}/"
         version_latest = "0.0.0"
         version_installed = "0.0.0"
-
-        ### Find the path to the Packages folder
-        if os.path.isfile(ha_config_file):
-            try:
-                with open(ha_config_file, "r") as ymlfile:
-                    config = yaml.load(ymlfile, Loader=yaml.BaseLoader)
-                if "homeassistant" in config and "packages" in config["homeassistant"]:
-                    packages_folder = config["homeassistant"]["packages"]
-                    cn_path = f"{self.config_dir}/{packages_folder}/centro_notifiche/"
-                    self.log(f"Package folder: {packages_folder}")
-                else:
-                    packages_folder = self.cfg.get("packages_folder")
-                    cn_path = f"{packages_folder}/centro_notifiche/"
-                    self.log(f"Package folder from user input: {packages_folder}")
-                if packages_folder is None:
-                    self.log(f"Package folder not foud.")
-                    return
-            except Exception as ex:
-                self.log("An error occurred in loading packages path, download abort {}".format(ex), level="ERROR")
-                self.set_debug_sensor("An error occurred in loading packages path, download abort", ex)
-                self.log(sys.exc_info())
-
-        ### Get the latest published version (GitHub)
-        response = self.request_url(URL_PACKAGE_RELEASES)
-        version_latest = response.json()[0]["tag_name"].replace("v", "")
+        ###################################################
+        branche = "beta" if is_beta else "main"
+        url_main = URL_ZIP.format(branche)
+        cn_path =  get_path_packges(ha_config_file,cn_path) ##<-- cn_path
+        self.client = FileDownloader(url_main, URL_PACKAGE_RELEASES, cn_path) #<-- START THE CLIENT
+        version_latest = self.get_rewmote_version() #<-- recupero versione da github
         self.log(f"package version latest: {version_latest}")
-
-        ### Get the local version
-        if os.path.isfile(cn_path + FILE_MAIN):
-            try:
-                with open(cn_path + FILE_MAIN, "r") as ymlfile:
-                    load_main = yaml.load(ymlfile, Loader=yaml.BaseLoader)
-                node = load_main["homeassistant"]["customize"]
-                if "package.cn" in node:
-                    version_installed = node["package.cn"]["version"]
-                else:
-                    version_installed = node["package.node_anchors"]["customize"]["version"]
-            except Exception as ex:
-                self.log(f"Error in configuration file: {ex}")
-            version_installed = version_installed.replace("Main ", "")
+        version_installed = self.get_local_version(cn_path,FILE_MAIN) #<-- recupero versione locale
         self.log(f"package version Installed: {version_installed}")
-
-        ### Download if the version is older
+        ### Download if the version is older ##############
         if version_installed < version_latest:
-            branche = "beta" if is_beta else "main"
-            url_main = URL_BASE_REPO.format(branche, PATH_PACKAGES, FILE_MAIN)
-            url_alexa = URL_BASE_REPO.format(branche, PATH_PACKAGES, FILE_ALEXA)
-            url_google = URL_BASE_REPO.format(branche, PATH_PACKAGES, FILE_GOOGLE)
-            url_message = URL_BASE_REPO.format(branche, PATH_PACKAGES, FILE_MESSAGE)
-            url_startup = URL_BASE_REPO.format(branche, PATH_BLUEPRINTS, FILE_STARTUP)
-
             if not os.path.isdir(cn_path):
                 try:
                     os.mkdir(cn_path)
                 except OSError:
                     self.log(f"Creation of the directory {cn_path} failed")
-            self.request_and_save(url_main, cn_path, FILE_MAIN)
-
-            ### Utadete blueprint file
+            self.get_zip_file(FILE_NAMES) #<-- scarico ZIP
+            ### Update blueprint file ########### 
             if not os.path.isdir(blueprints_path):
                 try:
                     os.mkdir(blueprints_path)
                 except OSError:
                     self.log(f"Creation of the directory {blueprints_path} failed")
-            self.request_and_save(url_startup, blueprints_path, FILE_STARTUP)
-
-            if not os.path.isfile(cn_path + FILE_MESSAGE):
-                self.request_and_save(url_message, cn_path, FILE_MESSAGE)
-            if "alexa_media" in self.config["components"]:
-                self.request_and_save(url_alexa, cn_path, FILE_ALEXA)
-            if "cast" in self.config["components"]:
-                self.request_and_save(url_google, cn_path, FILE_GOOGLE)
+            ### Move blueprint from CN folder to blueprint folder
+            os.rename(cn_path+FILE_STARTUP, blueprints_path+FILE_STARTUP)
+        ###################################################
             self.call_service("homeassistant/reload_all")
             self.restart_app("Notifier_Dispatch")
         self.log("####    PROCESS COMPLETED    ####")
@@ -196,31 +282,6 @@ class Notifier_Dispatch(hass.Hass):
             self.log(f"{self.cfg.get('personal_assistant')} ready!")
         else:
             self.log(f"Please, download blueprint and configure it. When done, restart AppDaemon.")
-
-    def request_and_save(self, url, path, file):
-        ### TODO async? run_in_executor() request downloaded multiple file
-        if os.path.isfile(path + file):
-            old = path + file
-            new = old.replace(".yaml", ".OLD")
-            os.rename(old, new)
-        self.log(f"download {file} start!")
-        response = self.request_url(url)
-        open(path + file, "wb").write(response.content)
-        self.log(f"download {file} complete!")
-
-    def request_url(self, url):
-        try:
-            r = requests.get(url, timeout=10, verify=True)
-            r.raise_for_status()
-        except requests.exceptions.HTTPError as errh:
-            self.log("AHTTP Error {}".format(errh.args[0]), level="ERROR")
-        except requests.exceptions.ReadTimeout as errrt:
-            self.log("Time out {}".format(errrt), level="ERROR")
-        except requests.exceptions.ConnectionError as conerr:
-            self.log("Connection error {}".format(conerr), level="ERROR")
-        except requests.exceptions.RequestException as errex:
-            self.log("CException request {}".format(errex), level="ERROR")
-        return r
 
     #####################################################################
     def set_debug_sensor(self, state, error):
