@@ -2,6 +2,7 @@ import sys
 import time
 from queue import Queue
 from threading import Thread
+
 import hassapi as hass
 import helpermodule as h
 
