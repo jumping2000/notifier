@@ -110,6 +110,8 @@ class Notification_Manager(hass.Hass):
                 # self.log("[EXTRA-DATA]: {}".format(extra_data), ascii_encode = False)
                 if str(html).lower() not in ["true", "on", "yes", "1"]:
                     messaggio = messaggio.replace("_", "\_")
+                else:
+                   extra_data.update({"parse_mode": "html"})
                 if image != "":
                     self.call_service(item, message="", data=extra_data)
                 elif extra_data:
