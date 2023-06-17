@@ -197,7 +197,7 @@ class Notifier_Dispatch(hass.Hass):
 
     def get_local_version(self, cn_path, file_names):
         ### Get the local version ###########
-        version_installed = ""
+        version_installed = "0.0.0"
         if os.path.isfile(cn_path + file_names):
             try:
                 with open(cn_path + file_names, "r") as ymlfile:
@@ -209,7 +209,7 @@ class Notifier_Dispatch(hass.Hass):
                     version_installed = node["package.node_anchors"]["customize"]["version"]
             except Exception as ex:
                 self.log(f"Error in configuration file: {ex}")
-            return version_installed.replace("Main ", "")
+        return version_installed.replace("Main ", "")
 
     def _create_folder(self, folder) -> None:
         if not os.path.isdir(folder):
@@ -264,7 +264,6 @@ class Notifier_Dispatch(hass.Hass):
         cn_path = self.config_dir + f"/{PATH_PACKAGES}/"
         blueprints_path = self.config_dir + f"/{PATH_BLUEPRINTS}/"
         version_latest = "0.0.0"
-        version_installed = "0.0.0"
         ###################################################
         branche = "beta" if is_beta else "main"
         url_main = URL_ZIP.format(branche)
@@ -276,10 +275,10 @@ class Notifier_Dispatch(hass.Hass):
         self.log(f"package version Installed: {version_installed}")
         ### Download if the version is older ##############
         if version.parse(version_installed) < version.parse(version_latest):
-            self._create_folder(cn_path) 
-            self._rename_file(cn_path,FILE_MESSAGE,"hub_build_message.old") #<-- salvo hub_build_message
-            self.get_zip_file(FILE_NAMES) #<-- scarico ZIP
-            self._create_folder(blueprints_path) 
+            self._create_folder(cn_path)
+            self._rename_file(cn_path, FILE_MESSAGE, "hub_build_message.old")  # <-- salvo hub_build_message
+            self.get_zip_file(FILE_NAMES)  # <-- scarico ZIP
+            self._create_folder(blueprints_path)
             self._move_file(cn_path, blueprints_path, FILE_STARTUP)
             ###################################################
             self.call_service("homeassistant/reload_all")
