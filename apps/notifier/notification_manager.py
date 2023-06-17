@@ -77,6 +77,7 @@ class Notification_Manager(hass.Hass):
         if target != "":
             target_vector = h.return_array(h.replace_regular(target, SUB_REMOVE_SPACE))
         ########## SAVE IN INPUT_TEXT ###########
+        self.text_last_message = h.replace_regular(self.text_last_message, SUB_NOTIFICHE_WRAP)
         self.set_state(self.text_last_message, state=message[:245])
         #########################################
         if isinstance(whatsapp_addon, dict):
