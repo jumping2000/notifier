@@ -3,11 +3,10 @@ import hassapi as hass
 import helpermodule as h
 import yaml
 import os
+
 #####################
 from dataclasses import dataclass
-from datetime import datetime
-from functools import partial
-from typing import Any, List, Optional
+from typing import Any, Optional
 from requests import get, HTTPError, RequestException
 from zipfile import ZipFile, BadZipFile
 from io import BytesIO
@@ -33,7 +32,7 @@ PATH_PACKAGES = "packages/centro_notifiche"
 PATH_BLUEPRINTS = "blueprints/automation/caiosweet"
 FILE_MAIN = "hub_main.yaml"
 FILE_STARTUP = "notifier_startup_configuration.yaml"
-FILE_NAMES = ["hub_main.yaml","hub_alexa.yaml","hub_google.yaml","notifier_startup_configuration.yaml"]
+FILE_NAMES = ["hub_main.yaml", "hub_alexa.yaml", "hub_google.yaml", "notifier_startup_configuration.yaml"]
 
 
 class ApiException(Exception):
@@ -41,17 +40,21 @@ class ApiException(Exception):
         message = f"{message} ({url})"
         super(ApiException, self).__init__(message)
 
+
 @dataclass
 class StatusResponse:
     """
     Represents the response received from the  method _do_request
     """
+
     version: str
+
 
 class FileDownloader:
     """
     A client to check API and download zip file
     """
+
     def __init__(self, zip_url: str, check_url: str, destination: str):
         self.zip_url = zip_url
         self.check_url = check_url
@@ -65,7 +68,7 @@ class FileDownloader:
         response = get(url)
         response.raise_for_status()
         return response
-            
+
     def get_status(self):
         """
         Retrieves the version from the github API
@@ -98,7 +101,7 @@ class FileDownloader:
                         index = str(zip_info.filename).find(names)
                         if index != -1:
                             zip_info.filename = str(zip_info.filename)[index:]
-                            zip_file.extract(zip_info,destination)
+                            zip_file.extract(zip_info, destination)
         except RequestException as e:
             raise ApiException(f"Error occurred during file download: {e}", url) from None
         except BadZipFile as e:
@@ -109,7 +112,7 @@ class FileDownloader:
 
 class Notifier_Dispatch(hass.Hass):
     client: Optional[FileDownloader] = None
-    
+
     def initialize(self):
         notifier_config = self.get_state("sensor.notifier_config", attribute="all", default={})
         self.cfg = notifier_config.get("attributes", {})
@@ -184,7 +187,7 @@ class Notifier_Dispatch(hass.Hass):
         # self.log(f"USER INPUT CONFIG: {cfg}")
         self.log(f"-->>> END {event_name} UPTATED")
 
-    def get_remote_version(self): # kwargs
+    def get_remote_version(self):  # kwargs
         try:
             status = self.client.get_status()
             return status.version
@@ -201,9 +204,9 @@ class Notifier_Dispatch(hass.Hass):
     def get_local_version(self, cn_path, file_names):
         ### Get the local version ###########
         version_installed = ""
-        if os.path.isfile(cn_path + file_main):
+        if os.path.isfile(cn_path + file_names):
             try:
-                with open(cn_path + file_main, "r") as ymlfile:
+                with open(cn_path + file_names, "r") as ymlfile:
                     load_main = yaml.load(ymlfile, Loader=yaml.BaseLoader)
                 node = load_main["homeassistant"]["customize"]
                 if "package.cn" in node:
@@ -214,7 +217,7 @@ class Notifier_Dispatch(hass.Hass):
                 self.log(f"Error in configuration file: {ex}")
             return version_installed.replace("Main ", "")
 
-    def get_path_packges(self,ha_config_file,cn_path):
+    def get_path_packges(self, ha_config_file, cn_path):
         ### Find the path to the Packages folder
         config = None
         if os.path.isfile(ha_config_file):
@@ -252,11 +255,11 @@ class Notifier_Dispatch(hass.Hass):
         ###################################################
         branche = "beta" if is_beta else "main"
         url_main = URL_ZIP.format(branche)
-        cn_path =  get_path_packges(ha_config_file,cn_path) ##<-- cn_path
-        self.client = FileDownloader(url_main, URL_PACKAGE_RELEASES, cn_path) #<-- START THE CLIENT
-        version_latest = self.get_rewmote_version() #<-- recupero versione da github
+        cn_path = self.get_path_packges(ha_config_file, cn_path)  ##<-- cn_path
+        self.client = FileDownloader(url_main, URL_PACKAGE_RELEASES, cn_path)  # <-- START THE CLIENT
+        version_latest = self.get_remote_version()  # <-- recupero versione da github
         self.log(f"package version latest: {version_latest}")
-        version_installed = self.get_local_version(cn_path,FILE_MAIN) #<-- recupero versione locale
+        version_installed = self.get_local_version(cn_path, FILE_MAIN)  # <-- recupero versione locale
         self.log(f"package version Installed: {version_installed}")
         ### Download if the version is older ##############
         if version_installed < version_latest:
@@ -265,16 +268,17 @@ class Notifier_Dispatch(hass.Hass):
                     os.mkdir(cn_path)
                 except OSError:
                     self.log(f"Creation of the directory {cn_path} failed")
-            self.get_zip_file(FILE_NAMES) #<-- scarico ZIP
-            ### Update blueprint file ########### 
+            self.get_zip_file(FILE_NAMES)  # <-- scarico ZIP
+            ### Update blueprint file ###########
             if not os.path.isdir(blueprints_path):
                 try:
                     os.mkdir(blueprints_path)
                 except OSError:
                     self.log(f"Creation of the directory {blueprints_path} failed")
             ### Move blueprint from CN folder to blueprint folder
-            os.rename(cn_path+FILE_STARTUP, blueprints_path+FILE_STARTUP)
-        ###################################################
+            os.rename(cn_path + FILE_STARTUP, blueprints_path + FILE_STARTUP)
+            ###################################################
+            self.log("Download Completed... run homeassistant reload all and restart the App")
             self.call_service("homeassistant/reload_all")
             self.restart_app("Notifier_Dispatch")
         self.log("####    PROCESS COMPLETED    ####")
