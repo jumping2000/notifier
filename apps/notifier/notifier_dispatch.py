@@ -16,7 +16,6 @@ Args:
   Version 1.0:
   Initial Version
 """
-
 DEFAULT_TTS_GOOGLE = "google_translate_say"
 DEFAULT_TTS_GOOGLE_CLOUD = "google_cloud"
 DEFAULT_NOTIFY_GOOGLE = "google_assistant"
@@ -32,27 +31,22 @@ FILE_MESSAGE = "hub_build_message.yml"
 FILE_STARTUP = "notifier_startup_configuration.yaml"
 FILE_NAMES = ["hub_alexa.yaml", "hub_google.yaml", FILE_MAIN, FILE_MESSAGE, FILE_STARTUP]
 
-
 class ApiException(Exception):
     def __init__(self, message: str, url: str):
         message = f"{message} ({url})"
         super(ApiException, self).__init__(message)
-
 
 @dataclass
 class StatusResponse:
     """
     Represents the response received from the  method _do_request
     """
-
     version: str
-
 
 class FileDownloader:
     """
     A client to check API and download zip file
     """
-
     def __init__(self, zip_url: str, check_url: str, destination: str):
         self.zip_url = zip_url
         self.check_url = check_url
@@ -77,6 +71,7 @@ class FileDownloader:
             version = response.json()[0]["tag_name"].replace("v", "")
             return StatusResponse(version=version)
         except HTTPError as e:
+            return StatusResponse(version="0.0.0")
             raise ApiException(f"error occurred while asking Github release: {e}", url) from None
 
     def download_extract_files(self, file_names):
