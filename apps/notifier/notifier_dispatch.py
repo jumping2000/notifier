@@ -258,7 +258,6 @@ class Notifier_Dispatch(hass.Hass):
         ha_config_file = self.config_dir + "/configuration.yaml"
         cn_path = self.config_dir + f"/{PATH_PACKAGES}/"
         blueprints_path = self.config_dir + f"/{PATH_BLUEPRINTS}/"
-        version_latest = "0.0.0"
         ###################################################
         branche = "beta" if is_beta else "main"
         url_main = URL_ZIP.format(branche)
