@@ -136,7 +136,9 @@ class Notifier_Dispatch(hass.Hass):
         self.config = self.get_plugin_config()
         self.config_dir = self.config["config_dir"]
         self.log(f"configuration dir: {self.config_dir}")
-        self.notifier_config("initialize", {}, {})  # init default value
+        ### FROM SENSOR CONFIG
+        sensor_config = self.get_state("sensor.notifier_config", attribute="all", default={})
+        self.notifier_config("initialize", sensor_config.get("attributes", {}), {})  
         # self.log(f"configuration: {self.config}")
         ### APP MANAGER ###
         self.notification_manager = self.get_app("Notification_Manager")
