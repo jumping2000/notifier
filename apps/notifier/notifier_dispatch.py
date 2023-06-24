@@ -278,6 +278,10 @@ class Notifier_Dispatch(hass.Hass):
             self._create_folder(cn_path)
             self._rename_file(cn_path,FILE_RENAME,".OLD") #<-- rinomino alcuni file di interesse
             self.get_zip_file(FILE_NAMES)  # <-- scarico ZIP
+            if "alexa_media" not in self.config["components"]:
+                self._rename_file(cn_path,"hub_alexa.yaml",".old")
+            if "cast" not in self.config["components"]:
+                self._rename_file(cn_path,"hub_google.yaml",".old")
             self._create_folder(blueprints_path)
             self._move_file(cn_path, blueprints_path, FILE_STARTUP)
             ###################################################
