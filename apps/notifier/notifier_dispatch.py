@@ -27,9 +27,9 @@ URL_ZIP = "https://github.com/caiosweet/Package-Notification-HUB-AppDaemon/archi
 PATH_PACKAGES = "packages/centro_notifiche"
 PATH_BLUEPRINTS = "blueprints/automation/caiosweet"
 FILE_MAIN = "hub_main.yaml"
-FILE_MESSAGE = "hub_build_message.yml"
 FILE_STARTUP = "notifier_startup_configuration.yaml"
-FILE_NAMES = ["hub_alexa.yaml", "hub_google.yaml", FILE_MAIN, FILE_MESSAGE, FILE_STARTUP]
+FILE_RENAME = ["hub_build_message.yml","hub_customize.yaml"]
+FILE_NAMES = ["hub_main.yaml","hub_alexa.yaml","hub_google.yaml","hub_build_message.yml","hub_customize.yaml","notifier_startup_configuration.yaml"]
 
 class ApiException(Exception):
     def __init__(self, message: str, url: str):
@@ -221,11 +221,15 @@ class Notifier_Dispatch(hass.Hass):
         except OSError:
             self.log(f"Move of file {file_name} failed")
 
-    def _rename_file(self, folder, source_file, destination_file) -> None:
-        try:
-            os.rename(folder + source_file, folder + destination_file)
+    def _rename_file(self, folder, source_list, extension) -> None:
+        try: 
+            if isinstance(source_list, str):
+                os.rename(folder+source_list, folder+source_list+extension)
+            else:
+                for element in source_list:
+                    os.rename(folder+element, folder+element+extension)
         except OSError:
-            self.log(f"Rename of the file {source_file} failed")
+            self.log(f"Rename of the files in {source_list} failed")
 
     def get_path_packges(self, ha_config_file, cn_path):
         ### Find the path to the Packages folder
@@ -272,7 +276,7 @@ class Notifier_Dispatch(hass.Hass):
         ### Download if the version is older ##############
         if version.parse(version_installed) < version.parse(version_latest):
             self._create_folder(cn_path)
-            self._rename_file(cn_path, FILE_MESSAGE, "hub_build_message.old")  # <-- salvo hub_build_message
+            self._rename_file(cn_path,FILE_RENAME,".OLD") #<-- rinomino alcuni file di interesse
             self.get_zip_file(FILE_NAMES)  # <-- scarico ZIP
             self._create_folder(blueprints_path)
             self._move_file(cn_path, blueprints_path, FILE_STARTUP)
