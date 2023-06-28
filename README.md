@@ -29,7 +29,7 @@ Package-Notification-HUB-AppDaemon<br>
 Use [HACS](https://github.com/custom-components/hacs) or [download](https://github.com/jumping2000/notifier) the `notifier` directory from inside the `apps` directory here to your local `apps` directory. 
 Remember:
 - enable [Appdaemon in HACS](https://hacs.xyz/docs/categories/appdaemon_apps#enable-appdaemon-apps-in-hacs);
-- add [this repository in HACS](https://hacs.xyz/docs/faq/custom_repositories/e)
+- add [this repository in HACS](https://hacs.xyz/docs/faq/custom_repositories/)
 
 ## Remember it!
 The app doesn't work standalone but togheter with [Centro Notifiche](https://github.com/caiosweet/Package-Notification-HUB-AppDaemon)
