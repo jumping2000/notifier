@@ -25,11 +25,14 @@ Package-Notification-HUB-AppDaemon<br>
 
 ## Installation
 
-<b>It needs [Appdaemon Container](https://hub.docker.com/r/acockburn/appdaemon) or [Appdaemon addon](https://github.com/hassio-addons/addon-appdaemon). </b> <br>
-Use [HACS](https://github.com/custom-components/hacs) or [download](https://github.com/jumping2000/notifier) the `notifier` directory from inside the `apps` directory here to your local `apps` directory. 
-Remember:
+<b>It needs [Appdaemon Container](https://hub.docker.com/r/acockburn/appdaemon) or [Appdaemon addon](https://github.com/hassio-addons/addon-appdaemon). </b> <br><br>
+Steps to follow:
 - enable [Appdaemon in HACS](https://hacs.xyz/docs/categories/appdaemon_apps#enable-appdaemon-apps-in-hacs);
-- add [this repository in HACS](https://hacs.xyz/docs/faq/custom_repositories/)
+- add [this repository in HACS](https://hacs.xyz/docs/faq/custom_repositories/);
+- click the button below.
+
+[![image](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=jumping2000&repository=notifier&category=appdaemon)
+
 
 ## Remember it!
 The app doesn't work standalone but togheter with [Centro Notifiche](https://github.com/caiosweet/Package-Notification-HUB-AppDaemon)
