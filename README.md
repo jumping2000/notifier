@@ -21,17 +21,19 @@ Package-Notification-HUB-AppDaemon<br>
 
 *Notifier is an [AppDaemon](https://github.com/home-assistant/appdaemon) app which works togheter with [Centro Notifiche](https://github.com/caiosweet/Package-Notification-HUB-AppDaemon) to sends text (Telegram, Push, WhatsApp), TTS Google and Alexa, VoIP notifications to you and/or your devices like PC, smartphone, pad, etc..*
 
-<b>The app works with Appdaemon v4.x.</b>
+<b>The app works with Appdaemon v4.x.-5.x</b>
 
 ## Installation
 
 <b>It needs [Appdaemon Container](https://hub.docker.com/r/acockburn/appdaemon) or [Appdaemon addon](https://github.com/hassio-addons/addon-appdaemon). </b> <br><br>
 Steps to follow:
 - enable [Appdaemon in HACS](https://hacs.xyz/docs/categories/appdaemon_apps#enable-appdaemon-apps-in-hacs);
-- add [this repository in HACS](https://hacs.xyz/docs/faq/custom_repositories/);
+- add [this repository in HACS](https://hacs.xyz/docs/faq/custom_repositories/); [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 - click the button below.
 
 [![image](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=jumping2000&repository=notifier&category=appdaemon)
+
+
 
 
 ## Remember it!
