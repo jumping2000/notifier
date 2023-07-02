@@ -1,8 +1,8 @@
 import json
-from queue import Queue
 import re
-from threading import Thread
 import time
+from queue import Queue
+from threading import Thread
 
 import hassapi as hass  # type: ignore
 
@@ -52,11 +52,11 @@ WHISPER = "whisper"
 MOBILE_PUSH_TYPE = (PUSH, "dropin", "dropin_notification")
 SUB_VOICE = [
     ("[\U00010000-\U0010ffff]", ""),  # strip emoji
-    ("[\?\.\!,]+(?=[\?\.\!,])", ""),  # strip duplicate .,
+    ("[\?\.\!,]+(?=[\?\.\!,])", ""),  # strip duplicate dot and comma
     ("(\s+\.|\s+\.\s+|[\.])(?! )(?![^{<]*[}>])(?![^\d.]*\d)", ". "),
     ("&", " and "),  # escape
-    ("[\n\*]", " "),
-    (" +", " "),
+    ("[\n\*]", " "),  # remove end-of-line (Carriage Return)
+    (" +", " "),  # remove whitespace
 ]
 SUB_TEXT = [(" +", " "), ("\s\s+", "\n")]
 
@@ -319,17 +319,21 @@ class Alexa_Manager(hass.Hass):
         t.start()
         self.set_state(self.debug_sensor, state="on")
 
-    def speak(self, alexa: dict, skill_id: str) -> None:
+    def speak(self, alexa: dict, skill_id: str, cfg: dict) -> None:
         """Speak the provided text through the media player."""
         self.lg(f"------ ALEXA START DISPATCH ------")
         self.lg(f"FROM DISPATCH: {type(alexa)} value {alexa}")
+        # remove keys with None value from a dict # TODO
+        # alexa = {k: v for k, v in alexa.items() if v not in [None, "None", ""]}
+        # self.lg(f"REMOVE [NONE] VALUE: {type(alexa)} value {alexa}")
 
         if not self.service2player:
             self.set_debug_sensor("Alexa Services not found", CUSTOM_COMPONENT_URL)
             return
-
-        default_vol = float(self.get_state(self.sensor_volume, default=10)) / 100
+        # TODO float null value in default
+        default_vol = float(self.get_state(self.sensor_volume, default=cfg.get("day_period_volume", 10))) / 100
         volume = float(alexa.get(VOLUME, default_vol))
+
         auto_volumes = self.check_bool(alexa.get(AUTO_VOLUMES, False))
         if volume == 0.0 and not auto_volumes:
             self.log("ALEXA VOLUME MUTED.", level="WARNING")
@@ -337,8 +341,9 @@ class Alexa_Manager(hass.Hass):
 
         # Backwards compatible message_tts
         message = str(alexa.get("message_tts", alexa.get(MESSAGE, "")))
-        get_players = alexa.get(MEDIA_PLAYER, self.get_state(self.sensor_player))
-        media_player = self.check_media_player(get_players)
+        get_players = alexa.get(MEDIA_PLAYER, self.get_state(self.sensor_player, default=cfg.get("alexa_sensor", [])))
+        media_name = self.get_state(self.select_player, attribute="options", default=cfg.get("alexa_options", []))
+        media_player = self.check_media_player(get_players, media_name)
         get_type = alexa.get(TYPE, self.get_state(self.select_type, default="tts"))
         data_type = str(get_type).lower().replace("dropin", "dropin_notification")
 
@@ -525,20 +530,21 @@ class Alexa_Manager(hass.Hass):
         ]
         self.lg(f"SERVICES TO MEDIA PLAYER: {replace_services}")
         service2player = [
-            s
-            for s in replace_services
-            if self.entity_exists(s) and not any(player in s for player in exclude)
+            s for s in replace_services if self.entity_exists(s) and not any(player in s for player in exclude)
         ]
         self.lg(f"CLEAN MEDIA PLAYER LIST: {service2player}")
         return service2player
 
-    def check_media_player(self, media_player: list) -> list:
+    def check_media_player(self, media_player: list, media_name: list) -> list:
         mplist = []
-        if not isinstance(media_player, list):
+        # if media_player is None:
+        #     media_player = []
+        if not isinstance(media_player, list):  # type(None),
             media_player = self.str2list(str(media_player.lower()))
         self.lg(f"USER PLAYER: {media_player} - TYPE: {type(media_player)}")
-        media_name = self.get_state(self.select_player, attribute="options", default="")
+        self.lg(f"MEDIA NAME: {media_name} - TYPE: {type(media_name)}")
         name2entity = self.entity_from_name(list(media_name) + media_player)
+        # TypeError: can only concatenate list (not "NoneType") to list
         for mp in media_player:
             if mp == "test":
                 mplist = self.service2player
@@ -591,13 +597,9 @@ class Alexa_Manager(hass.Hass):
                 continue
             self.lg(f"DIFFERENT VOLUMES: {volume_get} - DEFAULT: {volume}")
             if status.get("state", "") != "playing":
-                self.call_service(
-                    NOTIFY + ALEXA_SERVICE, data={TYPE: "tts"}, target=i, message=m
-                )
+                self.call_service(NOTIFY + ALEXA_SERVICE, data={TYPE: "tts"}, target=i, message=m)
                 time.sleep(2)
-            self.call_service(
-                "media_player/volume_set", entity_id=i, volume_level=volume
-            )
+            self.call_service("media_player/volume_set", entity_id=i, volume_level=volume)
             # Force attribute volume level in Home assistant
             self.set_state(i, attributes={"volume_level": volume})
             self.call_service("alexa_media/update_last_called", return_result=True)
@@ -621,10 +623,7 @@ class Alexa_Manager(hass.Hass):
             # Force attribute volume level in Home assistant
             self.set_state(i, attributes={"volume_level": j})
             self.call_service("alexa_media/update_last_called", return_result=True)
-            self.lg(
-                f"RESTORE VOL: {i} {j} [State:"
-                f" {self.get_state(i, attribute='volume_level')}]"
-            )
+            self.lg(f"RESTORE VOL: {i} {j} [State:" f" {self.get_state(i, attribute='volume_level')}]")
 
     def volume_set(self, media_player: list, volume: float) -> None:
         """Set the volume of each media player."""
@@ -633,9 +632,7 @@ class Alexa_Manager(hass.Hass):
         if not self.volumes_saved and smart_volume:
             return
         media_player = list(self.volumes_saved.keys()) if smart_volume else media_player
-        self.call_service(
-            "media_player/volume_set", entity_id=media_player, volume_level=volume
-        )
+        self.call_service("media_player/volume_set", entity_id=media_player, volume_level=volume)
         # Not strictly necessary
         for player in media_player:
             # Force attribute volume level in Home assistant
@@ -658,7 +655,7 @@ class Alexa_Manager(hass.Hass):
                 data = self.queue.get()
                 self.lg(f"------ ALEXA WORKER QUEUE  ------")
                 self.lg(f"WORKER: {type(data)} value {data}")
-                self.set_state(self.binary_speak, state="on", attributes=data)
+                self.set_state(self.binary_speak, state="on", attributes={**data})
                 media_player = data[MEDIA_PLAYER]
                 if data[AUTO_VOLUMES]:
                     self.volume_auto_silent(media_player, data[VOLUME])
@@ -700,9 +697,7 @@ class Alexa_Manager(hass.Hass):
                     if voice != "Alexa":
                         msg = self.voice_tags(msg, voice)
                     msg = self.audio_tags(data[AUDIO]) + msg
-                    msg = self.prosody_tags(
-                        msg, data[RATE], data[PITCH], data[SSML_VOL]
-                    )
+                    msg = self.prosody_tags(msg, data[RATE], data[PITCH], data[SSML_VOL])
                     if self.inbetween(20, data[RATE], 200) != 100:
                         if data[RATE] < 100:
                             duration += (100 - data[RATE]) * (duration / 100)
@@ -716,10 +711,7 @@ class Alexa_Manager(hass.Hass):
 
                 # Estimate reading time
                 duration += data[WAIT_TIME]
-                self.lg(
-                    f"DURATION-WAIT: {round(duration, 2)}"
-                    f" - words: {words} - Chars: {chars}"
-                )
+                self.lg(f"DURATION-WAIT: {round(duration, 2)}" f" - words: {words} - Chars: {chars}")
                 self.lg(f"WAIT_TIME: {data[WAIT_TIME]}")
 
                 # Speak >>>
@@ -742,6 +734,7 @@ class Alexa_Manager(hass.Hass):
                     duration += 10
                     self.lg(f"ADDED EXTRA ANSWER TIME {duration} Last {last_player}")
 
+                self.log(f"DURATION {duration}: ")
                 time.sleep(duration)
                 self.volume_restore()
                 ########
@@ -768,4 +761,5 @@ class Alexa_Manager(hass.Hass):
                     pass  # Nothing in queue
 
             self.set_state(self.binary_speak, state="off")
+            # attributes = {"icon": "mdi:speaker-message", **data}
             self.lg("------      ALEXA  END      ------\n")
