@@ -33,6 +33,7 @@ Steps to follow:
 
 [![image](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=jumping2000&repository=notifier&category=appdaemon)
 
+(👆 remember the <b>[my:](https://www.home-assistant.io/integrations/my/)</b> integration)
 
 
 
