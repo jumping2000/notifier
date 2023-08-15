@@ -2,7 +2,7 @@ name: Notifier Bug Report
 description: Create a bug report for the Notifier App
 title: 'Bug - '
 labels:
-  - blueprint
+  - appdaemon
   - bug
 body:
   - type: markdown
