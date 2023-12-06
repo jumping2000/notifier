@@ -134,7 +134,7 @@ class Notifier_Dispatch(hass.Hass):
 
         #### FROM CONFIGURATION BLUEPRINT ###
         self.config = self.get_plugin_config()
-        self.config_dir = self.config["config_dir"]
+        self.config_dir = "/homeassistant" #self.config["config_dir"]
         self.log(f"configuration dir: {self.config_dir}")
         ### FROM SENSOR CONFIG
         sensor_config = self.get_state("sensor.notifier_config", attribute="all", default={})
