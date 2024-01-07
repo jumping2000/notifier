@@ -3,10 +3,7 @@ GH_Manager:
   class: GH_Manager
   
   #log_level: DEBUG
-
-  gh_service: tts.google
   ytube_player: media_player.ytube_music_player
-  
   # Main hub
   gh_wait_time: input_number.notifier_tts_wait_time
   gh_select_media_player: select.notifier_player_google
