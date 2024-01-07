@@ -42,7 +42,6 @@ CONF_DEBUG = False
 
 class GH_Manager(hass.Hass):
     def initialize(self)->None:
-        self.gh_service = h.get_arg(self.args, "gh_service")
         self.gh_wait_time = h.get_arg(self.args, "gh_wait_time")
         self.gh_select_media_player = h.get_arg(self.args, "gh_select_media_player")
         self.gh_sensor_media_player = h.get_arg(self.args, "gh_sensor_media_player")
@@ -52,13 +51,14 @@ class GH_Manager(hass.Hass):
         self.ytube_called = False
         self.debug_sensor = h.get_arg(self.args, "debug_sensor")
         self.set_state(self.debug_sensor, state="on")
-        self.check_gh_service = self.check_gh(self.gh_service)
+        ##
+        hass_config = self.get_plugin_config()
+        self.tts_components = [s for s in hass_config["components"] if "tts" in s]
         self._player = {}
         ##
         for k in list(self.get_state(CONF_MEDIA_PLAYER).keys()):
             if CONF_FRIENDLY_NAME in self.get_state(CONF_MEDIA_PLAYER)[k][CONF_ATTRIBUTES]:
                 self._player.update({str(self.get_state(CONF_MEDIA_PLAYER)[k][CONF_ATTRIBUTES][CONF_FRIENDLY_NAME]).lower():k})
-
         self.queue = Queue(maxsize=0)
         self._when_tts_done_callback_queue = Queue()
         t = Thread(target=self.worker)
@@ -116,11 +116,9 @@ class GH_Manager(hass.Hass):
         attributes["google_error"] = error
         self.set_state(self.debug_sensor, state=state, attributes=attributes)
 
-    def check_gh(self, service):
+    def check_gh(self, service, tts_components):
         """ check if tts service exist in HA """
-        self.hass_config = self.get_plugin_config()
-        components = self.hass_config["components"]
-        return next((True for comp in components if service in comp), False)
+        return next((True for comp in tts_components if comp.replace("tts", "").replace(".", "") in service), False)
 
     def restore_mplayer_states(self, gh_players:list, dict_info_mplayers:dict)->None:
         """  Restore volumes and media-player states """ 
@@ -154,9 +152,9 @@ class GH_Manager(hass.Hass):
 
     def speak(self, google, gh_mode: bool, gh_notifier: str, cfg: dict):
         """ Speak the provided text through the media player. """
-        if not self.check_gh_service:
+        if not self.check_gh(gh_notifier,self.tts_components):
             self.set_debug_sensor(
-                "I can't find the TTS Google component", "https://www.home-assistant.io/integrations/tts"
+                "I can't find the TTS Google component", "https://www.home-assistant.io/integrations/tts",
             )
             return
         if "media_player" not in google:
